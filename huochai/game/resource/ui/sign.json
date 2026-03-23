@@ -1,0 +1,14 @@
+{"file":"sign.png","frames":{
+"course_done_btn":{"x":665,"y":1,"w":240,"h":240,"offX":0,"offY":0,"sourceW":240,"sourceH":240},
+"icon_daka_1":{"x":907,"y":189,"w":92,"h":92,"offX":0,"offY":0,"sourceW":92,"sourceH":92},
+"icon_daka_2":{"x":907,"y":95,"w":92,"h":92,"offX":0,"offY":0,"sourceW":92,"sourceH":92},
+"icon_daka_3":{"x":907,"y":1,"w":92,"h":92,"offX":0,"offY":0,"sourceW":92,"sourceH":92},
+"icon_daka_4":{"x":867,"y":283,"w":92,"h":92,"offX":0,"offY":0,"sourceW":92,"sourceH":92},
+"quickstart":{"x":665,"y":859,"w":224,"h":67,"offX":0,"offY":0,"sourceW":224,"sourceH":67},
+"sign_bg":{"x":665,"y":243,"w":200,"h":260,"offX":0,"offY":0,"sourceW":200,"sourceH":260},
+"sign_bg1":{"x":665,"y":505,"w":200,"h":260,"offX":0,"offY":0,"sourceW":200,"sourceH":260},
+"signbg1":{"x":1,"y":866,"w":451,"h":226,"offX":0,"offY":0,"sourceW":451,"sourceH":226},
+"signOk":{"x":665,"y":767,"w":260,"h":90,"offX":0,"offY":0,"sourceW":260,"sourceH":90},
+"signtoday":{"x":1,"y":1,"w":662,"h":863,"offX":1,"offY":1,"sourceW":664,"sourceH":865},
+"subview6":{"x":961,"y":283,"w":48,"h":70,"offX":0,"offY":0,"sourceW":48,"sourceH":70},
+"subview7":{"x":961,"y":355,"w":48,"h":70,"offX":0,"offY":0,"sourceW":48,"sourceH":70}}}

@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<e:Skin class="MainUISkin" width="720" height="1280" xmlns:e="http://ns.egret.com/eui" xmlns:w="http://ns.egret.com/wing" xmlns:ns1="*">
+	<w:Config id="17120d5285b" scale9Grid="40,45,2,35"/>
+	<e:Image fillMode="scale" verticalCenter="68" height="1416" width="720" horizontalCenter="0" source="scenebg_png" anchorOffsetY="0"/>
+
+	<e:Scroller id="scoll" anchorOffsetY="0" bounces="false" top="270" bottom="140" width="660" horizontalCenter="0">
+		<e:List id="itemList" anchorOffsetY="0"  itemRendererSkinName="contentsItem">
+			<e:layout>
+				<e:TileLayout orientation="rows" verticalGap="30" horizontalGap="40" paddingLeft="30" paddingRight="30" paddingTop="30"/>
+			</e:layout>
+		</e:List>
+	</e:Scroller>
+	<e:Label id="guankaLv" text="关卡:1" x="511.67" y="55" size="60" visible="false"/>
+	<e:Group id="signIn" width="720" height="1280" y="0" horizontalCenter="0" visible="false">
+		<e:Image width="720" height="1280" x="0" y="0" source="huochai_json.bg2" scale9Grid="33,33,34,34" alpha="1"/>
+		<e:Image width="720" height="1280" x="0" y="0" source="huochai_json.bg2" scale9Grid="33,33,34,34" alpha="1"/>
+		<e:Image width="720" height="1280" x="0" y="0" source="huochai_json.bg2" scale9Grid="33,33,34,34" alpha="1"/>
+		<e:Image width="670" height="110" y="275.87" source="huochai_json.result_title" horizontalCenter="4"/>
+		<e:Image id="signBg" width="384" height="392" source="huochai_json.g@2x" verticalCenter="-57" scaleX="1" scaleY="1" horizontalCenter="0"/>
+		<e:Image width="128" height="128" source="huochai_json.zuanshi1" horizontalCenter="0" verticalCenter="-44"/>
+		<e:Label id="signTitleTxt" text="签  到  奖  励" y="294.65" size="42" textAlign="center" height="48" verticalAlign="middle" width="520" fontFamily="Microsoft YaHei" textColor="0x110c0c" horizontalCenter="0"/>
+		<e:Label id="signTxt" text="X300" y="610" size="36" textAlign="center" height="50" verticalAlign="middle" width="120" fontFamily="Microsoft YaHei" horizontalCenter="119" bold="true" textColor="0xFFFFFF"/>
+		<e:Label id="signTxt0" text="连续签到可获得更多奖励！" y="844.043" size="36" textAlign="center" height="50" verticalAlign="middle" width="560" fontFamily="Microsoft YaHei" horizontalCenter="4" bold="true" x="429" textColor="0xD52D2D"/>
+		<ns1:OneStateButton id="btn_sign_ok" label="" y="965.978" horizontalCenter="1" width="248" height="94">
+			<ns1:skinName>
+			<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="huochai_json.draw_bt" source.down="huochai_json.draw_bt"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+			</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+	</e:Group>
+	<e:Image width="412" height="95" y="111.901" source="huochai_json.title" scaleX="0.7" scaleY="0.7" horizontalCenter="0"/>
+	<e:Group id="modeBtns" x="15" y="205" width="690" height="55">
+		<ns1:OneStateButton id="timedBtn" x="0" y="0" width="165" height="48" label="限时挑战">
+			<ns1:skinName>
+				<e:Skin states="up,down,disabled">
+					<e:Image width="100%" height="100%" source="btres_json.bg_orange" source.down="btres_json.bg_orange" source.disabled="btres_json.bg_orange"/>
+					<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0" text="限时挑战" textColor="0x2E2C2D" size="22" fontFamily="Microsoft YaHei" textAlign="center" verticalAlign="middle" bold="true"/>
+				</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+		<ns1:OneStateButton id="endlessBtn" x="172" y="0" width="165" height="48" label="连续闯关">
+			<ns1:skinName>
+				<e:Skin states="up,down,disabled">
+					<e:Image width="100%" height="100%" source="btres_json.bg_orange" source.down="btres_json.bg_orange" source.disabled="btres_json.bg_orange"/>
+					<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0" text="连续闯关" textColor="0x2E2C2D" size="22" fontFamily="Microsoft YaHei" textAlign="center" verticalAlign="middle" bold="true"/>
+				</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+		<ns1:OneStateButton id="dailyBtn" x="344" y="0" width="165" height="48" label="每日挑战">
+			<ns1:skinName>
+				<e:Skin states="up,down,disabled">
+					<e:Image width="100%" height="100%" source="btres_json.bg_orange" source.down="btres_json.bg_orange" source.disabled="btres_json.bg_orange"/>
+					<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0" text="每日挑战" textColor="0x2E2C2D" size="22" fontFamily="Microsoft YaHei" textAlign="center" verticalAlign="middle" bold="true"/>
+				</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+<ns1:OneStateButton id="reverseBtn" x="516" y="0" width="165" height="48" label="数字玩法">
+		<ns1:skinName>
+			<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="btres_json.bg_orange" source.down="btres_json.bg_orange" source.disabled="btres_json.bg_orange"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0" text="数字玩法" textColor="0x2E2C2D" size="22" fontFamily="Microsoft YaHei" textAlign="center" verticalAlign="middle" bold="true"/>
+			</e:Skin>
+		</ns1:skinName>
+	</ns1:OneStateButton>
+	</e:Group>
+	<e:Group id = "zsPanel" width="200" height="58" y="40" horizontalCenter="-231" visible="true">
+		<e:Image width="200" height="58" x="0" y="0" source="huochai_json.bg2" scale9Grid="12,12,76,76"/>
+		<e:Label id="score_num" text="300" x="63.83" y="4" size="36" textAlign="left" height="50" verticalAlign="middle" width="132.12" anchorOffsetX="0"/>
+		<e:Image id="img_star" width="42" height="40" x="30.51" y="27.257" source="huochai_json.zuanshi1" anchorOffsetX="21" anchorOffsetY="20"/>
+	</e:Group>
+
+    <e:Group id="onShowVideo" width="606" height="300" anchorOffsetX="360" anchorOffsetY="266.67" horizontalCenter="0" verticalCenter="-3" visible="false">
+		<e:Image width="606" height="300" horizontalCenter="0" anchorOffsetY="0" scale9Grid="12,12,76,76" anchorOffsetX="0" source="huochai_json.bd_@2x"/>
+		<e:Label id="video_tips" text="每日首次观看视频可获得200星星" y="34" width="520" size="38" height="110" verticalAlign="middle" fontFamily="Microsoft YaHei" horizontalCenter="0" textAlign="center" textColor="0x444242"/>
+
+		<ns1:OneStateButton id="show_video_ok" label="" y="203.996" width="220" height="75" horizontalCenter="109">
+			<ns1:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="huochai_json.btn_sure" source.down="huochai_json.btn_sure"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+				</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+		<ns1:OneStateButton id="show_video_cancel" label="" x="51.677" y="202.23" width="220" height="75">
+			<ns1:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="huochai_json.cancel" source.down="huochai_json.cancel"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+				</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+
+	</e:Group>
+	<e:Group width="720" visible="true" height="130" horizontalCenter="1" bottom="0">
+		<e:Image width="720" height="130" x="0" y="0" source="sign_json.subview7" anchorOffsetX="0"/>
+		<ns1:OneStateButton id="quickStart" x="383" y="14" width="295.67" height="103" label="快速开始">
+			<ns1:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="btres_json.bt_greed2x" source.down="btres_json.bt_greed2x" source.disabled="btres_json.bt_greed2x"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0.5" text="快速开始" textColor="0x2E2C2D" width="206.113" height="48" size="42" fontFamily="Microsoft YaHei" textAlign="center" verticalAlign="middle" bold="true"/>
+				</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+		<ns1:OneStateButton id="other" x="31.83" y="14" width="295" height="103" label="经典玩法" anchorOffsetX="0" anchorOffsetY="0" visible="false">
+			<ns1:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="btres_json.bg_orange" source.down="btres_json.bg_orange" source.disabled="btres_json.bg_orange"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0.5" text="经典玩法" textColor="0x2E2C2D" width="206.113" height="48" size="42" fontFamily="Microsoft YaHei" textAlign="center" verticalAlign="middle" bold="true"/>
+				</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+		<ns1:OneStateButton id="pintu" x="31.83" y="13.5" width="295" height="103" label="火柴拼图" anchorOffsetX="0" anchorOffsetY="0" visible="false">
+			<ns1:skinName>
+			<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="btres_json.bg_orange" source.down="btres_json.bg_orange" source.disabled="btres_json.bg_orange"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0.5" text="经典玩法" textColor="0x2E2C2D" width="206.113" height="48" size="42" fontFamily="Microsoft YaHei" textAlign="center" verticalAlign="middle" bold="true"/>
+			</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+		<e:Image id="img_box" width="125" height="114" x="42" source="sign_json.icon_daka_4" y="8.5" anchorOffsetX="0" anchorOffsetY="0"/>
+		<e:Label text="奖励" x="136.54" y="89.5" fontFamily="Microsoft YaHei" textColor="0xe2c116" anchorOffsetY="0" height="55"/>
+	</e:Group>
+    <e:Group id="newsignIn" width="720" height="1280" y="176.541" horizontalCenter="0" visible="false">
+		<e:Image width="664" height="865" x="28.71" y="0" alpha="1" source="sign_json.signtoday"/>
+			<e:Image width="619.983" height="617.678" x="49.068" y="187.437" alpha="1" source="sign_json.signbg1" scale9Grid="22,22,407,184"/>
+			<e:Group id="gp1" width="138" height="178" x="108.677" y="225.146">
+				<e:Image id="img1" width="137.541" height="178.803" horizontalCenter="-1" top="2" x="-93" y="-238" scaleX="1" scaleY="1" source="sign_json.sign_bg1"/>
+				<e:Image id="star_img1" width="48.915" height="52" horizontalCenter="2.5" top="72" x="-83" y="-228" scaleX="1" scaleY="1" source="huochai_json.continue_ruby"/>
+				<e:Label text="第一天" size="28" textAlign="center" height="50" verticalAlign="middle" width="100" fontFamily="Microsoft YaHei" horizontalCenter="1" bold="true" verticalCenter="-60" x="-79.00000000000006" y="-236" textColor="0x561414" scaleX="1" scaleY="1"/>
+				<e:Label text="X20" size="28" textAlign="center" height="50" verticalAlign="middle" width="100" fontFamily="Microsoft YaHei" horizontalCenter="1" bold="true" verticalCenter="64" x="-69.00000000000006" y="-226" scaleX="1" scaleY="1" textColor="0x5F5959"/>
+			</e:Group>
+			<e:Group id="gp2" width="138" height="178" x="281" y="225.15">
+				<e:Image id="img2" width="137.541" height="178.803" horizontalCenter="-1" top="2" x="-93" y="-238" source="sign_json.sign_bg1" scaleX="1" scaleY="1"/>
+				<e:Image id="star_img2" width="48.915" height="52" horizontalCenter="2.5" top="72" x="-83" y="-228" source="huochai_json.continue_ruby" scaleX="1" scaleY="1"/>
+				<e:Label text="第二天" size="28" textAlign="center" height="50" verticalAlign="middle" width="100" fontFamily="Microsoft YaHei" horizontalCenter="1" bold="true" verticalCenter="-60" x="-79.00000000000006" y="-236" textColor="0x561414" scaleX="1" scaleY="1"/>
+				<e:Label text="X40" size="28" textAlign="center" height="50" verticalAlign="middle" width="100" fontFamily="Microsoft YaHei" horizontalCenter="1" bold="true" verticalCenter="64" x="-69.00000000000006" y="-226" textColor="0x5F5959" scaleX="1" scaleY="1"/>
+			</e:Group>
+			<e:Group id="gp3" width="138" height="178" x="459.17" y="225.15">
+				<e:Image id="img3" width="137.541" height="178.803" horizontalCenter="-1" top="2" x="-93" y="-238" source="sign_json.sign_bg1" scaleX="1" scaleY="1"/>
+				<e:Image id="star_img3" width="48.915" height="52" horizontalCenter="2.5" top="72" x="-83" y="-228" source="huochai_json.continue_ruby" scaleX="1" scaleY="1"/>
+				<e:Label text="第三天" size="28" textAlign="center" height="50" verticalAlign="middle" width="100" fontFamily="Microsoft YaHei" horizontalCenter="1" bold="true" verticalCenter="-60" x="-79.00000000000006" y="-236" textColor="0x561414" scaleX="1" scaleY="1"/>
+				<e:Label text="X60" size="28" textAlign="center" height="50" verticalAlign="middle" width="100" fontFamily="Microsoft YaHei" horizontalCenter="1" bold="true" verticalCenter="64" x="-69.00000000000006" y="-226" textColor="0x5F5959" scaleX="1" scaleY="1"/>
+			</e:Group>
+			<e:Group id="gp4" width="138" height="178" x="49.068" y="449.073">
+				<e:Image id="img4" width="137.541" height="178.803" horizontalCenter="-1" top="2" x="-93" y="-238" source="sign_json.sign_bg1" scaleX="1" scaleY="1"/>
+				<e:Image id="star_img4" width="48.915" height="52" horizontalCenter="2.5" top="72" x="-83" y="-228" source="huochai_json.continue_ruby" scaleX="1" scaleY="1"/>
+				<e:Label text="第四天" size="28" textAlign="center" height="50" verticalAlign="middle" width="100" fontFamily="Microsoft YaHei" horizontalCenter="1" bold="true" verticalCenter="-60" x="-79.00000000000006" y="-236" textColor="0x561414" scaleX="1" scaleY="1"/>
+				<e:Label text="X80" size="28" textAlign="center" height="50" verticalAlign="middle" width="100" fontFamily="Microsoft YaHei" horizontalCenter="1" bold="true" verticalCenter="64" x="-69.00000000000006" y="-226" textColor="0x5F5959" scaleX="1" scaleY="1"/>
+			</e:Group>
+			<e:Group id="gp5" width="138" height="178" x="204.592" y="449.072">
+				<e:Image id="img5" width="137.541" height="178.803" horizontalCenter="-1" top="2" x="-93" y="-238" source="sign_json.sign_bg1" scaleX="1" scaleY="1"/>
+				<e:Image id="star_img5" width="48.915" height="52" horizontalCenter="2.5" top="72" x="-83" y="-228" source="huochai_json.continue_ruby" scaleX="1" scaleY="1"/>
+				<e:Label text="第五天" size="28" textAlign="center" height="50" verticalAlign="middle" width="100" fontFamily="Microsoft YaHei" horizontalCenter="1" bold="true" verticalCenter="-60" x="-79.00000000000006" y="-236" textColor="0x561414" scaleX="1" scaleY="1"/>
+				<e:Label text="X100" size="28" textAlign="center" height="50" verticalAlign="middle" width="100" fontFamily="Microsoft YaHei" horizontalCenter="1" bold="true" verticalCenter="64" x="-69.00000000000006" y="-226" textColor="0x5F5959" scaleX="1" scaleY="1"/>
+			</e:Group>
+			<e:Group id="gp6" width="138" height="178" x="366.4" y="449.072">
+				<e:Image id="img6" width="137.541" height="178.803" horizontalCenter="-1" top="2" x="-93" y="-238" source="sign_json.sign_bg1" scaleX="1" scaleY="1"/>
+				<e:Image id="star_img6" width="48.915" height="52" horizontalCenter="2.5" top="72" x="-83" y="-228" source="huochai_json.continue_ruby" scaleX="1" scaleY="1"/>
+				<e:Label text="第六天" size="28" textAlign="center" height="50" verticalAlign="middle" width="100" fontFamily="Microsoft YaHei" horizontalCenter="1" bold="true" verticalCenter="-60" x="-79.00000000000006" y="-236" textColor="0x561414" scaleX="1" scaleY="1"/>
+				<e:Label text="X120" size="28" textAlign="center" height="50" verticalAlign="middle" width="100" fontFamily="Microsoft YaHei" horizontalCenter="1" bold="true" verticalCenter="64" x="-69.00000000000006" y="-226" textColor="0x5F5959" scaleX="1" scaleY="1"/>
+			</e:Group>
+			<e:Group id="gp7" width="138" height="178" x="506" y="449.07">
+				<e:Image id="img7" width="137.541" height="178.803" horizontalCenter="-1" top="2" x="-93" y="-238" source="sign_json.sign_bg1" scaleX="1" scaleY="1"/>
+				<e:Image id="star_img7" width="48.915" height="52" horizontalCenter="2.5" top="72" x="-83" y="-228" source="huochai_json.continue_ruby" scaleX="1" scaleY="1"/>
+				<e:Label text="第七天" size="28" textAlign="center" height="50" verticalAlign="middle" width="100" fontFamily="Microsoft YaHei" horizontalCenter="1" bold="true" verticalCenter="-60" x="-79.00000000000006" y="-236" textColor="0x561414" scaleX="1" scaleY="1"/>
+				<e:Label text="X140" size="28" textAlign="center" height="50" verticalAlign="middle" width="100" fontFamily="Microsoft YaHei" horizontalCenter="1" bold="true" verticalCenter="64" x="-69.00000000000006" y="-226" textColor="0x5F5959" scaleX="1" scaleY="1"/>
+			</e:Group>
+			<ns1:OneStateButton id="signOK" x="226.4" y="703.091">
+				<ns1:skinName>
+					<e:Skin states="up,down,disabled">
+					<e:Image width="100%" height="100%" source="sign_json.signOk" source.down="sign_json.signOk" source.disabled="sign_json.signOk"/>
+					<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+					</e:Skin>
+				</ns1:skinName>
+			</ns1:OneStateButton>
+			<ns1:OneStateButton id="signClose" x="586.735" y="105.884" width="80" height="80">
+				<ns1:skinName>
+					<e:Skin states="up,down,disabled">
+					<e:Image width="100%" height="100%" source="huochai_json.bt_no" source.down="huochai_json.bt_no" source.disabled="huochai_json.bt_no"/>
+					<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+					</e:Skin>
+				</ns1:skinName>
+			</ns1:OneStateButton>
+			<e:Label id="sign_day" text="已经连续签到七天" x="306.264" y="653.091" size="42" textAlign="center" verticalAlign="middle" height="50" fontFamily="Microsoft YaHei"/>
+	</e:Group>
+	<e:Image id="img_sign" width="64" height="64" x="124.17" source="sign_json.icon_daka_2" y="107.33" visible="false"/>
+	<e:Label text="签到" x="126.17" y="174" fontFamily="Microsoft YaHei" textColor="0xE2C116" visible="false"/>
+</e:Skin>

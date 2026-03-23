@@ -1,0 +1,32 @@
+{
+	"initial": [
+		"libs/modules/egret/egret.js",
+		"libs/modules/egret/egret.web.js",
+		"libs/modules/eui/eui.js",
+		"libs/modules/res/res.js",
+		"libs/modules/tween/tween.js",
+		"libs/modules/game/game.js",
+		"libs/modules/socket/socket.js",
+		"libs/modules/promise/promise.js",
+		"libs/modules/mylib/mylib.js",
+		"libs/weapp-adapter/weapp-adapter.js"
+	],
+	"game": [
+		"bin-debug/modules/game/GameView.js",
+		"bin-debug/AlertBox.js",
+		"bin-debug/JsonID.js",
+		"bin-debug/LevelBuilder.js",
+		"bin-debug/Main.js",
+		"bin-debug/MapJson.js",
+		"bin-debug/OneStateButton.js",
+		"bin-debug/modules/game/GameMath.js",
+		"bin-debug/GameplayConfig.js",
+		"bin-debug/modules/game/MapEqualyGroup.js",
+		"bin-debug/modules/game/MapGroup.js",
+		"bin-debug/modules/mainui/ContentItem.js",
+		"bin-debug/modules/mainui/MainUIManager.js",
+		"bin-debug/modules/mainui/MainUIView_v1.js",
+		"bin-debug/modules/mainui/MainUIView.js",
+		"bin-debug/modules/mainui/Mission.js"
+	]
+}

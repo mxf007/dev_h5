@@ -1,0 +1,667 @@
+package msg;
+///////////////////////////////////////////////////////////////////////////////////////////
+// 游戏服务器通用协议
+// 操作结果码
+message PbMsgRetCode
+{
+  enum MSG{ ID = 1;}
+  required int32 retCode = 1;
+}
+
+// 通知打开付费引导
+message PbMsgBeginPaidGuide
+{
+  enum MSG{ ID = 4;}
+  required int32 number = 1;     // 充值数量
+}
+
+// 通知购买道具
+message PbMsgBeginBuyItem
+{
+  enum MSG{ ID = 5;}
+  required int32 itemId = 1;     // 购买道具
+  required int32 number = 2;	 // 购买数量
+}
+
+// 下线通知
+message PbMsgUpdateOffline
+{
+  enum MSG{ ID = 10;}
+  required int32 retCode = 1; // 返回码通知下线
+}
+
+// 同步角色属性json
+message PbMsgUpdateJson
+{
+  enum MSG{ ID = 11;}
+  required int32 id = 1; // 属性id
+  required string data = 2; // json
+}
+
+// 同步角色列表
+message PbMsgUpdateRoleList
+{
+  enum MSG{ ID = 12;}
+  required int32 id = 1; // 类型
+  repeated int32 roleid = 2; // 角色ID列表
+}
+
+// 同步角色属性json列表
+message PbMsgUpdateJsonList
+{
+  enum MSG{ ID = 13;}
+  repeated PbMsgUpdateJson datas= 1;
+}
+
+
+
+// 领取奖励 根据Id类型获取奖励
+message PbMsgGetAwardById
+{
+    enum MSG{ ID = 1010;}
+	required int32 id = 1;  // 领奖类型
+    repeated int32 argv = 2; // 附加参数
+    optional int32 time=3; //当前时间
+}
+
+message PbMsgRetGetAwardById
+{
+    enum MSG{ ID = 2010;}
+	message Item
+    {
+        required int32 id = 1; 
+        required int32 num = 2; // 数量
+    }
+    required int32 retCode = 1; // 返回码
+	repeated Item award = 2; // 奖励列表
+    repeated PbMsgUpdateJson datas = 3;
+}
+
+// 通用操作请求 返回一号协议
+message PbMsgDoActionById
+{
+    enum MSG{ ID = 1011;}
+	required int32 id = 1;  // ActionId
+    repeated int32 argv = 2; // 附加参数
+    optional int32 time=3; //当前时间
+}
+
+message PbMsgRetDoActionById
+{
+    enum MSG{ ID = 2011;}
+    required int32 retCode = 1; // 返回码
+    repeated PbMsgUpdateJson datas = 2;
+}
+
+// 通用操作请求AI信息
+message PbMsgGetAiInfo
+{
+    enum MSG{ ID = 1012;}
+    repeated fixed64 roleId = 1; // 需要查询的角色ID
+    repeated int32 idx = 2; //需要查询的属性字段1,2,3等等
+}
+
+// 获取AI信息
+message PbMsgRetAiInfo
+{
+    enum MSG{ ID = 2012;}
+    message AiInfo
+    {
+        required fixed64 roleId = 1;	// id
+        required string roleName = 2;   // 名字 昵称
+        required int32 serverid = 3;    // 服务器ID
+        repeated int32 data = 4;        // 其他data数据
+    }
+    repeated AiInfo data = 1;
+}
+
+// json请求操作
+message PbMsgGetJsonById
+{
+    enum MSG{ ID = 1013;}
+	required int32 id = 1;  // 请求类型
+    repeated int32 argv = 2; // 附加参数
+}
+
+message PbMsgRetJsonById
+{
+    enum MSG{ ID = 2013;}
+    required int32 retCode = 1; // 返回码
+	optional string data = 2; // 返回数据
+}
+
+// 请求封号
+message PbMsgKillRole
+{
+    enum MSG{ ID = 1014;}
+	required string msg = 1;  // 请求类型
+}
+
+// 共享json请求操作
+message PbMsgGetShareById
+{
+    enum MSG{ ID = 1015;}
+	required int32 id = 1;  // 请求类型
+}
+
+message PbMsgRetShareById
+{
+    enum MSG{ ID = 2015;}
+	required string data = 1; // 返回数据
+}
+
+// 设置共享json请求操作
+message PbMsgSetShareById
+{
+    enum MSG{ ID = 1016;}
+	required int32 id = 1;
+    required string data = 2;
+}
+
+// 数据上报
+message PbMsgReportData
+{
+    enum MSG{ ID = 1017;}
+	required int32 id = 1; // 活动id
+    required int32 subid = 2; // 统计点
+    required int32 num = 3;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// 游戏服务器特有协议
+
+// 角色信息结构定义，也用做更新角色信息到客户端
+message PbMsgRoleInfo
+{
+  enum MSG{ ID = 101;}
+  required fixed64 roleId = 1;			// UID
+  required string roleName = 2;			// 名字 昵称
+  required int32 careerId = 3;			// 职业ID
+  required string userId = 4;			// 角色所属账号
+  required int32 platserver = 5;        // 区服ID
+  required int32 serverid = 6;          // 服务器ID
+  required int32 createTime = 7;		// 角色创建时间
+  required int32 loginTime = 8;		    // 本次登陆时间戳
+  required int32 logoutTime = 9; 		// 上次下线时间戳
+  optional int32 version = 10;          // 版本号
+  optional fixed64 inviter = 11;	    // 我的邀请者
+  optional int32 serverTime = 12;	    // 当前时间
+}
+
+// 验证用户ID
+message PbMsgEnterGame
+{
+    enum MSG{ ID = 1001;}
+	required fixed64 roleId = 1; 
+    required int32 time = 2; // 校验码生成时间
+	required string userKey = 3; // 校验码
+    required int32 groupid = 4; // 组
+}
+
+// 创建角色
+message PbMsgCreateRole
+{
+    enum MSG{ ID = 1002;}
+    required string userId = 1; // 账号
+	required fixed64 roleId = 2; // 
+    required int32 time = 3; // 校验码生成时间
+	required string userKey = 4; // 校验码
+    required int32 serverId = 5; // 服务器ID
+    required int32 groupid = 6; // 组
+    required int32 platid = 7; // 平台ID 用于区分用户来源
+    required int32 platserver = 8; // 区服ID
+    required string name = 9; // 创建的角色名
+    required int32 careerId = 10; // 职业ID
+    optional string headurl = 11; // 头像地址
+    optional int32 ext = 12; // 拓展类型
+}
+
+
+// 修改角色名
+message PbMsgSetName
+{
+    enum MSG{ ID = 1021;}
+    required string name = 1;
+}
+
+// 修改头像
+message PbMsgSetHead
+{
+    enum MSG{ ID = 1022;}
+    required string headurl = 1;
+}
+
+// 拉取头像
+message PbMsgGetHead
+{
+    enum MSG{ ID = 1023;}
+    required fixed64 roleId = 1;
+}
+
+// 返回拉取头像
+message PbMsgRetHead
+{
+    enum MSG{ ID = 2023;}
+    required string headurl = 1;
+}
+
+// 拉取关系链
+message PbMsgGetChain
+{
+    enum MSG{ ID = 1024;}
+    required int32 type	= 1; // 关系链类型
+	required int32 bIndex = 2; //起始索引 起始=0
+	required int32 num = 3; //查询的数量 单次最大300条
+}
+
+// 返回拉取关系链列表
+message PbMsgRetChain
+{
+    enum MSG{ ID = 2024;}
+    required int32 type	= 1; // 关系链类型
+	required int32 bIndex = 2; //起始索引 起始=0
+	repeated int32 roleid = 3; //玩家列表
+}
+
+// 设置关系
+message PbMsgSetChain
+{
+    enum MSG{ ID = 1025;}
+    required int32 type	= 1; // 关系链类型
+    required int32 roleId = 2; //发生关系的玩家
+    required int32 action=3; // 行为 0=添加 1=删除
+}
+
+// 客户端管理员命令
+message PbMsgAdminCommand
+{
+    enum MSG{ ID = 3961;}
+	required string cmd = 1;
+	repeated string parms = 2;
+}
+
+// 商店购买道具
+message PbMsgBuyItem
+{
+    enum MSG{ ID = 5031;}
+	required int32 itemid = 1; //道具id
+	required int32 num = 2; //购买数量
+    required int32 money = 3; // 货币类型
+}
+
+// 拉取随机名字
+message PbMsgGetRandName
+{
+    enum MSG{ ID = 5032;}
+	required int32 num = 1; //拉取数量 单次不能超过10个
+}
+
+// 返回拉取随机名字
+message PbMsgRetGetRandName
+{
+    enum MSG{ ID = 6032;}
+	repeated string name = 1; // 名字数组
+}
+
+// 领取CDK奖励
+message PbMsgGetCdkAward
+{
+    enum MSG{ ID = 5033;}
+	required string code = 1; // 获取cdk奖励
+}
+
+// cdk奖励
+message PbMsgRetGetCdkAward
+{
+    enum MSG{ ID = 6033;}
+	message Item
+    {
+        required int32 id = 1; 
+        required int32 num = 3; // 数量
+    }
+    required int32 retCode = 1; // 返回码
+	repeated Item award = 2; // 奖励列表
+}
+
+// 通过名字拉取角色ID
+message PbMsgGetRoleIdsByName
+{
+    enum MSG{ ID = 5035;}
+    required int32 serverid = 1;
+    required string name = 2;
+}
+
+// 反馈通过名字拉取角色ID
+message PbMsgRetRoleIdsByName
+{
+    enum MSG{ ID = 6035;}
+    required int32 roleid = 1;
+}
+
+// 通过账号拉取角色ID
+message PbMsgGetRoleIdsByUserIds
+{
+    enum MSG{ ID = 5034;}
+    required int32 serverid = 1;
+    repeated string list = 2;
+}
+
+// 反馈通过账号拉取角色ID
+message PbMsgRetRoleIdsByUserIds
+{
+    enum MSG{ ID = 6034;}
+	message RoleInfo
+  {
+    required fixed64 roleId = 1;
+    required string userId = 2;
+  }
+  repeated RoleInfo list = 1;
+}
+
+// 邮箱系统信件基础结构 （同时做主动同时可用）
+message PbMsgMailInfo
+{
+    enum MSG{ ID = 701;}
+	message PbMsgAppendix
+	{
+		required int32 itemId = 1;
+		required int32 count = 2;
+		required fixed64 uId = 3;
+	}
+	required fixed64 mailId = 1;					//邮件ID		
+	required string subiect = 2;					//邮件主题
+	required fixed64 addresserRoleId = 3; 			//发件人ID（现不做P2P。ID为0）
+	required string addresser = 4;					//发件人名字（现不做P2P.始终为“系统”）
+	required string content = 5;					//邮件内容
+	repeated PbMsgAppendix appendixList = 6;		//附件列表
+	required int32 recvFlag = 7;					//附件收取标志（为1时表示已收取）
+	required int32 readFlag = 8;					//邮件已读标志（为1时表示已读）
+	required int32 date = 9;						//邮件日期
+}
+
+// 通过邮件数量到客户端
+message PbMsgUpdateMailCountToClient
+{
+    enum MSG{ ID = 702;}
+	required int32 count = 1;
+	required int32 unreadCount = 2;
+}
+
+// 邮件摘要
+message PbMsgAbstractMailInfo
+{
+	required fixed64 mailId = 1;		// 邮件ID
+	required string subiect = 2;		// 邮件主题
+	required string addresser = 3;		// 发件人名字
+	required int32 date = 4;			// 时间
+	required int32 recvFlag = 5;		// 附件收取标志（为1时表示已收取）
+	required int32 readFlag = 6;		// 邮件已读标志（为1时表示已读）	
+}
+
+// 获取角色邮件信息
+message PbMsgGetRoleMailInfoList
+{
+    enum MSG{ ID = 5001;}
+	required int32 flag = 1;		// 分页类别（1：全部   2：未读   3：已读）
+	required int32 index = 2;		// 邮件列表索引从0开始
+}
+
+// 返回获取角色邮件信息
+message PbMsgRetGetRoleMailInfoList
+{
+    enum MSG{ ID = 6001;}
+	required int32 retCode = 1;
+	repeated PbMsgAbstractMailInfo abstractMailList = 2;	
+}
+
+// 阅读邮件
+message PbMsgReadMail
+{
+    enum MSG{ ID = 5002;}
+	required fixed64 mailId = 1;
+}
+
+// 返回阅读邮件
+message PbMsgRetReadMail
+{
+    enum MSG{ ID = 6002;}
+	required int32 retCode = 1;
+	optional PbMsgMailInfo mailInfo = 2;
+}
+
+// 收取附件
+message PbMsgRecvMailAppendix
+{
+    enum MSG{ ID = 5003;}
+	required fixed64 mailId = 1;
+}
+
+// 删除邮件
+message PbMsgDelMail
+{
+    enum MSG{ ID = 5004;}
+	required fixed64 mailId = 1;
+}
+
+// 批量删除邮件
+message PbMsgMultiDelMail
+{
+    enum MSG{ ID = 5005;}
+}
+
+// 一键收取附件
+message PbMsgMultiRecvMailAppendix
+{
+    enum MSG{ ID = 5006;}
+    required int32 read = 1; // 1 表示同时标记为已读 0表示不设置
+}
+
+// 登陆校验
+message PbMsgLoginCheck
+{
+    enum MSG{ ID = 5041;}
+	required string account	= 1; // 账号
+	required int32 serverId = 2; // 平台上区服 1 2 3..
+	required int32 time = 3; // 时间
+    required string sig = 4; // 校验码
+    optional int32 platid = 5; // 平台ID 默认=1
+    optional fixed64 inviter = 6; // 邀请者id
+    optional string linktype = 7; // 连接类型 tcp websocket websockets http https
+}
+
+// 登陆校验返回
+message PbMsgLoginRetCheck
+{
+    enum MSG{ ID = 6041;}
+    required int32 retCode = 1; // 返回码
+    optional fixed64 roleId = 2; // 角色ID
+	optional string host = 3; // 网关HOST
+    optional int32 port = 4; // 网关端口
+    optional int32 time = 5; // 生成校验码的时间
+    optional string sig = 6; // 网关校验码
+    optional int32 groupid = 7; // 组
+    optional int32 serverid = 8; // 实际ID 用来登陆游戏服
+    optional int32 platserver = 9; // 平台区服 1 2 3...
+}
+
+message LoginServerInfo
+{
+  required int32 serverId = 1; // 服务器ID
+  required string serverName = 2; // 服务器名
+  optional int32 time = 3; // 登陆时间或开服时间
+}
+
+// 拉取服务器信息
+message PbMsgLoginGetServerInfo
+{
+    enum MSG{ ID = 5042;}
+	required string account	= 1; // 账号
+    required int32 platid = 2; // 平台ID 默认=1
+}
+
+// 拉取服务器信息返回
+message PbMsgLoginRetServerInfo
+{
+    enum MSG{ ID = 6042;}
+    required LoginServerInfo newServer = 1; // 新服
+    repeated LoginServerInfo myServer = 2; // 玩家已有服
+    required int32 serverSize = 3; // 服务器总数量
+    optional int32 minnewserver = 4; // 最小新服
+}
+
+// 拉取服务器列表
+message PbMsgLoginGetServerList
+{
+    enum MSG{ ID = 5043;}
+	required int32 platid	= 1; // 平台ID 默认=1
+    required int32 beginId = 2; // 起始服务器ID
+    required int32 endId = 3; // 终止服务器ID    
+}
+
+// 拉取服务器列表返回
+message PbMsgLoginRetServerList
+{
+    enum MSG{ ID = 6043;}
+    repeated LoginServerInfo data = 1; // 服务器列表
+}
+
+// 发起聊天
+message PbMsgChatSend
+{
+    enum MSG{ ID = 5061;}
+	required int32 channel = 1; // 频道100+玩家发送
+    required int32 type = 2; // 1=文本信息 2=语音信息
+    required string content = 3;
+    required string appendContent = 4;
+}
+
+// 查询聊天记录
+message PbMsgChatLog
+{
+    enum MSG{ ID = 5062;}
+	required int32 channel = 1;
+    required int32 num = 2;
+}
+
+// 返回查询聊天记录
+message PbMsgRetChatLog
+{
+    enum MSG{ ID = 6062;}
+    message ChatLog
+    {
+        required int32 type = 1; // 1=文本信息 2=语音信息
+        required string content = 2;
+        required string appendContent = 3;
+        required fixed64 srcRoleId = 4;
+        required string srcRoleName = 5;
+    }
+	repeated ChatLog data=1;
+}
+
+
+// 同步聊天信息
+message PbMsgUpdateChatMessage
+{
+    enum MSG{ ID = 721;}
+    required int32 channel = 1; // 频道
+    required int32 type = 2; // 1=文本信息 2=语音信息
+    required string content = 3;
+    required string appendContent = 4;
+    required fixed64 srcRoleId = 5;
+    required string srcRoleName = 6;
+}
+
+// 服务器推送同步聊天信息
+message PbMsgUpdateChatRetcode
+{
+    enum MSG{ ID = 722;}
+    required int32 channel = 1; // 频道
+    required int32 retcode = 2; // 返回码
+    repeated string content=3; // 参数
+}
+
+// 删除指定玩家的聊天记录
+message PbMsgCleanChatLog
+{
+    enum MSG{ ID = 723;}
+    required fixed64 roleId = 1;
+}
+
+// 1000是用来做心跳用的
+message PbMsgHeartBeat
+{
+    enum MSG{ID = 5000;}
+	required int32 placeHolder = 1;
+}
+
+
+
+//排行榜数据结构
+message RankingData
+{
+	required fixed64 roleId = 1;
+	required string name = 2;
+	required fixed64 data = 3;
+	repeated int32 additional = 4; //附加数据
+}
+
+// 下发排行榜信息
+message PbMsgUpdateRankingData
+{
+    enum MSG{ ID = 711;}
+	required int32 type	= 1; //排行榜类型
+	required int32 bIndex = 2; //起始索引
+	repeated RankingData data = 3;
+    required bool nextpage = 4; // 是否有下一个排名 nextpage=true表示有下一页 否则没有下一页
+}
+
+// 下发玩家排名
+// 排名从1开始
+// 0=表示没有上排行榜
+message PbMsgUpdateRoleRankingLevel
+{
+    enum MSG{ ID = 712;}
+    required int32 type	= 1; //排行榜类型
+	required int32 rnkLevel = 2; //玩家等级排名
+}
+
+// 下发玩家排名
+// 排名从1开始
+// 0=表示没有上排行榜
+message PbMsgUpdateRoleMRankingLevel
+{
+    enum MSG{ ID = 713;}
+    repeated PbMsgUpdateRoleRankingLevel data=1;
+}
+
+// 查询排行榜信息
+message PbMsgGetRankingData
+{
+    enum MSG{ ID = 5021;}
+	required int32 type	= 1;
+	required int32 bIndex = 2; //起始索引
+	required int32 num = 3; //查询的数量
+}
+
+// 通过排名 查询排行榜信息
+message PbMsgGetRankingDataByRankList
+{
+    enum MSG{ ID = 5023;}
+	required int32 type	= 1;
+	repeated int32 ranklist = 2; //要查询的排名 1代表第1名  x代表第x名
+}
+
+// 通过排名 查询排行榜信息
+message PbMsgRetRankingDataByRankList
+{
+    enum MSG{ ID = 6023;}
+    message RankRole
+    {
+        required fixed64 roleId	= 1;
+        required int32 rank = 2;
+    }
+	required int32 retCode = 1;
+	repeated RankRole data = 2;
+}
+
+

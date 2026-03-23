@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<e:Skin class="MainUISkin_v1" width="1280" height="720" xmlns:e="http://ns.egret.com/eui" xmlns:w="http://ns.egret.com/wing" xmlns:ns1="*">
+	<w:Config id="17120d5285b" scale9Grid="40,45,2,35"/>
+	<e:Image fillMode="scale" scale9Grid="32,38,11,23" source="bg_png" verticalCenter="0" height="1920" left="0" right="0"/>
+
+	<ns1:OneStateButton id="check" label="检查" anchorOffsetX="50" anchorOffsetY="50" y="70" left="0" height="100">
+		<ns1:skinName>
+		<e:Skin states="up,down,disabled">
+			<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+		</e:Skin>
+		</ns1:skinName>
+	</ns1:OneStateButton>
+
+	<ns1:OneStateButton id="revivification" label="还原" anchorOffsetX="50" anchorOffsetY="50" y="65" left="789" height="100">
+		<ns1:skinName>
+		<e:Skin states="up,down,disabled">
+			<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+		</e:Skin>
+		</ns1:skinName>
+	</ns1:OneStateButton>
+
+	<e:Rect id="rect1" width="20" height="150" x="135" y="157.32" anchorOffsetX="0" anchorOffsetY="0" fillColor="0xfcfcfc" fillAlpha="0"/>
+	<e:Rect id="rect2" width="20" height="150" x="135" y="327.32" anchorOffsetX="0" anchorOffsetY="0" fillColor="0xFCFCFC" fillAlpha="0"/>
+	<e:Image id="img_1" width="20" height="150" x="135" y="157" source="line_json.shu"/>
+	<e:Image id="img_2" width="20" height="150" x="135" y="327" source="line_json.shu"/>
+	<e:Image id="img_3" width="150" x="155" y="136" source="line_json.shu" height="20"/>
+	<e:Image id="img_4" width="150" height="20" x="155" y="307" source="line_json.shu" />
+	<e:Image id="img_5" width="150" height="20" x="155" y="477" source="line_json.shu" />
+	<e:Image id="img_6" width="20" height="150" x="305" y="157" source="line_json.shu" />
+	<e:Image id="img_7" width="20" height="150" x="305" y="327" source="line_json.shu" />
+	<e:Image id="imgB_1" width="20" height="150" x="548.67" y="157" source="line_json.shu"/>
+	<e:Image id="imgB_2" width="20" height="150" x="548.67" y="327" source="line_json.shu"/>
+	<e:Image id="imgB_3" width="150" height="20" y="136" source="line_json.shu" x="566"/>
+	<e:Image id="imgB_4" width="150" height="20" x="568" y="308" source="line_json.shu"/>
+	<e:Image id="imgB_5" width="150" height="20" x="569" y="477" source="line_json.shu"/>
+	<e:Image id="imgB_6" width="20" height="150" x="715" y="157" source="line_json.shu"/>
+	<e:Image id="imgB_7" width="20" height="150" x="715" y="327" source="line_json.shu"/>
+	<e:Image id="imgC_1" width="20" height="150" x="944.84" y="157" source="line_json.shu"/>
+	<e:Image id="imgC_2" width="20" height="150" x="944.84" y="327" source="line_json.shu"/>
+	<e:Image id="imgC_3" width="150" height="20" x="965" y="136" source="line_json.shu"/>
+	<e:Image id="imgC_4" width="150" height="20" x="965" y="307" source="line_json.shu"/>
+	<e:Image id="imgC_5" width="150" height="20" x="965" y="477" source="line_json.shu"/>
+	<e:Image id="imgC_6" width="20" height="150" x="1114.84" y="157" source="line_json.shu"/>
+	<e:Image id="imgC_7" width="20" height="150" x="1114.84" y="327" source="line_json.shu"/>
+	<e:Image id="fuhao1" width="150" height="20" x="361.67" y="309.99" source="line_json.shu"/>
+	<e:Image id="fuhao2" width="20" height="150" x="426.67" y="252.32" source="line_json.shu"/>
+	<e:Image id="eque1" width="150" height="20" x="763.86" y="269.14" source="line_json.shu"/>
+	<e:Image id="eque0" width="150" height="20" x="763.86" y="364.14" source="line_json.shu"/>
+
+
+	<e:Label id="guankaLv" text="关卡:1" x="511.67" y="55" size="60"/>
+</e:Skin>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<e:Skin class="MapSkin16" width="720" height="800" xmlns:e="http://ns.egret.com/eui" xmlns:w="http://ns.egret.com/wing" xmlns:ns1="*">
+	<w:Config id="17120d5285b" scale9Grid="-150,-150,2,35"/>
+	<e:Image id="img_0" width="720" height="800"  source="bg_png" fillMode="scale" horizontalCenter="0" y="0"/>
+	<e:Image id="img_1" width="70" height="106" x="206" y="271.5" source="huochai_json.ingame_map" rotation="90" />
+	<e:Image id="img_2" width="70" height="106" x="344.2" y="271.5" source="huochai_json.ingame_map" rotation="90" />
+	<e:Image id="img_3" width="70" height="106" x="484.6" y="271.5" source="huochai_json.ingame_map" rotation="90"/>
+	<e:Image id="img_4" width="70" height="106" x="615.84" y="271.5" source="huochai_json.ingame_map" rotation="90"/>
+	<e:Image id="img_5" width="70" height="106" x="175.47" y="391.8" source="huochai_json.ingame_map" rotation=" 150" />
+	<e:Image id="img_6" width="70" height="106" x="190.99" y="426.8" source="huochai_json.ingame_map" rotation="-150" />
+	<e:Image id="img_7" width="70" height="106" x="312.6" y="391.4" source="huochai_json.ingame_map" rotation=" 150"/>
+	<e:Image id="img_8" width="70" height="106" x="330.6" y="426.4" source="huochai_json.ingame_map" rotation="-150"/>
+	<e:Image id="img_9" width="70" height="106" x="453.4" y="391.4" source="huochai_json.ingame_map" rotation="150"/>
+	<e:Image id="img_10" width="70" height="106" x="467.8" y="426.4" source="huochai_json.ingame_map" rotation="-150"/>
+	<e:Image id="img_11" width="70" height="106" x="586.43" y="391.4" source="huochai_json.ingame_map" rotation="150"/>
+	<e:Image id="img_12" width="70" height="106" x="600.03" y="426.4" source="huochai_json.ingame_map" rotation="-150"/>
+	<e:Image id="img_13" width="70" height="106" y="387.35" source="huochai_json.ingame_map" rotation="90" horizontalCenter="-138"/>
+	<e:Image id="img_14" width="70" height="106" y="387.35" source="huochai_json.ingame_map" rotation="90" horizontalCenter="1"/>
+	<e:Image id="img_15" width="70" height="106" y="387.35" source="huochai_json.ingame_map" rotation="90" horizontalCenter="138"/>
+	<e:Image id="img_16" width="70" height="106" x="121.35" y="543" source="huochai_json.ingame_map" rotation="-150"/>
+	<e:Image id="img_17" width="70" height="106" x="243" y="507.98" source="huochai_json.ingame_map" rotation=" 150"/>
+	<e:Image id="img_18" width="70" height="106" x="260.33" y="543.01" source="huochai_json.ingame_map" rotation="-150"/>
+	<e:Image id="img_19" width="70" height="106" x="382.34" y="508.01" source="huochai_json.ingame_map" rotation=" 150"/>
+	<e:Image id="img_20" width="70" height="106" x="400.33" y="543" source="huochai_json.ingame_map" rotation="-150"/>
+	<e:Image id="img_21" width="70" height="106" x="520.32" y="508" source="huochai_json.ingame_map" rotation="150"/>
+	<e:Image id="img_22" width="70" height="106" x="533.27" y="543" source="huochai_json.ingame_map" rotation="-150"/>
+	<e:Image id="img_23" width="70" height="106" x="653.26" y="508" source="huochai_json.ingame_map" rotation="150"/>	
+	<e:Image id="img_24" width="70" height="106" x="205.17" y="501.02" source="huochai_json.ingame_map" rotation="90"/>
+	<e:Image id="img_25" width="70" height="106" x="344.2" y="501.02" source="huochai_json.ingame_map" rotation="90"/>
+	<e:Image id="img_26" width="70" height="106" x="483.34" y="501.02" source="huochai_json.ingame_map" rotation="90"/>
+	<e:Image id="img_27" width="70" height="106" x="615.85" y="501.02" source="huochai_json.ingame_map" rotation="90"/>
+	
+
+</e:Skin>

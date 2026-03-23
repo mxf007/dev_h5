@@ -1,0 +1,58 @@
+{
+	"engineVersion": "5.4.1",
+	"compilerVersion": "5.4.1",
+	"template": {},
+	"target": {
+		"current": "web"
+	},
+	"modules": [
+		{
+			"name": "egret"
+		},
+		{
+			"name": "eui"
+		},
+		{
+			"name": "res"
+		},
+		{
+			"name": "tween"
+		},
+		{
+			"name": "game"
+		},
+		{
+			"name": "socket"
+		},
+		{
+			"name": "promise"
+		},
+		{
+			"name": "mylib",
+			"path": "../../extends/mylib"
+		},
+		{
+			"name": "weapp-adapter",
+			"path": "libs/weapp-adapter"
+		}
+	],
+	"targets": {
+		"android": {
+			"appname": "火柴拼图",
+			"packagename": "com.xyx.huochai"
+		},
+		"ios": {
+			"appname": "猜拳",
+			"packagename": "com.companyname",
+			"hybrid": true
+		}
+	},
+	"vivo": {
+		"usePlugin": true
+	},
+	"eui": {
+		"exmlRoot": [
+			"resource/eui_skins"
+		]
+	}
+}

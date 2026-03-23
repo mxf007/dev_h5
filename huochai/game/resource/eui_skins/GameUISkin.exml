@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<e:Skin class="GameUISkin" width="720" height="1280" xmlns:e="http://ns.egret.com/eui" xmlns:w="http://ns.egret.com/wing" xmlns:ns1="*">
+	<w:Config id="17120d5285b" scale9Grid="40,45,2,35"/>
+	<e:Image fillMode="scale" source="scenebg_png" verticalCenter="0" height="1920" width="720" horizontalCenter="0"/>
+
+	<e:Group id="gameGroup" width="720" horizontalCenter="0" top="177" bottom="150">
+		<e:Image fillMode="scale" width="720" horizontalCenter="0" top="0" bottom="-146" anchorOffsetY="0" source="scenebg_png"/>
+	</e:Group>
+	<e:Label id="completeTxt" text="完成挑战" y="196" size="48" visible="true" height="62" fontFamily="Microsoft YaHei" textAlign="center" verticalAlign="middle" horizontalCenter="0" textColor="0x0d0dc1"/>
+	<e:Group id="gameTitleRule" width="720" height="107" x="0" y="70">
+		<e:Image id="img_target_bg2" width="720" height="107" x="0" y="0" anchorOffsetX="0" source="huochai_json.bg2" scale9Grid="12,12,76,76"/>
+		<e:Label id="txt_target_rule" text="3" x="123" y="2" size="40" verticalAlign="middle" textAlign="center" height="105" width="520"/>
+	</e:Group>
+	<e:Group id="gameTitle" width="720" height="107" x="0" y="70">
+		<e:Image id="img_target_bg" width="720" height="107" x="0" y="0" source="huochai_json.ingame_ui_add" anchorOffsetX="0"/>
+		<e:Image id="target_rect" width="68" height="68" x="626.5" y="22" source="huochai_json.ingame_mission_square"/>
+		<e:Image width="69" height="52" x="410" y="30" source="huochai_json.get_jt"/>
+		<e:Image id="mission_huochai" width="13" height="68" x="250.51" y="22" source="huochai_json.ingame_mission_matches"/>
+		<e:Label id="txt_huochai" text="0 / 1" x="294.96" y="31" size="46" height="50" textAlign="center" verticalAlign="middle"/>
+		<e:Label id="txt_condition" text="移动" x="135.84" y="31" size="46" fontFamily="Microsoft YaHei" height="50" verticalAlign="middle"/>
+		<e:Label id="txt_target" text="3 / 3" x="507.67" y="31" size="46" verticalAlign="middle" textAlign="center" height="50"/>
+	</e:Group>
+	<e:Group id="gameTitleEquation" width="720" height="107" x="0" y="70" visible="false">
+		<e:Image id="img_target_bg1" width="720" height="107" x="0" y="0" source="huochai_json.ingame_ui_add" anchorOffsetX="0"/>
+		<e:Image id="mission_huochai1" width="13" height="68" x="262.67" y="22" source="huochai_json.ingame_mission_matches"/>
+		<e:Label id="txt_huochai1" text="0 / 1" x="298" y="31" size="46" height="50" textAlign="center" verticalAlign="middle"/>
+		<e:Label id="txt_condition1" text="移动" x="148" y="31" size="46" fontFamily="Microsoft YaHei" height="50" verticalAlign="middle"/>
+		<e:Label id="txt_cl" text="使等式成立" x="430" y="31" size="46" verticalAlign="middle" textAlign="center" height="50"/>
+	</e:Group>
+
+	<ns1:OneStateButton id="btn_tip_close" label="" y="984" anchorOffsetX="0" width="197" anchorOffsetY="0" height="93" horizontalCenter="0" visible="false">
+		<ns1:skinName>
+		<e:Skin states="up,down,disabled">
+			<e:Image width="100%" height="100%" source="huochai_json.bt_yes" source.down="huochai_json.bt_yes"/>
+			<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+		</e:Skin>
+		</ns1:skinName>
+	</ns1:OneStateButton>
+	<e:Group id="gameMenue" width="720" height="140" horizontalCenter="0" bottom="0" anchorOffsetY="0">
+		<e:Image width="720" height="140" anchorOffsetY="0" source="sign_json.subview7" horizontalCenter="0" verticalCenter="0"/>
+		<ns1:OneStateButton id="btn_retry" label="" x="20" y="9" width="105" height="105">
+			<ns1:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="huochai_json.ingame_bt_retry" source.down="huochai_json.ingame_bt_retry"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+				</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+		<ns1:OneStateButton id="btn_share" label="" x="586.14" y="9" width="105" height="105">
+			<ns1:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="huochai_json.share" source.down="huochai_json.share"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+				</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+		<ns1:OneStateButton id="btn_help" label="" x="586.14" y="9" width="105" height="105">
+			<ns1:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="huochai_json.help" source.down="huochai_json.help"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+				</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+		<ns1:OneStateButton id="btn_remind" label="" x="398" y="9" width="105" height="105">
+			<ns1:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="huochai_json.explain_bt" source.down="huochai_json.explain_bt"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+				</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+		<e:Image id="btn_back_step" width="120" height="120" x="201" y="2.92" source="huochai_json.ingame_bt_back"/>
+		<ns1:OneStateButton id="btn_next" label="" x="176.34" y="3.56" anchorOffsetX="0" width="366.06" anchorOffsetY="0" height="126.24" visible="false">
+			<ns1:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="btres_json.continue" source.down="btres_json.continue"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+				</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+	</e:Group>
+	<e:Group width="200" height="58" y="206.5" horizontalCenter="279">
+		<e:Label id="score_num" text="300" x="63.14" y="9" size="36" textAlign="left" height="42" verticalAlign="middle" width="120"/>
+		<e:Image id="img_star" width="42" height="40" x="30.551" y="29.342" source="huochai_json.zuanshi1" anchorOffsetX="21" anchorOffsetY="20"/>
+	</e:Group>
+	<e:Label id="gameRule" text="guize" y="81.49" size="30" textAlign="center" verticalAlign="middle" height="100" width="280" x="176.34" textColor="0x565656" visible="false"/>
+	<ns1:OneStateButton id="btn_home" label="" x="10" y="73.5" width="86.02" height="100.55" anchorOffsetX="0" anchorOffsetY="0">
+		<ns1:skinName>
+			<e:Skin states="up,down,disabled">
+			<e:Image width="100%" height="100%" source="huochai_json.btn_back" source.down="huochai_json.btn_back"/>
+			<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+			</e:Skin>
+		</ns1:skinName>
+	</ns1:OneStateButton>
+	<e:Label id="guankaLv" text="关卡1" bottom="148" left="20" size="32" visible="true" height="40" fontFamily="Microsoft YaHei" textAlign="left" verticalAlign="middle" textColor="0x999999"/>
+	<e:Label id="txt_timer" text="" bottom="148" right="20" size="36" visible="false" height="40" fontFamily="Microsoft YaHei" textAlign="right" verticalAlign="middle" textColor="0xff6600"/>
+	
+	<e:Group id="gp_tip" width="480" height="34" horizontalCenter="0" verticalCenter="0" visible="false">
+		<e:Image width="480" height="48" source="huochai_json.popUp" horizontalCenter="0" verticalCenter="0"/>
+		<e:Label id="txt_tip" text="错误，重新挑战吧！" width="480" height="48" textAlign="center" verticalAlign="middle" textColor="0xe0d0d0" size="40" horizontalCenter="0" verticalCenter="0"/>
+	</e:Group>
+	<e:Group id="gp_GetRst" width="400" height="240" horizontalCenter="0" verticalCenter="0" visible="false">
+		<e:Image width="400" height="240" x="0" y="0" source="huochai_json.bd_@2x" scale9Grid="18,6,110,41"/>
+		<e:Label id="txt_GetRst" text="是否花费200颗小星星看查看结果" width="364" height="34" textAlign="center" verticalAlign="middle" horizontalCenter="2" verticalCenter="-17" fontFamily="Microsoft YaHei" size="28" textColor="0x0f0a0a"/>
+		<ns1:OneStateButton id="btn_getRst_ok" label="" y="170.27" horizontalCenter="0.5">
+			<ns1:skinName>
+			<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="huochai_json.bt_yes" source.down="huochai_json.bt_yes"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+			</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+		<ns1:OneStateButton id="btn_getRst_close" label="" x="358.14" y="-32.48" width="68" height="68">
+			<ns1:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="huochai_json.bt_no" source.down="huochai_json.bt_no"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+				</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+	</e:Group>
+	<e:Group id="gameEnd" width="720" height="600" x="0" y="180.24" visible="false">
+		<e:Image id="img_win" width="668" height="531" y="-500" source="huochai_json.win_two_2" horizontalCenter="0"/>
+		<e:Image id="end_beautiful" width="330" height="95" source="huochai_json.Welldone_en" horizontalCenter="0" verticalCenter="0"/>
+		<e:Label id="first_tongguan" text="首次通关获得1颗小星星" size="40" verticalAlign="middle" textAlign="center" bottom="14" horizontalCenter="0.5" textColor="0x3fbf5c"/>
+	</e:Group>
+
+	<e:Group id="onhelp" width="606" height="300" anchorOffsetX="360" anchorOffsetY="266.67" horizontalCenter="0" verticalCenter="-87" visible="false">
+		<e:Image width="606" height="300" horizontalCenter="0" anchorOffsetY="0" scale9Grid="12,12,76,76" anchorOffsetX="0" source="huochai_json.bd_@2x"/>
+		<e:Label id="onhelp_rule" text="规则" y="34" width="520" size="46" height="110" verticalAlign="middle" fontFamily="Microsoft YaHei" horizontalCenter="0" textAlign="center" textColor="0x444242"/>
+
+		<ns1:OneStateButton id="onhelp_ok" label="" y="219" width="124" height="47" horizontalCenter="81">
+			<ns1:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="huochai_json.btn_sure" source.down="huochai_json.btn_sure"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+				</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+		<ns1:OneStateButton id="onhelp_cancel" label="" x="147" y="219" width="124" height="47">
+			<ns1:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="huochai_json.cancel" source.down="huochai_json.cancel"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+				</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+
+	</e:Group>
+
+	<e:Group id="onShowVideo" width="606" height="300" anchorOffsetX="360" anchorOffsetY="266.67" horizontalCenter="0" verticalCenter="-25" visible="false">
+		<e:Image width="606" height="300" horizontalCenter="0" anchorOffsetY="0" scale9Grid="12,12,76,76" anchorOffsetX="0" source="huochai_json.bd_@2x"/>
+		<e:Label id="video_tips" text="观看视频即可获取参考答案" y="34" width="520" size="38" height="110" verticalAlign="middle" fontFamily="Microsoft YaHei" horizontalCenter="0" textAlign="center" textColor="0x444242"/>
+
+		<ns1:OneStateButton id="show_video_ok" label="" y="203.996" width="220" height="75" horizontalCenter="109">
+			<ns1:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="huochai_json.btn_sure" source.down="huochai_json.btn_sure"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+				</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+		<ns1:OneStateButton id="show_video_cancel" label="" x="51.677" y="202.23" width="220" height="75">
+			<ns1:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="huochai_json.cancel" source.down="huochai_json.cancel"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+				</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+
+	</e:Group>
+</e:Skin>

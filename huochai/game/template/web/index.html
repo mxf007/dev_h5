@@ -1,0 +1,354 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>拼图</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="full-screen" content="true" />
+    <meta name="screen-orientation" content="portrait" />
+    <meta name="x5-fullscreen" content="true" />
+    <meta name="360-fullscreen" content="true" />
+    <script type="text/javascript" src="https://cdn.7tiao.net/Public/Js/jquery-1.10.1.min.js"></script>
+    <style>
+    *{margin:0px;padding:0px;border:none}
+html, body{
+    -ms-touch-action: none;
+    background: #000000;
+    padding: 0;
+    border: 0;
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+#tip_text{
+    position: relative;
+    text-align: center;
+    z-index: 2000;
+    height: 1em;
+    width: 100%;
+}
+#tip_text2{
+    position: relative;
+    overflow: hidden;
+    display: block;
+}
+#advice_tip{
+    position: relative;
+    z-index: 3000;
+}
+    </style>
+</head>
+  
+<body>
+
+<div id="canvas_container" style="position: absolute;margin: auto;width: 100%;height: 100%;" class="egret-player" data-entry-class="Main" data-orientation="auto" data-scale-mode="fixedWidth" data-frame-rate="60"
+data-content-width="720" data-content-height="1280" data-multi-fingered="3" data-show-fps="false" data-show-log="false" data-show-fps-style="x:0,y:0,size:12,textColor:0xffffff,bgAlpha:0.9">
+</div>
+<div id="mask_fenxiang" style="width: 100%; height: 100%; z-index: 999999; position: fixed; top: 0px; left: 0px; display: block; background: url('http://soeasysdk.com/soeasysr/sdk/xiangzhiyou/fenxiang.png') 90% 5% no-repeat rgba(0, 0, 0, 0.7);display: none;">
+</div>
+<dir id="ormask" style="width: 100%; height:100%; z-index:1999999;position: fixed; top:0px; left:0px; background: rgba(0, 0, 0, 1);display: none;">
+<span style="text-align:center;display:block;position:relative; top: 50%;color: #FFF">保持竖屏，会有更好的游戏体验</span>
+</dir>
+
+
+<script>
+function getHttpParams(name) {
+    var r = new RegExp("(\\?|#|&)" + name + "=([^&#]*)(&|#|$)");
+    var m = location.href.match(r);
+    return decodeURIComponent(!m ? "" : m[2]);
+}
+
+
+
+
+function addEvents() {
+    document.addEventListener("visibilitychange", onStateChanged);
+    document.addEventListener("webkitvisibilitychange", onStateChanged);
+    document.addEventListener("msvisibilitychange", onStateChanged);
+    document.addEventListener("qbrowserVisibilityChange", onQBrowserStateChanged);
+}
+
+function onStateChanged() {
+    if (document.hidden || document.webkitHidden || document.msHidden) {
+        window.gameHidden = true;
+    }
+    else {
+        window.gameHidden = false;
+    }
+
+    dispatchStateChangeEvent();
+}
+
+function onQBrowserStateChanged(e) {
+    window.gameHidden = e.hidden;
+    dispatchStateChangeEvent();
+}
+
+function dispatchStateChangeEvent() {
+    var event = document.createEvent("HTMLEvents");
+    event.initEvent("gamestatechange", true, true);
+    document.dispatchEvent(event);
+}
+
+function startGame() {
+    window.DisableAvatarUrl = true;
+    egret.ImageLoader.crossOrigin = "anonymous";
+    var adtype = getAudioType();
+    egret.runEgret({
+        renderMode: "webgl", audioType: adtype, calculateCanvasScaleFactor: function (context) {
+            var backingStore = context.backingStorePixelRatio ||
+                context.webkitBackingStorePixelRatio ||
+                context.mozBackingStorePixelRatio ||
+                context.msBackingStorePixelRatio ||
+                context.oBackingStorePixelRatio ||
+                context.backingStorePixelRatio || 1;
+            return (window.devicePixelRatio || 1) / backingStore;
+        }
+    });
+
+    //添加页面隐藏事件
+    addEvents();
+}
+
+function resizePlayerContainer() {
+    var containerList = document.querySelectorAll(".egret-player");
+    var length = containerList.length;
+    for (var i = 0; i < length; i++) {
+        var container = containerList[i];
+        var player = container["egret-player"];
+        player.updateScreenSize();
+    }
+}
+
+function gameInited() {
+    resizePlayerContainer();
+}
+
+//获取音频播放类型，默认为0
+function getAudioType() {
+    var type = 0;
+    var sUserAgent = navigator.userAgent.toLowerCase();
+    if (sUserAgent.match(/abxcnop/i) == "abxcnop")
+        type = 3;
+    return type;
+}
+
+</script>
+
+<script>
+    var loadScript = function (list, callback) {
+        var loaded = 0;
+        var loadNext = function () {
+            loadSingleScript(list[loaded], function () {
+                loaded++;
+                // setPreloadProgress(Math.ceil(loaded / list.length * 30), null, 10);
+                if (loaded >= list.length) {
+                    callback();
+                }
+                else {
+                    loadNext();
+                }
+            })
+        };
+        loadNext();
+    };
+
+    var loadSingleScript = function (src, callback) {
+        var s = document.createElement('script');
+        s.async = false;
+        s.src = src;
+        s.addEventListener('load', function () {
+            s.parentNode.removeChild(s);
+            s.removeEventListener('load', arguments.callee, false);
+            callback();
+        }, false);
+        document.body.appendChild(s);
+    };
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', './manifest.json?v=' + Math.random(), true);
+    xhr.addEventListener("load", function () {
+        var manifest = JSON.parse(xhr.response);
+        var list = manifest.initial.concat(manifest.game);
+        loadScript(list, function () {
+            /**
+             * {
+             * "renderMode":, //Engine rendering mode, "canvas" or "webgl"
+             * "audioType": 0 //Use the audio type, 0: default, 2: web audio, 3: audio
+             * "antialias": //Whether the anti-aliasing is enabled in WebGL mode, true: on, false: off, defaults to false
+             * "calculateCanvasScaleFactor": //a function return canvas scale factor
+             * }
+             **/
+            window.VERSION = 100;
+            window.SAVEGAME = true;      //是否开启保存桌面模块
+            window.SHARE_MODULE = true;  //是否开启分享模块
+            window.SHARE_FRIEND = false;  //是否开启分享好友列表
+            window.SHARE_INVITE = false; //是否开启好友邀请功能
+            window.SHARE_SHARE = false; //是否开启好友邀请功能
+            window.HAS_AD = false;
+            window.HTTP = "http:";       //http通信模式
+  
+            window.APP_JUMP = [];
+            window.PF_CONST = {noimage:"yes"};
+            startGame();
+        });
+    });
+    xhr.send(null);
+
+    window.onerror = function (errorMsg, scriptUrl, lineNo, columnNo, error) {
+        
+    }
+
+    var shareCb = null;
+    var shareThis = null;
+    var payOpenCB = null;
+    var payOpenThis = null;
+    //执行平台命令
+    function pfCommand(cmd, data, cb, thisObj) {
+        switch (cmd) {
+            case "gameLogin":
+                var data = {};
+                data.userId = "jingang";
+                data.serverId = 9;
+                data.sig = "b8b1f0ba2151b51e799cf5600b62801a";
+                data.time = 1573704308;
+                data.host = "http://www.likexyx.com/pintuxyx";
+
+                data.platid = 1;
+                cb.call(thisObj, data);
+
+                break;
+            case "showRectAd":
+                mylib.MsgBox.Text( "插屏广告");
+                break;
+            case "LpStart":
+                mylib.MsgBox.Text( "开始录屏");
+                break;
+            case "LpStop":
+                mylib.MsgBox.Text( "结束录屏");
+                break;
+            case "LpShare":
+                mylib.MsgBox.Text( "分享录屏");
+                break;
+            case "jumpapp":
+                console.log("jumpapp "+data.appid);
+                break;
+            case "gameToDesktop":
+                if (cb) {
+                    cb.call(thisObj)
+                }
+                console.log("gameToDesktop");
+                break;
+            case "gameBar":
+                console.log("gameBar:" + data.frd + " " + data.str);
+                break;
+            case "gameUploadState":
+                break;
+            case "gameGetPfFriends":
+                var list = [{ "openid": "EDAB95E32FFD56A49B4A769375164DFD", "nickname": "大彭家的闺女" }];
+                cb.call(thisObj, list);
+                break;
+            case "gameSubscribe":
+                console.log('关注游戏');
+                cb.call(thisObj);
+                break
+            case "checkSubscribe":
+                cb.call(thisObj, false);
+            case "pfReport":
+                pfReport(data);
+                break;
+            case "sendRedPacket":
+                cb.call(thisObj);
+                break;
+            case "createbannerAd":
+                cb.call(thisObj, 0);
+                break;
+            case "openUrl":
+                pfOpenUrl(data);
+                break;
+            case "openDianjing":
+                openDianjing();
+                break;
+            case "pfViewAd":
+                pfViewAd(data, cb, thisObj);
+                break;
+            case "pfReportLimiData":
+                reportRoleData(data);
+                break;
+            case "pfReportLimiGData":
+                reportGameData(data);
+                break;
+            case "pfLoginOut":
+                window.location.reload()
+                break;
+            case "bindPayOpenCB":
+                payOpenCB = cb;
+                payOpenThis = thisObj;
+                break;
+
+        }
+    }
+
+    function showShareGuide() {
+        console.log('show share');
+        var shareImg = document.getElementById("mask_fenxiang");
+        shareImg.style.display = "";
+        var evt = shareImg.addEventListener('click', onShareClick)
+    }
+
+    function onShareClick() {
+        var shareImg = document.getElementById("mask_fenxiang");
+        hideShareGuide();
+        if (shareCb && shareThis) {
+            shareCb.call(shareThis);
+        }
+        shareImg.removeEventListener('click', onShareClick);
+        shareCb = null;
+        shareThis = null;
+    }
+
+    function hideShareGuide() {
+        console.log('hide share');
+        var shareImg = document.getElementById("mask_fenxiang");
+        shareImg.style.display = "none";
+    }
+
+    //游戏上报
+    var preLv = 0;
+    function pfReport(data) {
+        if ((preLv == 0 || preLv != data.level) && data.level > 30) {
+            window.IS_NOPAY = false;
+            window.IOS_IS_NOPAY = false;
+
+            if (payOpenCB) {
+                payOpenCB.call(payOpenThis);
+                payOpenCB = null;
+                payOpenThis = null;
+            }
+        }
+        preLv = data.level;
+        console.log(data);
+    }
+
+    function openDianjing() {
+        pfOpenUrl("https://m.egame.qq.com/download/app?adtag=lmxldy");
+    }
+
+    function pfOpenUrl(url) {
+        window.open(url);
+    }
+
+    function pfViewAd(type, cb, thisObj) {
+        mylib.MsgBox.Text("假设这是一个视频");
+        if (cb && thisObj) {
+            cb.call(thisObj, 0);
+        }
+    }
+</script>
+
+</body>
+
+</html>

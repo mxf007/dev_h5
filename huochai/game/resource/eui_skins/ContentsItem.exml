@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<e:Skin class="contentsItem" width="120" height="125" xmlns:e="http://ns.egret.com/eui" xmlns:w="http://ns.egret.com/wing" xmlns:ns1="*">
+	<w:Config id="17120d5285b" scale9Grid="40,45,2,35"/>
+	<ns1:OneStateButton label="" width="120" height="125" horizontalCenter="0" verticalCenter="0">
+		<ns1:skinName>
+			<e:Skin states="up,down,disabled">
+			<e:Image width="100%" height="100%" source="" scale9Grid="21,28,16,30"/>
+			<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+			</e:Skin>
+		</ns1:skinName>
+	</ns1:OneStateButton>
+	<e:Image id="img_bg" fillMode="scale" height="125" anchorOffsetX="0" anchorOffsetY="0" y="0" touchEnabled="false" x="0" width="120" source="huochai_json.menu2"/>
+	<e:Label id="content_Id" text="1" size="42" width="100" textAlign="center" anchorOffsetX="50" height="84" anchorOffsetY="42" verticalAlign="middle" textColor="0xffffff" fontFamily="Microsoft YaHei" touchEnabled="false" horizontalCenter="0" verticalCenter="0"/>
+	<e:Image id="img_lock" source="huochai_json.lock1" width="36" height="36" right="10" top="10" touchEnabled="false" visible="false"/>
+
+</e:Skin>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<e:Skin class="MissionSkin" width="720" height="1280" xmlns:e="http://ns.egret.com/eui" xmlns:w="http://ns.egret.com/wing" xmlns:ns1="*">
+	<w:Config id="17120d5285b" scale9Grid="40,45,2,35"/>
+	<e:Image fillMode="scale" source="bg_png" verticalCenter="0" height="1920" width="720" horizontalCenter="0"/>
+
+	<e:Label id="guankaLv" text="关卡:1" x="511.67" y="55" size="60" visible="false"/>
+	<e:Group width="720" height="533.33" anchorOffsetX="360" anchorOffsetY="266.67" horizontalCenter="0" verticalCenter="0">
+		<e:Image width="680" height="540" y="0" anchorOffsetY="0" horizontalCenter="0" source="huochai_json.bd_@2x"/>
+		<e:Image width="606" height="300" y="120" horizontalCenter="-6" anchorOffsetY="0" source="huochai_json.bg2" scale9Grid="12,12,76,76" anchorOffsetX="0"/>
+		<e:Label id="mission_rule" text="规则" y="289" width="520" size="46" height="110" verticalAlign="middle" fontFamily="Microsoft YaHei" horizontalCenter="-14" textAlign="center"/>
+		<e:Image id="img_target_bg" width="720" height="107" x="-9.5" y="470.5" source="huochai_json.ingame_ui_add" visible="false"/>
+		<e:Image id="mission_target" width="50" height="50" x="489" y="200" source="huochai_json.ingame_mission_square"/>
+		<e:Image id="mission_tool" width="13" height="65" x="235.17" y="190" source="huochai_json.ingame_mission_matches"/>
+		
+		<e:Label id="mission_tips" text="提示 : 地图上只能留下正方形和正三角形" fontFamily="Microsoft YaHei" size="26" horizontalCenter="-9" verticalCenter="393.335"/>
+		<e:Label id="txt_tool" text="1" x="260" y="200" size="45" fontFamily="Microsoft YaHei" verticalAlign="middle" height="50" textAlign="center"/>
+		<e:Label id="txt_target" text="1" x="444.65" y="200" size="45" fontFamily="Microsoft YaHei" height="50" verticalAlign="middle" textAlign="center"/>
+		<ns1:OneStateButton id="mission_ok" label="" y="441" width="216" height="84" horizontalCenter="0">
+			<ns1:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="huochai_json.btn_sure" source.down="huochai_json.btn_sure"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+				</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+		<ns1:OneStateButton id="mission_close" label="" x="646" y="-27.5" width="68" height="68">
+			<ns1:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="huochai_json.bt_no" source.down="huochai_json.bt_no"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
+				</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+		<e:Label id="mission_title" text="第" y="34" fontFamily="Microsoft YaHei" size="60" textColor="0x5b5b5b" verticalAlign="justify" horizontalCenter="0"/>
+		<e:Label id="guize" text="添加" y="200" fontFamily="Microsoft YaHei" size="45" verticalAlign="justify" textColor="0x1e1d1d" x="122"/>
+		<e:Image width="69" height="52" y="197" source="huochai_json.get_jt" horizontalCenter="0"/>
+	</e:Group>
+</e:Skin>

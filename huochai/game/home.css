@@ -1,0 +1,27 @@
+*{margin:0px;padding:0px;border:none}
+html, body{
+    -ms-touch-action: none;
+    background: #000000;
+    padding: 0;
+    border: 0;
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+#tip_text{
+    position: relative;
+    text-align: center;
+    z-index: 2000;
+    height: 1em;
+    width: 100%;
+}
+#tip_text2{
+    position: relative;
+    overflow: hidden;
+    display: block;
+}
+#advice_tip{
+    position: relative;
+    z-index: 3000;
+}

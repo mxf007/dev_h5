@@ -1,0 +1,376 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>巧移火柴棒</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="full-screen" content="true" />
+    <meta name="screen-orientation" content="portrait" />
+    <meta name="x5-fullscreen" content="true" />
+    <meta name="360-fullscreen" content="true" />
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico" media="screen" />
+    <link rel="Stylesheet" type="text/css" href="home.css" />
+</head>
+  
+<body>
+
+<div id="canvas_container" style="position: absolute;margin: auto;width: 100%;height: 100%;left: 0;top: 0;right: 0;bottom: 0;" class="egret-player" data-entry-class="Main" data-orientation="portrait" data-scale-mode="fixedWidth" data-frame-rate="60"
+data-content-width="720" data-content-height="1280" data-multi-fingered="3" data-show-fps="false" data-show-log="false" data-show-fps-style="x:0,y:0,size:12,textColor:0xffffff,bgAlpha:0.9">
+</div>
+<div id="mask_fenxiang" style="width: 100%; height: 100%; z-index: 999999; position: fixed; top: 0px; left: 0px; display: block; background: url('http://soeasysdk.com/soeasr/sdk/xiangzhiyou/fenxiang.png') 90% 5% no-repeat rgba(0, 0, 0, 0.7);display: none;">
+</div>
+<dir id="ormask" style="width: 100%; height:100%; z-index:1999999;position: fixed; top:0px; left:0px; background: rgba(0, 0, 0, 1);display: none;">
+<span style="text-align:center;display:block;position:relative; top: 50%;color: #FFF">保持竖屏，会有更好的游戏体验</span>
+</dir>
+
+<!-- 微信小游戏兼容性处理 -->
+<script>
+    // 检测是否在微信小游戏环境
+    if (typeof wx !== 'undefined' && wx.getSystemInfo) {
+        // 微信小游戏环境特殊处理
+        window.isWeChatGameEnv = true;
+        
+        // 重写可能引起问题的API
+        if (window.__globalAdapter && __globalAdapter.createTextField) {
+            const originalCreateTextField = __globalAdapter.createTextField;
+            __globalAdapter.createTextField = function() {
+                try {
+                    return originalCreateTextField.apply(this, arguments);
+                } catch (e) {
+                    console.warn('createTextField failed, fallback to default:', e);
+                    // 返回一个基础的文本对象
+                    return {
+                        node: null,
+                        initialize: function() {},
+                        destroy: function() {}
+                    };
+                }
+            };
+        }
+    } else {
+        window.isWeChatGameEnv = false;
+    }
+</script>
+
+<script type="text/javascript" src="jquery.min.js"></script>
+<script type="text/javascript" src="home.js"></script>
+<script>
+    var loginservername="sdk_serverid";
+    var accountlist=[];
+
+        function heredoc(fn) {
+            return fn.toString().split('\n').slice(1,-1).join('\n') + '\n'
+        };
+
+
+        function sdklogin(serverlist, logincb){
+                var dlg=$("#sdkmask");
+                if (dlg.length == 0)
+                {
+                    $("body").append('<div id="sdkmask" style="left:0;top:0;width:100%;height:100%;background:black;position:absolute;z-index:9999;opacity:0.5;display:none;"></div>'); 
+                    dlg=$("#sdkmask");
+                }
+                var dlg=$("#sdkbox");
+                if (dlg.length == 0)
+                {
+                    $("body").append('<div id="sdkbox" style="left:50%;top:70%;width:252px;height:40px;margin-left:-145px;margin-top:-20px;padding:0;z-index:10000; color:black;border-radius:2px;display:none;position:absolute;cursor:default;"></div>'); 
+                    dlg=$("#sdkbox");
+                }
+
+                var tpl = heredoc(function(){/*
+        <div class="loginbox" style="display:none;width:255px;height:36px;background:green;">
+        <select id="servername" style="width:200px;height:100%;border:none;border-right:1px solid grey;padding:0  0 0 8px;margin:0;border-radius:4px;"></select><span class="loginbtn" style="width:50px;height:100%; padding:0 0 0 8px;cursor: pointer;margin: 0;">登陆</span>
+        </div>
+        */});
+
+
+        var showdlg=function(){
+            $("#sdkmask").show();
+            $("#sdkbox").show();
+            $("#sdkbox .loginbox").show();
+            var selItem=document.getElementById("servername");
+            accountlist=serverlist;
+            for (var key in serverlist) {
+                selItem.options.add(new Option(serverlist[key][0], key));
+            }
+            $("#sdkbox .loginbox #servername").val(localStorage.getItem(loginservername));
+
+        }
+
+        $("#sdkbox").html(tpl);
+        showdlg();
+        $("#sdkbox .loginbox .loginbtn").click(function(){
+            if ($("#sdkbox .loginbox #servername").val()=="")
+            {
+                return;
+            }
+            localStorage.setItem(loginservername, $("#sdkbox .loginbox #servername").val());
+            $("#sdkmask").hide();
+            $("#sdkbox").hide();
+            $("#sdkbox .loginbox").hide();
+            var accountdata=accountlist[$("#sdkbox .loginbox #servername").val()];
+            logincb(accountdata);
+        });
+      
+};
+
+</script>
+
+<script>
+    var loadScript = function (list, callback) {
+        var loaded = 0;
+        var loadNext = function () {
+            loadSingleScript(list[loaded], function () {
+                loaded++;
+                // setPreloadProgress(Math.ceil(loaded / list.length * 30), null, 10);
+                if (loaded >= list.length) {
+                    callback();
+                }
+                else {
+                    loadNext();
+                }
+            })
+        };
+        loadNext();
+    };
+
+    var loadSingleScript = function (src, callback) {
+        var s = document.createElement('script');
+        s.async = false;
+        s.src = src;
+        s.addEventListener('load', function () {
+            s.parentNode.removeChild(s);
+            s.removeEventListener('load', arguments.callee, false);
+            callback();
+        }, false);
+        document.body.appendChild(s);
+    };
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', './manifest.json?v=' + Math.random(), true);
+    xhr.addEventListener("load", function () {
+        var manifest = JSON.parse(xhr.response);
+        // window.vf_version = manifest.version;
+        var list = manifest.initial.concat(manifest.game);
+        loadScript(list, function () {
+            /**
+             * {
+             * "renderMode":, //Engine rendering mode, "canvas" or "webgl"
+             * "audioType": 0 //Use the audio type, 0: default, 2: web audio, 3: audio
+             * "antialias": //Whether the anti-aliasing is enabled in WebGL mode, true: on, false: off, defaults to false
+             * "calculateCanvasScaleFactor": //a function return canvas scale factor
+             * }
+             **/
+            window.VERSION = 100;
+            window.SAVEGAME = true;      //是否开启保存桌面模块
+            window.SHARE_MODULE = true;  //是否开启分享模块
+            window.SHARE_FRIEND = false;  //是否开启分享好友列表
+            window.SHARE_INVITE = false; //是否开启好友邀请功能
+            window.SHARE_SHARE = false; //是否开启好友邀请功能
+            window.HAS_AD = false;
+            window.HTTP = "http:";       //http通信模式
+            window.CONTACTUS = "官方客服QQ:123456789"; //联系方式
+            // window.LOGO_IMG = 'login_bg_tskp.jpg'; //指定LOGO图片
+            // 版号相关信息
+            // window.COPYRIGHTINFO = "出版物号：ISBN 978-7-7979-8101-9  批准文号：新广出审[2017】4754号\n著作权力：上海乐提软件科技有限公司";
+            // window.RES_ROOT = "https://cdn.7tiao.net/dxts/lianyun/"; //游戏资源目录
+            window.LOGFILE = 'log.txt'; //日志文件，默认为log.txt
+            window.RUNTIME = 'web';
+            // window.VF_VERSION = "34"
+            window.DATA_REPORT = true;
+            window.SUBSCRIBE_GAME = false;
+            window.BTN_LAYOUT = 'left';
+            window.DIANJING = true;
+            window.LIMI_REPORT = true;
+            window.DJ_GIFT = true;
+            window.SWITCH_ACCOUNT = false;
+            window.APP_JUMP = [ "wx96023ce5d883b557","wx0cddf2edb9edba73","wx17f0c1d5806951a1","wx1f0d964f4b4ab752","wxdf8d2f714fa5fa00"];
+            window.PF_CONST = {};
+            // window.IS_ELOADING = false;
+
+            // window.URL_ARGS = "?xytxlocal=1"; //url请求参数
+            // window.isNoPay = true;
+            // window.FROM_PF = "wanba_txv";
+            // window.WANBAGIFT = true;
+
+            window.SKIP_GUIDE = true;
+
+            window.FC_LOGINAW = 2;
+
+            // window.IS_NOPAY = true;
+
+            startGame();
+        });
+    });
+    xhr.send(null);
+
+    window.onerror = function (errorMsg, scriptUrl, lineNo, columnNo, error) {
+        
+    }
+
+    var shareCb = null;
+    var shareThis = null;
+    var payOpenCB = null;
+    var payOpenThis = null;
+    //执行平台命令
+    function pfCommand(cmd, data, cb, thisObj) {
+        switch (cmd) {
+            case "gameLogin":
+                sdklogin([
+                        ["金刚-外网测试", "https://www.likexyx.com/pintuxyx","jingang","b8b1f0ba2151b51e799cf5600b62801a"],
+                        ["雄风-外网测试", "https://www.likexyx.com/pintuxyx","xiongfeng","2039ab1f08cac77168a07ca634cc4151"],
+                        ["红涛-外网测试", "https://www.likexyx.com/pintuxyx","hongtao","4ec3d193384d29dabfacdfc4a7e7d57b"],
+                        ["内网测试1", "http://127.0.0.1:8003","123456","1"],
+                    ], function (accountdata) {
+                    var data = {};
+                    data.userId = accountdata[2];
+                    data.serverId = 9;
+                    data.sig = accountdata[3];
+                    data.time = 1573704308;
+                    data.host = accountdata[1];
+                    data.platid = 1;
+                    cb.call(thisObj, data);
+                });
+                break;
+            case "reload":
+                window.location.reload();
+                break;
+            case "match":
+                alert("邀请匹配 我的id="+data.roleId);
+                break;
+            case "getUserInfo":
+                if (cb) {
+                    cb.call(thisObj, {headurl:"http://cdn.7tiao.net/Public/Images/ios.png"});
+                }
+                break;
+
+            case "gameInit":
+                console.log("setServerId : " + data.serverId + " roleId:" + data.roleId + " shareTitle:" + data.title + " shareStr:" + data.str);
+                window.serverId = data.serverId;
+                window.roleId = data.roleId;
+                break;
+            case "gamePay":
+                break;
+            case "gameToDesktop":
+                if (cb) {
+                    cb.call(thisObj)
+                }
+                console.log("gameToDesktop");
+                break;
+            case "gameShare":
+                //显示指引
+                showShareGuide();
+                shareCb = cb;
+                shareThis = thisObj;
+                break;
+            case "gameBar":
+                console.log("gameBar:" + data.frd + " " + data.str);
+                break;
+            case "gameUploadState":
+                break;
+            case "gameGetPfFriends":
+                var list = [{ "openid": "EDAB95E32FFD56A49B4A769375164DFD", "nickname": "大彭家的闺女" }];
+                cb.call(thisObj, list);
+                break;
+            case "gameSubscribe":
+                console.log('关注游戏');
+                cb.call(thisObj);
+                break
+            case "checkSubscribe":
+                cb.call(thisObj, false);
+            case "pfReport":
+                pfReport(data);
+                break;
+            case "sendRedPacket":
+                cb.call(thisObj);
+                break;
+            case "createbannerAd":
+                cb.call(thisObj, 0);
+                break;
+            case "openUrl":
+                pfOpenUrl(data);
+                break;
+            case "openDianjing":
+                openDianjing();
+                break;
+            case "pfViewAd":
+                pfViewAd(data, cb, thisObj);
+                break;
+            case "pfReportLimiData":
+                reportRoleData(data);
+                break;
+            case "pfReportLimiGData":
+                reportGameData(data);
+                break;
+            case "pfLoginOut":
+                window.location.reload()
+                break;
+            case "bindPayOpenCB":
+                payOpenCB = cb;
+                payOpenThis = thisObj;
+                break;
+
+        }
+    }
+
+    function showShareGuide() {
+        console.log('show share');
+        var shareImg = document.getElementById("mask_fenxiang");
+        shareImg.style.display = "";
+        var evt = shareImg.addEventListener('click', onShareClick)
+    }
+
+    function onShareClick() {
+        var shareImg = document.getElementById("mask_fenxiang");
+        hideShareGuide();
+        if (shareCb && shareThis) {
+            shareCb.call(shareThis);
+        }
+        shareImg.removeEventListener('click', onShareClick);
+        shareCb = null;
+        shareThis = null;
+    }
+
+    function hideShareGuide() {
+        console.log('hide share');
+        var shareImg = document.getElementById("mask_fenxiang");
+        shareImg.style.display = "none";
+    }
+
+    //游戏上报
+    var preLv = 0;
+    function pfReport(data) {
+        if ((preLv == 0 || preLv != data.level) && data.level > 30) {
+            window.IS_NOPAY = false;
+            window.IOS_IS_NOPAY = false;
+
+            if (payOpenCB) {
+                payOpenCB.call(payOpenThis);
+                payOpenCB = null;
+                payOpenThis = null;
+            }
+        }
+        preLv = data.level;
+        console.log(data);
+    }
+
+    function openDianjing() {
+        pfOpenUrl("https://m.egame.qq.com/download/app?adtag=lmxldy");
+    }
+
+    function pfOpenUrl(url) {
+        window.open(url);
+    }
+
+    function pfViewAd(type, cb, thisObj) {
+        if (cb && thisObj) {
+            cb.call(thisObj, 0);
+        }
+    }
+</script>
+
+</body>
+
+</html>
