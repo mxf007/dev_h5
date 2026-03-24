@@ -114,15 +114,28 @@ class MapGroup extends eui.Component {
 		}
 	}
 
-	/** 火柴放置/移除时的弹跳反馈特效 */
+	/** 火柴放置/移除时的弹跳反馈特效
+	 *  缩放时同步补偿 x/y，使视觉中心保持不动（修复旋转火柴棒缩放移位问题）。
+	 *  Egret 默认 anchorOffset=(0,0)，对旋转元素缩放会产生明显偏移，
+	 *  公式：保持中心点不变时 new_x = ox + (1-s)*dcx，dcx = (w/2)*cosθ - (h/2)*sinθ
+	 */
 	private _playClickEffect(obj: any, isPlace: boolean): void {
 		egret.Tween.removeTweens(obj)
 		const s1 = isPlace ? 1.20 : 0.85
 		const s2 = isPlace ? 0.92 : 1.05
+
+		const ox = obj.x, oy = obj.y
+		const w = obj.width, h = obj.height
+		const rad = obj.rotation * Math.PI / 180
+		const cosR = Math.cos(rad), sinR = Math.sin(rad)
+		// 锚点(0,0)到视觉中心(w/2, h/2)在父坐标系中的偏移
+		const dcx = (w / 2) * cosR - (h / 2) * sinR
+		const dcy = (w / 2) * sinR + (h / 2) * cosR
+
 		egret.Tween.get(obj, { loop: false })
-			.to({ scaleX: s1, scaleY: s1 }, 80)
-			.to({ scaleX: s2, scaleY: s2 }, 70)
-			.to({ scaleX: 1.0, scaleY: 1.0 }, 60)
+			.to({ x: ox + (1 - s1) * dcx, y: oy + (1 - s1) * dcy, scaleX: s1, scaleY: s1 }, 80)
+			.to({ x: ox + (1 - s2) * dcx, y: oy + (1 - s2) * dcy, scaleX: s2, scaleY: s2 }, 70)
+			.to({ x: ox, y: oy, scaleX: 1.0, scaleY: 1.0 }, 60)
 	}
 
 	private onClickItemOk(e: egret.TouchEvent) {
@@ -310,7 +323,7 @@ class MapGroup extends eui.Component {
 		this.CloseHighlight()
 	}
 
-	private _highlightTweens: any[] = []
+	private _highlightTweens: { obj: any, ox: number, oy: number }[] = []
 	public HighlightOperableCells() {
 		this.CloseHighlight()
 		if (this.stepData.length < 1) return
@@ -322,17 +335,29 @@ class MapGroup extends eui.Component {
 			else if (this.gameType == 2 && cur[i] == 1) canOperate = true
 			if (canOperate && this.szImg[i]) {
 				const obj = this.szImg[i]
+				const ox = obj.x, oy = obj.y
+				const w = obj.width, h = obj.height
+				const rad = obj.rotation * Math.PI / 180
+				const cosR = Math.cos(rad), sinR = Math.sin(rad)
+				const dcx = (w / 2) * cosR - (h / 2) * sinR
+				const dcy = (w / 2) * sinR + (h / 2) * cosR
+				const s = 1.08
 				egret.Tween.removeTweens(obj)
-				const tw = egret.Tween.get(obj, { loop: true }).to({ scaleX: 1.08, scaleY: 1.08 }, 400).to({ scaleX: 1, scaleY: 1 }, 400)
-				this._highlightTweens.push(obj)
+				egret.Tween.get(obj, { loop: true })
+					.to({ x: ox + (1 - s) * dcx, y: oy + (1 - s) * dcy, scaleX: s, scaleY: s }, 400)
+					.to({ x: ox, y: oy, scaleX: 1, scaleY: 1 }, 400)
+				this._highlightTweens.push({ obj, ox, oy })
 			}
 		}
 	}
 	public CloseHighlight() {
 		for (let i = 0; i < this._highlightTweens.length; i++) {
-			egret.Tween.removeTweens(this._highlightTweens[i])
-			this._highlightTweens[i].scaleX = 1
-			this._highlightTweens[i].scaleY = 1
+			const { obj, ox, oy } = this._highlightTweens[i]
+			egret.Tween.removeTweens(obj)
+			obj.scaleX = 1
+			obj.scaleY = 1
+			obj.x = ox
+			obj.y = oy
 		}
 		this._highlightTweens = []
 	}

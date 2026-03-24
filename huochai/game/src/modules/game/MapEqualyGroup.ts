@@ -359,7 +359,7 @@ class MapEqualyGroup extends eui.Component {
 		this.CloseHighlight()
 	}
 
-	private _highlightTweens: any[] = []
+	private _highlightTweens: { obj: any, ox: number, oy: number }[] = []
 	public HighlightOperableCells() {
 		this.CloseHighlight()
 		if (this.stepData.length < 1) return
@@ -372,18 +372,30 @@ class MapEqualyGroup extends eui.Component {
 			if (canOperate) {
 				const obj = this["img_" + (i + 1).toString()]
 				if (obj && obj.visible) {
+					const ox = obj.x, oy = obj.y
+					const w = obj.width, h = obj.height
+					const rad = obj.rotation * Math.PI / 180
+					const cosR = Math.cos(rad), sinR = Math.sin(rad)
+					const dcx = (w / 2) * cosR - (h / 2) * sinR
+					const dcy = (w / 2) * sinR + (h / 2) * cosR
+					const s = 1.08
 					egret.Tween.removeTweens(obj)
-					egret.Tween.get(obj, { loop: true }).to({ scaleX: 1.08, scaleY: 1.08 }, 400).to({ scaleX: 1, scaleY: 1 }, 400)
-					this._highlightTweens.push(obj)
+					egret.Tween.get(obj, { loop: true })
+						.to({ x: ox + (1 - s) * dcx, y: oy + (1 - s) * dcy, scaleX: s, scaleY: s }, 400)
+						.to({ x: ox, y: oy, scaleX: 1, scaleY: 1 }, 400)
+					this._highlightTweens.push({ obj, ox, oy })
 				}
 			}
 		}
 	}
 	public CloseHighlight() {
 		for (let i = 0; i < this._highlightTweens.length; i++) {
-			egret.Tween.removeTweens(this._highlightTweens[i])
-			this._highlightTweens[i].scaleX = 1
-			this._highlightTweens[i].scaleY = 1
+			const { obj, ox, oy } = this._highlightTweens[i]
+			egret.Tween.removeTweens(obj)
+			obj.scaleX = 1
+			obj.scaleY = 1
+			obj.x = ox
+			obj.y = oy
 		}
 		this._highlightTweens = []
 	}
