@@ -20,6 +20,8 @@ class MapGroup extends eui.Component {
 		16: null, 17: null, 18: null, 19: null, 20: null, 21: null, 22: null,
 		23: null, 24: null, 25: null, 26: null, 27: null, 28: null,
 	}
+	// templateMapId → 预处理后的形状信息（一次构建，多次复用）
+	private static readonly TEMPLATE_INFO_MAP: { [id: number]: { mapLen: number, shapeCells: number[][] } } = {}
 
 	/** 按 mapId 获取形状模板（延迟绑定，避免静态初始化顺序问题） */
 	private static getTemplate(mapId: number): number[][] | null {
@@ -37,6 +39,24 @@ class MapGroup extends eui.Component {
 			tbl[26] = Const.map26; tbl[27] = Const.map27; tbl[28] = Const.map28
 		}
 		return tbl[mapId] || null
+	}
+
+	private static getTemplateInfo(mapId: number): { mapLen: number, shapeCells: number[][] } | null {
+		if (MapGroup.TEMPLATE_INFO_MAP[mapId]) return MapGroup.TEMPLATE_INFO_MAP[mapId]
+		const template = MapGroup.getTemplate(mapId)
+		if (!template || template.length == 0) return null
+		const mapLen = template[0].length
+		const shapeCells: number[][] = []
+		for (let i = 0; i < template.length; i++) {
+			const cells: number[] = []
+			for (let j = 0; j < mapLen; j++) {
+				if (template[i][j] == 1) cells.push(j)
+			}
+			if (cells.length > 0) shapeCells.push(cells)
+		}
+		const info = { mapLen, shapeCells }
+		MapGroup.TEMPLATE_INFO_MAP[mapId] = info
+		return info
 	}
 
 	public constructor(lv: number, mapType: number, reverseMode?: boolean) {
@@ -221,11 +241,8 @@ class MapGroup extends eui.Component {
 			return dr && dr[0] && dr[1]
 		}
 		const target = MyConst.MapData[this.curLv].rule[3]
-		const ctx = this._buildCurrentCoverContext()
-		if (!ctx) return false
-		if (ctx.activeCells.length == 0) return target == 0
-		if (ctx.candidates.length == 0) return false
-		return this._canExactCoverWithCount(ctx.mapData.length, ctx.activeCells, ctx.candidates, ctx.cellToShapes, target)
+		const ret = this.GetTriangleNum()
+		return !!(ret && ret[0] == target)
 	}
 
 	private CheckReverseComplete(): boolean {
@@ -268,8 +285,14 @@ class MapGroup extends eui.Component {
 		return false
 	}
 
-	private getTemplatesByShape(shapeType: number): number[][] | null {
-		if (shapeType != 1 && shapeType != 2) return null
+	private getShapeCount(shapeType: number): number {
+		const ctx = this._buildCurrentCoverContext(shapeType)
+		if (!ctx) return 0
+		return ctx.candidates.length
+	}
+
+	private getTemplateMapTypeByShape(shapeType: number): number {
+		if (shapeType != 1 && shapeType != 2) return -1
 		let templateMapType = -1
 		if (MyConst.getShapeTemplateMapType) {
 			templateMapType = MyConst.getShapeTemplateMapType(this.mapId, shapeType)
@@ -278,8 +301,7 @@ class MapGroup extends eui.Component {
 			const byMap = MyConst.getMapTypeShapeType ? MyConst.getMapTypeShapeType(this.mapId) : -1
 			if (byMap == shapeType) templateMapType = this.mapId
 		}
-		if (templateMapType <= 0) return null
-		return MapGroup.getTemplate(templateMapType)
+		return templateMapType > 0 ? templateMapType : -1
 	}
 
 	private GetDualTargetNum(): [boolean, boolean] | null {
@@ -288,10 +310,8 @@ class MapGroup extends eui.Component {
 		const target1 = r[3], target2 = r[5]
 		const shape1 = (r[2] == 1 || r[2] == 2) ? r[2] : this.getPrimaryShapeType()
 		const shape2 = r[4]
-		const ctx1 = this._buildCurrentCoverContext(shape1)
-		const ok1 = this.canExactCoverAtLeastCount(ctx1, target1)
-		const ctx2 = this._buildCurrentCoverContext(shape2)
-		const ok2 = this.canExactCoverAtLeastCount(ctx2, target2)
+		const ok1 = this.getShapeCount(shape1) >= target1
+		const ok2 = this.getShapeCount(shape2) >= target2
 		return [ok1, ok2]
 	}
 
@@ -347,18 +367,15 @@ class MapGroup extends eui.Component {
 		this._highlightTweens = []
 	}
 
-	private _buildCandidateShapes(templates: number[][], mapData: number[]): number[][] {
+	private _buildCandidateShapes(shapeCells: number[][], mapData: number[]): number[][] {
 		const candidates: number[][] = []
-		for (let i = 0; i < templates.length; i++) {
-			const shape: number[] = []
+		for (let i = 0; i < shapeCells.length; i++) {
+			const cells = shapeCells[i]
 			let ok = true
-			for (let j = 0; j < mapData.length; j++) {
-				if (templates[i][j] == 1) {
-					if (mapData[j] == 0) { ok = false; break }
-					shape.push(j)
-				}
+			for (let j = 0; j < cells.length; j++) {
+				if (mapData[cells[j]] == 0) { ok = false; break }
 			}
-			if (ok && shape.length > 0) candidates.push(shape)
+			if (ok) candidates.push(cells)
 		}
 		return candidates
 	}
@@ -480,15 +497,17 @@ class MapGroup extends eui.Component {
 	private _buildCurrentCoverContext(shapeType?: number): { mapData: number[], activeCells: number[], candidates: number[][], cellToShapes: { [idx: number]: number[] } } | null {
 		if (this.stepData.length < 1) return null
 		const targetShape = (shapeType == 1 || shapeType == 2) ? shapeType : this.getPrimaryShapeType()
-		const templates = this.getTemplatesByShape(targetShape)
-		if (!templates) return null
+		const templateMapType = this.getTemplateMapTypeByShape(targetShape)
+		if (templateMapType <= 0) return null
+		const templateInfo = MapGroup.getTemplateInfo(templateMapType)
+		if (!templateInfo) return null
 		const mapData: number[] = this.stepData[this.stepData.length - 1]
-		if (templates[0].length !== mapData.length) return null
+		if (templateInfo.mapLen !== mapData.length) return null
 		const activeCells: number[] = []
 		for (let i = 0; i < mapData.length; i++) {
 			if (mapData[i] == 1) activeCells.push(i)
 		}
-		const candidates = this._buildCandidateShapes(templates, mapData)
+		const candidates = this._buildCandidateShapes(templateInfo.shapeCells, mapData)
 		const cellToShapes = this._buildCellToShapes(candidates)
 		return { mapData, activeCells, candidates, cellToShapes }
 	}
@@ -497,16 +516,8 @@ class MapGroup extends eui.Component {
 	public GetTriangleNum(): [number, boolean] {
 		const ctx = this._buildCurrentCoverContext()
 		if (!ctx) return [0, false]
-		const mapData = ctx.mapData
-		const activeCells = ctx.activeCells
-		if (activeCells.length == 0) return [0, true]
-
-		const candidates = ctx.candidates
-		if (candidates.length == 0) return [0, false]
-		const cellToShapes = ctx.cellToShapes
-		const count = this._getMaxNonOverlapCount(candidates)
-		const noStray = this._canExactCover(mapData.length, activeCells, candidates, cellToShapes)
-		return [count, noStray]
+		const count = ctx.candidates.length
+		return [count, count > 0]
 	}
 
 	public GetRuleDebugText(): string {
@@ -537,10 +548,10 @@ class MapGroup extends eui.Component {
 			const p1 = dr ? dr[0] : false
 			const p2 = dr ? dr[1] : false
 			lines.push("双目标：" + s1 + ">=" + t1 + "  " + s2 + ">=" + t2)
-			lines.push("识别=" + ret[0] + "  覆盖=" + ret[1] + "  主目标=" + p1 + " 次目标=" + p2)
+			lines.push("主识别=" + this.getShapeCount(r[2]) + "  次识别=" + this.getShapeCount(r[4]) + "  主目标=" + p1 + " 次目标=" + p2)
 		} else {
 			const s1 = this.getShapeName(r[2])
-			lines.push("目标=" + s1 + "  数量=" + r[3] + "  识别=" + ret[0] + "  完全覆盖=" + ret[1])
+			lines.push("目标=" + s1 + "  数量=" + r[3] + "  识别=" + ret[0] + "  有完整图形=" + ret[1])
 		}
 		lines.push("判定结果=" + this.CheckComplete())
 		return lines.join("\n")

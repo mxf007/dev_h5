@@ -54,5 +54,14 @@
 		"exmlRoot": [
 			"resource/eui_skins"
 		]
+	},
+	"compileOptions": {
+		"matrix": false,
+		"sourceMap": false,
+		"html5": true,
+		"compress": true,
+		"keepConsole": false,
+		"uglify": true,
+		"removeDeadCode": true
 	}
 }
