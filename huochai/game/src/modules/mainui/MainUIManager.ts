@@ -38,12 +38,39 @@ class MainUIManager {
 	public bEndlessMode: boolean = false;
 	public endlessLevel: number = 1;
 	private static readonly ENDLESS_HIGH_KEY = "huochaiEndlessHigh";
+	private static readonly RULE_DEBUG_KEY = "huochaiRuleDebug";
+	private _ruleDebugLoaded: boolean = false;
+	private _ruleDebug: boolean = false;
 	public getEndlessHighScore(): number {
 		const raw = egret.localStorage.getItem(MainUIManager.ENDLESS_HIGH_KEY);
 		return raw ? parseInt(raw, 10) || 0 : 0;
 	}
 	public setEndlessHighScore(v: number): void {
 		egret.localStorage.setItem(MainUIManager.ENDLESS_HIGH_KEY, "" + v);
+	}
+
+	private ensureRuleDebugLoaded(): void {
+		if (this._ruleDebugLoaded) return
+		const raw = egret.localStorage.getItem(MainUIManager.RULE_DEBUG_KEY)
+		this._ruleDebug = raw === "1"
+		this._ruleDebugLoaded = true
+	}
+
+	public isRuleDebugEnabled(): boolean {
+		this.ensureRuleDebugLoaded()
+		return this._ruleDebug
+	}
+
+	public setRuleDebugEnabled(v: boolean): void {
+		this.ensureRuleDebugLoaded()
+		this._ruleDebug = !!v
+		egret.localStorage.setItem(MainUIManager.RULE_DEBUG_KEY, this._ruleDebug ? "1" : "0")
+	}
+
+	public toggleRuleDebug(): boolean {
+		const next = !this.isRuleDebugEnabled()
+		this.setRuleDebugEnabled(next)
+		return next
 	}
 
 	// ===== 每日挑战 =====

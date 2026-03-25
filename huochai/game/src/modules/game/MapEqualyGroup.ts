@@ -149,6 +149,18 @@ class MapEqualyGroup extends eui.Component {
 		return result !== undefined ? result : -1
 	}
 
+	private getCellIndex(obj: any): number {
+		let idx = this._a.indexOf(obj)
+		if (idx >= 0) return idx
+		idx = this._b.indexOf(obj)
+		if (idx >= 0) return 7 + idx
+		idx = this._c.indexOf(obj)
+		if (idx >= 0) return 14 + idx
+		idx = this._d.indexOf(obj)
+		if (idx >= 0) return 21 + idx
+		return -1
+	}
+
 	private onTouchClick(e: egret.TouchEvent) {
 		if (this.step >= this.gameTagStep) {
 			mylib.EvtBus.dispatchEvt(EvtType.TouchMoreStep, {});
@@ -160,7 +172,7 @@ class MapEqualyGroup extends eui.Component {
 			return;
 		}
 
-		var i = this.getChildIndex(obj) - 1;
+		var i = this.getCellIndex(obj);
 		if (this.stepData.length < 1) {
 			return;
 		}
@@ -216,8 +228,9 @@ class MapEqualyGroup extends eui.Component {
 					this.step++
 					mylib.GmGlobal.sound.playSoundEffect("sound/snd_04.mp3");
 					mylib.EvtBus.dispatchEvt(EvtType.TouchStep, { step: this.step, mapStep: this.stepData.length, tagNum: -1 });
-					if (this.step == this.gameTagStep && this.CheckComplete()) {
-						mylib.EvtBus.dispatchEvt(EvtType.TouchCommplete, { lv: this.curLv, bWin: true, tagNum: -1 });
+					if (this.step == this.gameTagStep) {
+						const ok = this.CheckComplete()
+						mylib.EvtBus.dispatchEvt(EvtType.TouchCommplete, { lv: this.curLv, bWin: ok, tagNum: -1 });
 					}
 					
 				}
@@ -236,8 +249,9 @@ class MapEqualyGroup extends eui.Component {
 				this.step++
 				mylib.GmGlobal.sound.playSoundEffect("sound/snd_04.mp3");
 				mylib.EvtBus.dispatchEvt(EvtType.TouchStep, { step: this.step, mapStep: this.stepData.length,tagNum: -1 });
-				if (this.step == this.gameTagStep && this.CheckComplete()) {
-					mylib.EvtBus.dispatchEvt(EvtType.TouchCommplete, { lv: this.curLv, bWin: true, tagNum: -1 });
+				if (this.step == this.gameTagStep) {
+					const ok = this.CheckComplete()
+					mylib.EvtBus.dispatchEvt(EvtType.TouchCommplete, { lv: this.curLv, bWin: ok, tagNum: -1 });
 				}
 			}
 		} else if (this.gameType == 3) { // 删除
@@ -253,8 +267,9 @@ class MapEqualyGroup extends eui.Component {
 				this.step++
 				mylib.GmGlobal.sound.playSoundEffect("sound/snd_04.mp3");
 				mylib.EvtBus.dispatchEvt(EvtType.TouchStep, { step: this.step, mapStep: this.stepData.length, tagNum: -1  });
-				if (this.step == this.gameTagStep && this.CheckComplete()) {
-					mylib.EvtBus.dispatchEvt(EvtType.TouchCommplete, {lv: this.curLv, bWin: true, tagNum: -1 });
+				if (this.step == this.gameTagStep) {
+					const ok = this.CheckComplete()
+					mylib.EvtBus.dispatchEvt(EvtType.TouchCommplete, {lv: this.curLv, bWin: ok, tagNum: -1 });
 				}
 			}
 		}
@@ -293,6 +308,56 @@ class MapEqualyGroup extends eui.Component {
 		return false
 	}
 
+	private getOperatorText(): string {
+		if (this._operator == 1) return "+"
+		if (this._operator == 2) return "-"
+		if (this._operator == 3) return "*"
+		if (this._operator == 4) return "/"
+		return "?"
+	}
+
+	public GetRuleDebugText(): string {
+		if (this.stepData.length < 1) return "[等式规则层]\n状态为空"
+		const sz = this.stepData[this.stepData.length - 1]
+		const a = this.getNum(1, sz)
+		const b = this.getNum(2, sz)
+		const c = this.getNum(3, sz)
+		const d = this.getNum(4, sz)
+		const rightValid = c >= 0 && d >= 0
+		const right = rightValid ? (10 * c + d) : -1
+		const leftValid = a >= 0 && b >= 0
+		let leftExpr = ""
+		let leftOk = false
+		if (leftValid && rightValid) {
+			if (this._operator == 1) {
+				leftExpr = a + " + " + b
+				leftOk = (a + b == right)
+			} else if (this._operator == 2) {
+				leftExpr = a + " - " + b
+				leftOk = (a - b == right)
+			} else if (this._operator == 3) {
+				leftExpr = a + " * " + b
+				leftOk = (a * b == right)
+			} else if (this._operator == 4) {
+				leftExpr = a + " / " + b
+				leftOk = (b != 0 && a / b == right)
+			}
+		}
+
+		const lines: string[] = []
+		const modeName = this.gameType == 1 ? "添加" : (this.gameType == 2 ? "移动" : "删除")
+		lines.push("[等式规则层]")
+		lines.push("玩法=" + modeName + "  运算=" + this.getOperatorText() + "  step=" + this.step + "/" + this.gameTagStep + "  hist=" + this.stepData.length)
+		lines.push("数字A=" + a + " B=" + b + " C=" + c + " D=" + d)
+		if (!leftValid || !rightValid) {
+			lines.push("等式：存在无法识别的数字")
+		} else {
+			lines.push("等式：" + leftExpr + " = " + right + "  => " + leftOk)
+		}
+		lines.push("判定结果=" + this.CheckComplete())
+		return lines.join("\n")
+	}
+
 	public RefreshMap(szMap: any) { // 刷新地图
 		var img_path_normal = RES.getRes(("huochai_json.game_map"))	// 默认
 		var img_path_match = RES.getRes(("huochai_json.ingame_matches"))			// 火柴背景
@@ -302,6 +367,7 @@ class MapEqualyGroup extends eui.Component {
 		for (var i = 0; i < szMap.length; i++) {
 			var obj = this["img_" + (i + 1).toString()]
 			if (obj != null) {
+				obj.visible = true
 				if (szMap[i] == 0) {
 					obj.$setTexture(img_path_normal)
 				}
@@ -323,6 +389,10 @@ class MapEqualyGroup extends eui.Component {
 		if (this.getNum(3, szMap) == 0){
 			for (var i = 0 ;i < 7;i++){
 				this._c[i].visible = false
+			}
+		} else {
+			for (var i = 0 ;i < 7;i++){
+				if (szMap[14 + i] != 3) this._c[i].visible = true
 			}
 		}
 	}
@@ -359,7 +429,7 @@ class MapEqualyGroup extends eui.Component {
 		this.CloseHighlight()
 	}
 
-	private _highlightTweens: { obj: any, ox: number, oy: number }[] = []
+	private _highlightTweens: any[] = []
 	public HighlightOperableCells() {
 		this.CloseHighlight()
 		if (this.stepData.length < 1) return
@@ -372,30 +442,18 @@ class MapEqualyGroup extends eui.Component {
 			if (canOperate) {
 				const obj = this["img_" + (i + 1).toString()]
 				if (obj && obj.visible) {
-					const ox = obj.x, oy = obj.y
-					const w = obj.width, h = obj.height
-					const rad = obj.rotation * Math.PI / 180
-					const cosR = Math.cos(rad), sinR = Math.sin(rad)
-					const dcx = (w / 2) * cosR - (h / 2) * sinR
-					const dcy = (w / 2) * sinR + (h / 2) * cosR
-					const s = 1.08
 					egret.Tween.removeTweens(obj)
-					egret.Tween.get(obj, { loop: true })
-						.to({ x: ox + (1 - s) * dcx, y: oy + (1 - s) * dcy, scaleX: s, scaleY: s }, 400)
-						.to({ x: ox, y: oy, scaleX: 1, scaleY: 1 }, 400)
-					this._highlightTweens.push({ obj, ox, oy })
+					egret.Tween.get(obj, { loop: true }).to({ scaleX: 1.08, scaleY: 1.08 }, 400).to({ scaleX: 1, scaleY: 1 }, 400)
+					this._highlightTweens.push(obj)
 				}
 			}
 		}
 	}
 	public CloseHighlight() {
 		for (let i = 0; i < this._highlightTweens.length; i++) {
-			const { obj, ox, oy } = this._highlightTweens[i]
-			egret.Tween.removeTweens(obj)
-			obj.scaleX = 1
-			obj.scaleY = 1
-			obj.x = ox
-			obj.y = oy
+			egret.Tween.removeTweens(this._highlightTweens[i])
+			this._highlightTweens[i].scaleX = 1
+			this._highlightTweens[i].scaleY = 1
 		}
 		this._highlightTweens = []
 	}

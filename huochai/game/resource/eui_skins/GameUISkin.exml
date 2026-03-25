@@ -95,6 +95,10 @@
 	</ns1:OneStateButton>
 	<e:Label id="guankaLv" text="关卡1" bottom="148" left="20" size="32" visible="true" height="40" fontFamily="Microsoft YaHei" textAlign="left" verticalAlign="middle" textColor="0x999999"/>
 	<e:Label id="txt_timer" text="" bottom="148" right="20" size="36" visible="false" height="40" fontFamily="Microsoft YaHei" textAlign="right" verticalAlign="middle" textColor="0xff6600"/>
+	<e:Group id="gp_rule_debug" left="12" right="12" top="252" height="220" visible="false" touchEnabled="false" touchChildren="false">
+		<e:Rect left="0" right="0" top="0" bottom="0" fillColor="0x000000" alpha="0.58"/>
+		<e:Label id="txt_rule_debug" left="12" right="12" top="8" bottom="8" size="22" lineSpacing="6" textColor="0xFFFFFF" fontFamily="Microsoft YaHei"/>
+	</e:Group>
 	
 	<e:Group id="gp_tip" width="480" height="34" horizontalCenter="0" verticalCenter="0" visible="false">
 		<e:Image width="480" height="48" source="huochai_json.popUp" horizontalCenter="0" verticalCenter="0"/>

@@ -12,21 +12,6 @@
 		"libs/weapp-adapter/weapp-adapter.js"
 	],
 	"game": [
-		"bin-debug/modules/game/GameView.js",
-		"bin-debug/AlertBox.js",
-		"bin-debug/JsonID.js",
-		"bin-debug/LevelBuilder.js",
-		"bin-debug/Main.js",
-		"bin-debug/MapJson.js",
-		"bin-debug/OneStateButton.js",
-		"bin-debug/modules/game/GameMath.js",
-		"bin-debug/GameplayConfig.js",
-		"bin-debug/modules/game/MapEqualyGroup.js",
-		"bin-debug/modules/game/MapGroup.js",
-		"bin-debug/modules/mainui/ContentItem.js",
-		"bin-debug/modules/mainui/MainUIManager.js",
-		"bin-debug/modules/mainui/MainUIView_v1.js",
-		"bin-debug/modules/mainui/MainUIView.js",
-		"bin-debug/modules/mainui/Mission.js"
+		"main.js"
 	]
 }

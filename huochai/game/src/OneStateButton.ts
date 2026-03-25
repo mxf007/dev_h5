@@ -10,6 +10,37 @@ class OneStateButton extends eui.Button implements eui.UIComponent {
 
 	protected childrenCreated(): void {
 		super.childrenCreated();
+		this.updateLabelDisplayStyle()
+	}
+
+	protected updateDisplayList(unscaledWidth: number, unscaledHeight: number): void {
+		super.updateDisplayList(unscaledWidth, unscaledHeight)
+		this.updateLabelDisplayStyle()
+	}
+
+	private getLabelDisplay(): eui.Label {
+		const anyThis: any = this as any
+		return anyThis.labelDisplay as eui.Label
+	}
+
+	private updateLabelDisplayStyle(): void {
+		const lb = this.getLabelDisplay()
+		if (!lb) return
+		lb.textAlign = "center"
+		lb.verticalAlign = "middle"
+		lb.wordWrap = false
+		lb.size = Math.max(18, Math.min(42, lb.size || 30))
+		if (this.width > 0) {
+			lb.width = Math.max(10, this.width - 16)
+		}
+		lb.validateNow()
+		// Auto-shrink for long labels to avoid overflow on small buttons.
+		let guard = 0
+		while (lb.textWidth > lb.width && lb.size > 18 && guard < 12) {
+			lb.size = lb.size - 1
+			lb.validateNow()
+			guard++
+		}
 	}
 
 	public refresh()

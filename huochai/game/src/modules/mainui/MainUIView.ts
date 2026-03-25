@@ -52,6 +52,7 @@ class MainUIView extends mylib.UIBase {
 	private timedBtn: OneStateButton
 	private endlessBtn: OneStateButton
 	private reverseBtn: OneStateButton
+	private ruleDebugBtn: OneStateButton
 
 	private _targetTotal: number = 0;
 	private _loadedCount: number = 0;
@@ -312,6 +313,7 @@ class MainUIView extends mylib.UIBase {
 		this.timedBtn.addEventListener(egret.TouchEvent.TOUCH_END, this.onTimedChallenge, this);
 		this.endlessBtn.addEventListener(egret.TouchEvent.TOUCH_END, this.onEndlessChallenge, this);
 		if (this.reverseBtn) this.reverseBtn.addEventListener(egret.TouchEvent.TOUCH_END, this.onReverseChallenge, this);
+		if (this.ruleDebugBtn) this.ruleDebugBtn.addEventListener(egret.TouchEvent.TOUCH_END, this.onToggleRuleDebug, this);
 		this.signOK.addEventListener(egret.TouchEvent.TOUCH_TAP, this.onClickSignOk, this);
 		this.signClose.addEventListener(egret.TouchEvent.TOUCH_TAP, this.onClickSignClose, this);
 		// 钻石框点击事件
@@ -337,6 +339,7 @@ class MainUIView extends mylib.UIBase {
 		this.timedBtn.removeEventListener(egret.TouchEvent.TOUCH_END, this.onTimedChallenge, this);
 		this.endlessBtn.removeEventListener(egret.TouchEvent.TOUCH_END, this.onEndlessChallenge, this);
 		if (this.reverseBtn) this.reverseBtn.removeEventListener(egret.TouchEvent.TOUCH_END, this.onReverseChallenge, this);
+		if (this.ruleDebugBtn) this.ruleDebugBtn.removeEventListener(egret.TouchEvent.TOUCH_END, this.onToggleRuleDebug, this);
 		if (this._highlightTimer) {
 			egret.clearTimeout(this._highlightTimer);
 			this._highlightTimer = 0;
@@ -559,8 +562,9 @@ class MainUIView extends mylib.UIBase {
 	public showAt(p: egret.DisplayObjectContainer): void {
 		super.showAt(p);
 		this.other.visible = false	
+		this.syncRuleDebugBtn()
 		const high = MainUIManager.getInstance().getEndlessHighScore();
-		if (this.endlessBtn) this.endlessBtn.label = high > 0 ? ("连续闯关(最高" + high + ")") : "连续闯关";
+		if (this.endlessBtn) this.endlessBtn.label = this.getEndlessBtnText(high);
 
 		if (MainUIManager.getInstance().special == 0) {
 			// this.other.visible = false
@@ -599,8 +603,25 @@ class MainUIView extends mylib.UIBase {
 		//this.btn_music.$setSelected(mylib.GmGlobal.sound.isSoundOpen());
 	}
 
+	private getEndlessBtnText(high: number): string {
+		if (!high || high <= 0) return "连续闯关"
+		if (high > 999) return "连续闯关·999+"
+		return "连续闯关·" + high
+	}
+
 	private jumpPage(view) {
 		this.showUIRight(view);
+	}
+
+	private syncRuleDebugBtn(): void {
+		if (!this.ruleDebugBtn) return
+		this.ruleDebugBtn.label = MainUIManager.getInstance().isRuleDebugEnabled() ? "规则调试:开" : "规则调试:关"
+	}
+
+	private onToggleRuleDebug(): void {
+		const on = MainUIManager.getInstance().toggleRuleDebug()
+		this.syncRuleDebugBtn()
+		AlertBox.alert(on ? "规则调试已开启\n进入关卡可看到规则层判定信息" : "规则调试已关闭", null, null, "知道了")
 	}
 
 	public loadData() {

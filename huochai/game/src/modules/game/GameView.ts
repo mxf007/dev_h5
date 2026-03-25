@@ -84,8 +84,11 @@ class GameView extends mylib.UIBase {
 
 	private bRetry: boolean
 	private txt_timer: eui.Label
+	private gp_rule_debug: eui.Group
+	private txt_rule_debug: eui.Label
 	private _timerToken: number = 0
 	private _timerStart: number = 0
+	private _ruleDebugToken: number = 0
 	public constructor() {
 		super("GameUISkin");
 		this.curLv = MainUIManager.getInstance().selectId - 1
@@ -180,6 +183,7 @@ class GameView extends mylib.UIBase {
 				this.txt_condition1.text = "删除"
 			}
 			this.img_target_bg1.$setTexture(img_path_add)
+			this._startRuleDebugTicker()
 			return
 		}
 		var img_path_add = RES.getRes("huochai_json.ingame_ui_add")
@@ -239,7 +243,8 @@ class GameView extends mylib.UIBase {
 		this.btn_remind.visible = !(dailyActive && constraint == 3)
 
 		// 加载小星星动画
-		this.LoadStartBlinkAction()	
+		this.LoadStartBlinkAction()
+		this._startRuleDebugTicker()
 	}
 
 	protected childrenCreated() {
@@ -297,6 +302,7 @@ class GameView extends mylib.UIBase {
 		mylib.EvtBus.rmListener(EvtType.TouchStep, this.onSetpUpdate, this);
 		mylib.EvtBus.rmListener(EvtType.TouchCommplete, this.GameComplete, this);
 		mylib.EvtBus.rmListener(EvtType.TouchMoreStep, this.TouchMoreStep, this);
+		this._stopRuleDebugTicker();
 	}
 
 	public OnShowVideoOk(){
@@ -312,6 +318,7 @@ class GameView extends mylib.UIBase {
 		if (this._map != null && MyConst.MapData[this.curLv].mapType != 999) { // 
 			this._map.UpDateDisplaytagNum()
 		}
+		this.refreshRuleDebugPanel()
 		
 		//mylib.GmGlobal.page.setPage({page:"help"}, this.jumpPage, this);
 	}
@@ -541,6 +548,38 @@ class GameView extends mylib.UIBase {
 		}
 	}
 
+	private _startRuleDebugTicker(): void {
+		this._stopRuleDebugTicker()
+		this.refreshRuleDebugPanel()
+		if (!MainUIManager.getInstance().isRuleDebugEnabled()) return
+		this._ruleDebugToken = egret.setInterval(this.refreshRuleDebugPanel, this, 250)
+	}
+
+	private _stopRuleDebugTicker(): void {
+		if (this._ruleDebugToken) {
+			egret.clearInterval(this._ruleDebugToken)
+			this._ruleDebugToken = 0
+		}
+	}
+
+	private refreshRuleDebugPanel(): void {
+		if (!this.gp_rule_debug || !this.txt_rule_debug) return
+		const enabled = MainUIManager.getInstance().isRuleDebugEnabled()
+		this.gp_rule_debug.visible = enabled
+		if (!enabled) {
+			this.txt_rule_debug.text = ""
+			return
+		}
+		const lines: string[] = []
+		lines.push("关卡=" + (this.curLv + 1) + "  步数=" + this.step + "/" + this.constStep)
+		if (this._map && this._map.GetRuleDebugText) {
+			lines.push(this._map.GetRuleDebugText())
+		} else {
+			lines.push("地图未初始化")
+		}
+		this.txt_rule_debug.text = lines.join("\n")
+	}
+
 	private onClickRetry() { // 重试
 		this.gp_tip.visible = false
 		if (this.btn_next.visible == true) {
@@ -621,6 +660,7 @@ class GameView extends mylib.UIBase {
 			var img_path = RES.getRes(("huochai_json.ingame_bt_back1"))
 			this.btn_back_step.$setTexture(img_path)
 		}
+		this.refreshRuleDebugPanel()
 	}
 	private OnGameEnd(bGetAward: boolean) {
 		this.btn_back_step.$setTexture(RES.getRes("huochai_json.ingame_bt_back1"))
@@ -674,6 +714,7 @@ class GameView extends mylib.UIBase {
 
 	public onClickGoHome() {
 		this._stopTimer();
+		this._stopRuleDebugTicker();
 		const mgr = MainUIManager.getInstance();
 		mgr.bTimedChallenge = false;
 		mgr.bReverseMode = false;

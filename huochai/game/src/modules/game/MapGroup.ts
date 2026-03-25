@@ -114,28 +114,19 @@ class MapGroup extends eui.Component {
 		}
 	}
 
-	/** 火柴放置/移除时的弹跳反馈特效
-	 *  缩放时同步补偿 x/y，使视觉中心保持不动（修复旋转火柴棒缩放移位问题）。
-	 *  Egret 默认 anchorOffset=(0,0)，对旋转元素缩放会产生明显偏移，
-	 *  公式：保持中心点不变时 new_x = ox + (1-s)*dcx，dcx = (w/2)*cosθ - (h/2)*sinθ
-	 */
+	/** 火柴放置/移除时的弹跳反馈特效 */
 	private _playClickEffect(obj: any, isPlace: boolean): void {
 		egret.Tween.removeTweens(obj)
-		const s1 = isPlace ? 1.20 : 0.85
-		const s2 = isPlace ? 0.92 : 1.05
-
-		const ox = obj.x, oy = obj.y
-		const w = obj.width, h = obj.height
-		const rad = obj.rotation * Math.PI / 180
-		const cosR = Math.cos(rad), sinR = Math.sin(rad)
-		// 锚点(0,0)到视觉中心(w/2, h/2)在父坐标系中的偏移
-		const dcx = (w / 2) * cosR - (h / 2) * sinR
-		const dcy = (w / 2) * sinR + (h / 2) * cosR
-
+		const a1 = isPlace ? 0.72 : 0.55
+		const a2 = isPlace ? 1.0 : 0.9
 		egret.Tween.get(obj, { loop: false })
-			.to({ x: ox + (1 - s1) * dcx, y: oy + (1 - s1) * dcy, scaleX: s1, scaleY: s1 }, 80)
-			.to({ x: ox + (1 - s2) * dcx, y: oy + (1 - s2) * dcy, scaleX: s2, scaleY: s2 }, 70)
-			.to({ x: ox, y: oy, scaleX: 1.0, scaleY: 1.0 }, 60)
+			.to({ alpha: a1 }, 70)
+			.to({ alpha: a2 }, 70)
+			.to({ alpha: 1.0 }, 60)
+	}
+
+	private getCellIndex(obj: any): number {
+		return this.szImg.indexOf(obj)
 	}
 
 	private onClickItemOk(e: egret.TouchEvent) {
@@ -150,7 +141,7 @@ class MapGroup extends eui.Component {
 		if (this.stepData.length < 1) return
 
 		const curStep = this.stepData.length - 1
-		const i = this.getChildIndex(obj) - 1
+		const i = this.getCellIndex(obj)
 		if (i == -1 || this.stepData[curStep].length <= i) return
 
 		if (this.gameType == 2) {
@@ -188,7 +179,7 @@ class MapGroup extends eui.Component {
 					const ret = this.GetTriangleNum()
 					mylib.EvtBus.dispatchEvt(EvtType.TouchStep, { step: this.step, mapStep: this.stepData.length, tagNum: ret[0] });
 					if (this.step == this.constStep) {
-						mylib.EvtBus.dispatchEvt(EvtType.TouchCommplete, { lv: this.curLv, bWin: ret[1], tagNum: ret[0] });
+						mylib.EvtBus.dispatchEvt(EvtType.TouchCommplete, { lv: this.curLv, bWin: this.CheckComplete(), tagNum: ret[0] });
 					}
 				}
 			}
@@ -204,7 +195,7 @@ class MapGroup extends eui.Component {
 			const ret = this.GetTriangleNum()
 			mylib.EvtBus.dispatchEvt(EvtType.TouchStep, { step: this.step, mapStep: this.stepData.length, tagNum: ret[0] });
 			if (this.step == this.constStep) {
-				mylib.EvtBus.dispatchEvt(EvtType.TouchCommplete, { lv: this.curLv, bWin: ret[1], tagNum: ret[0] });
+				mylib.EvtBus.dispatchEvt(EvtType.TouchCommplete, { lv: this.curLv, bWin: this.CheckComplete(), tagNum: ret[0] });
 			}
 		} else if (this.stepData[curStep][i] == 1 && this.gameType == 3) {
 			const sz = this.stepData[curStep].slice()
@@ -217,7 +208,7 @@ class MapGroup extends eui.Component {
 			const ret = this.GetTriangleNum()
 			mylib.EvtBus.dispatchEvt(EvtType.TouchStep, { step: this.step, mapStep: this.stepData.length, tagNum: ret[0] });
 			if (this.step == this.constStep) {
-				mylib.EvtBus.dispatchEvt(EvtType.TouchCommplete, { lv: this.curLv, bWin: ret[1], tagNum: ret[0] });
+				mylib.EvtBus.dispatchEvt(EvtType.TouchCommplete, { lv: this.curLv, bWin: this.CheckComplete(), tagNum: ret[0] });
 			}
 		}
 	}
@@ -226,12 +217,12 @@ class MapGroup extends eui.Component {
 			return this.CheckReverseComplete()
 		}
 		var ret = this.GetTriangleNum()
-		if (ret && ret[1]) return true
 		if (this.isDualTarget()) {
 			var dr = this.GetDualTargetNum()
 			return dr && dr[0] && dr[1]
 		}
-		return false
+		const target = MyConst.MapData[this.curLv].rule[3]
+		return !!(ret && ret[1] && ret[0] == target)
 	}
 
 	private CheckReverseComplete(): boolean {
@@ -256,7 +247,7 @@ class MapGroup extends eui.Component {
 		const target1 = r[3], target2 = r[5]
 		const ret1 = this.GetTriangleNum()
 		if (!ret1) return null
-		const ok1 = ret1[1] && ret1[0] >= target1
+		const ok1 = ret1[0] >= target1
 		const szRst2 = this.getSecondShapeTemplates()
 		if (!szRst2 || this.stepData.length < 1) return [ok1, false]
 		const mapData = this.stepData[this.stepData.length - 1]
@@ -323,7 +314,7 @@ class MapGroup extends eui.Component {
 		this.CloseHighlight()
 	}
 
-	private _highlightTweens: { obj: any, ox: number, oy: number }[] = []
+	private _highlightTweens: any[] = []
 	public HighlightOperableCells() {
 		this.CloseHighlight()
 		if (this.stepData.length < 1) return
@@ -335,66 +326,164 @@ class MapGroup extends eui.Component {
 			else if (this.gameType == 2 && cur[i] == 1) canOperate = true
 			if (canOperate && this.szImg[i]) {
 				const obj = this.szImg[i]
-				const ox = obj.x, oy = obj.y
-				const w = obj.width, h = obj.height
-				const rad = obj.rotation * Math.PI / 180
-				const cosR = Math.cos(rad), sinR = Math.sin(rad)
-				const dcx = (w / 2) * cosR - (h / 2) * sinR
-				const dcy = (w / 2) * sinR + (h / 2) * cosR
-				const s = 1.08
 				egret.Tween.removeTweens(obj)
-				egret.Tween.get(obj, { loop: true })
-					.to({ x: ox + (1 - s) * dcx, y: oy + (1 - s) * dcy, scaleX: s, scaleY: s }, 400)
-					.to({ x: ox, y: oy, scaleX: 1, scaleY: 1 }, 400)
-				this._highlightTweens.push({ obj, ox, oy })
+				const tw = egret.Tween.get(obj, { loop: true }).to({ scaleX: 1.08, scaleY: 1.08 }, 400).to({ scaleX: 1, scaleY: 1 }, 400)
+				this._highlightTweens.push(obj)
 			}
 		}
 	}
 	public CloseHighlight() {
 		for (let i = 0; i < this._highlightTweens.length; i++) {
-			const { obj, ox, oy } = this._highlightTweens[i]
-			egret.Tween.removeTweens(obj)
-			obj.scaleX = 1
-			obj.scaleY = 1
-			obj.x = ox
-			obj.y = oy
+			egret.Tween.removeTweens(this._highlightTweens[i])
+			this._highlightTweens[i].scaleX = 1
+			this._highlightTweens[i].scaleY = 1
 		}
 		this._highlightTweens = []
 	}
 
+	private _buildCandidateShapes(templates: number[][], mapData: number[]): number[][] {
+		const candidates: number[][] = []
+		for (let i = 0; i < templates.length; i++) {
+			const shape: number[] = []
+			let ok = true
+			for (let j = 0; j < mapData.length; j++) {
+				if (templates[i][j] == 1) {
+					if (mapData[j] == 0) { ok = false; break }
+					shape.push(j)
+				}
+			}
+			if (ok && shape.length > 0) candidates.push(shape)
+		}
+		return candidates
+	}
+
+	private _isShapeDisjoint(shape: number[], used: boolean[]): boolean {
+		for (let i = 0; i < shape.length; i++) {
+			if (used[shape[i]]) return false
+		}
+		return true
+	}
+
+	private _toggleShape(shape: number[], used: boolean[], value: boolean): void {
+		for (let i = 0; i < shape.length; i++) {
+			used[shape[i]] = value
+		}
+	}
+
+	private _getMaxNonOverlapCount(candidates: number[][]): number {
+		if (candidates.length == 0) return 0
+		const used: boolean[] = []
+		let best = 0
+		const dfs = (start: number, count: number) => {
+			if (count > best) best = count
+			for (let i = start; i < candidates.length; i++) {
+				const shape = candidates[i]
+				if (!this._isShapeDisjoint(shape, used)) continue
+				this._toggleShape(shape, used, true)
+				dfs(i + 1, count + 1)
+				this._toggleShape(shape, used, false)
+			}
+		}
+		dfs(0, 0)
+		return best
+	}
+
+	private _canExactCover(mapLen: number, activeCells: number[], candidates: number[][], cellToShapes: { [idx: number]: number[] }): boolean {
+		const used: boolean[] = []
+		for (let i = 0; i < mapLen; i++) used[i] = false
+		const dfs = (): boolean => {
+			let pick = -1
+			let pickOpts: number[] = null
+			for (let i = 0; i < activeCells.length; i++) {
+				const cell = activeCells[i]
+				if (used[cell]) continue
+				const options: number[] = []
+				const bucket = cellToShapes[cell] || []
+				for (let k = 0; k < bucket.length; k++) {
+					const si = bucket[k]
+					if (this._isShapeDisjoint(candidates[si], used)) options.push(si)
+				}
+				if (options.length == 0) return false
+				if (pick == -1 || options.length < pickOpts.length) {
+					pick = cell
+					pickOpts = options
+					if (options.length == 1) break
+				}
+			}
+			if (pick == -1) return true
+			for (let i = 0; i < pickOpts.length; i++) {
+				const shape = candidates[pickOpts[i]]
+				this._toggleShape(shape, used, true)
+				if (dfs()) return true
+				this._toggleShape(shape, used, false)
+			}
+			return false
+		}
+		return dfs()
+	}
 
 	// 获取当前图形个数，返回 [count, noStraySticks]
 	public GetTriangleNum(): [number, boolean] {
 		if (this.stepData.length < 1) return [0, false]
-
-		const szRst = MapGroup.getTemplate(this.mapId)
-		if (!szRst) return [0, false]  // 未注册的 mapId，安全返回
+		const templates = MapGroup.getTemplate(this.mapId)
+		if (!templates) return [0, false]
 
 		const mapData: number[] = this.stepData[this.stepData.length - 1]
-		if (szRst[0].length !== mapData.length) return [0, false]
+		if (templates[0].length !== mapData.length) return [0, false]
 
-		let index = 0
-		const zuhe: number[] = [...mapData]
+		const activeCells: number[] = []
+		for (let i = 0; i < mapData.length; i++) {
+			if (mapData[i] == 1) activeCells.push(i)
+		}
+		if (activeCells.length == 0) return [0, true]
 
-		for (let i = 0; i < szRst.length; i++) {
-			let find = true
-			for (let j = 0; j < mapData.length; j++) {
-				if (szRst[i][j] == 1 && mapData[j] == 0) { find = false; break }
-			}
-			if (find) {
-				for (let j = 0; j < zuhe.length; j++) {
-					if (zuhe[j] == 1 && szRst[i][j] == 1) zuhe[j] = 0
-				}
-				index++
+		const candidates = this._buildCandidateShapes(templates, mapData)
+		if (candidates.length == 0) return [0, false]
+
+		const cellToShapes: { [idx: number]: number[] } = {}
+		for (let i = 0; i < candidates.length; i++) {
+			for (let j = 0; j < candidates[i].length; j++) {
+				const cell = candidates[i][j]
+				if (!cellToShapes[cell]) cellToShapes[cell] = []
+				cellToShapes[cell].push(i)
 			}
 		}
+		const count = this._getMaxNonOverlapCount(candidates)
+		const noStray = this._canExactCover(mapData.length, activeCells, candidates, cellToShapes)
+		return [count, noStray]
+	}
 
-		// bRect = true 表示所有火柴都恰好构成图形，没有"游离"火柴
-		let bRect = true
-		for (let i = 0; i < zuhe.length; i++) {
-			if (zuhe[i] == 1) { bRect = false; break }
+	public GetRuleDebugText(): string {
+		const r = MyConst.MapData[this.curLv].rule
+		const modeName = this.gameType == 1 ? "添加" : (this.gameType == 2 ? "移动" : "删除")
+		const mapData: number[] = this.stepData.length > 0 ? this.stepData[this.stepData.length - 1] : []
+		let active = 0
+		let selected = 0
+		for (let i = 0; i < mapData.length; i++) {
+			if (mapData[i] == 1 || mapData[i] == 3) {
+				active++
+				if (mapData[i] == 3) selected++
+			}
 		}
-		return [index, bRect]
+		const ret = this.GetTriangleNum()
+		const lines: string[] = []
+		lines.push("[拼图规则层]")
+		lines.push("玩法=" + modeName + "  mapType=" + this.mapId + "  step=" + this.step + "/" + this.constStep + "  hist=" + this.stepData.length)
+		lines.push("火柴数=" + active + (selected > 0 ? ("  选中=" + selected) : ""))
+		if (this.bReverse) {
+			lines.push("反转模式：当前状态" + (this.CheckReverseComplete() ? "已还原" : "未还原"))
+		} else if (this.isDualTarget()) {
+			const dr = this.GetDualTargetNum()
+			const t1 = r[3], t2 = r[5]
+			const p1 = dr ? dr[0] : false
+			const p2 = dr ? dr[1] : false
+			lines.push("双目标：主目标>=" + t1 + " 次目标>=" + t2)
+			lines.push("识别=" + ret[0] + "  覆盖=" + ret[1] + "  主目标=" + p1 + " 次目标=" + p2)
+		} else {
+			lines.push("目标数量=" + r[3] + "  识别=" + ret[0] + "  完全覆盖=" + ret[1])
+		}
+		lines.push("判定结果=" + this.CheckComplete())
+		return lines.join("\n")
 	}
 
 	public UpDateDisplaytagNum() {
