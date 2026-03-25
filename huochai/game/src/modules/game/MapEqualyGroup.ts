@@ -347,7 +347,8 @@ class MapEqualyGroup extends eui.Component {
 		const lines: string[] = []
 		const modeName = this.gameType == 1 ? "添加" : (this.gameType == 2 ? "移动" : "删除")
 		lines.push("[等式规则层]")
-		lines.push("玩法=" + modeName + "  运算=" + this.getOperatorText() + "  step=" + this.step + "/" + this.gameTagStep + "  hist=" + this.stepData.length)
+		const mapTag = MyConst.getMapTypeTag ? MyConst.getMapTypeTag(999) : "等式"
+		lines.push("玩法=" + modeName + "  mapType=999(" + mapTag + ")  运算=" + this.getOperatorText() + "  step=" + this.step + "/" + this.gameTagStep + "  hist=" + this.stepData.length)
 		lines.push("数字A=" + a + " B=" + b + " C=" + c + " D=" + d)
 		if (!leftValid || !rightValid) {
 			lines.push("等式：存在无法识别的数字")

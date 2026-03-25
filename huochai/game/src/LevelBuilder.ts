@@ -15,6 +15,8 @@
  *   rule[3] : 目标数量
  *   rule[4] : (可选) 第二目标形状
  *   rule[5] : (可选) 第二目标数量
+ *            混合规则示例：[2,2,1,2,2,3] => 2步内达成 2个正方形 + 3个三角形
+ *            注意：目标形状是否可识别由 MyConst.getShapeTemplateMapType(mapType, shapeType) 决定
  *   bef     : 初始火柴状态（0=空 1=有火柴），长度需与皮肤 img 数量一致
  *   rst     : 答案状态数组（可多解），用于提示和反转模式
  */
@@ -151,6 +153,20 @@ class LevelBuilder {
 			if ((this._shape2 > 0) !== (this._count2 > 0)) {
 				return { ok: false, error: LevelError.DUAL_TARGET_INCOMPLETE,
 					message: 'shape2 和 count2 必须同时设置或同时不设置' }
+			}
+			if (MyConst.canUseShapeTarget && !MyConst.canUseShapeTarget(this._mapType, this._shape1)) {
+				return { ok: false, error: LevelError.INVALID_SHAPE,
+					message: `mapType=${this._mapType} 不支持主目标形状 ${this._shape1}，请先配置 MyConst.SHAPE_TEMPLATE_MAP` }
+			}
+			if (this._shape2 > 0) {
+				if (this._shape2 !== LevelShape.SQUARE && this._shape2 !== LevelShape.TRIANGLE) {
+					return { ok: false, error: LevelError.INVALID_SHAPE,
+						message: `shape2 应为 1(正方形) 或 2(三角形)，当前: ${this._shape2}` }
+				}
+				if (MyConst.canUseShapeTarget && !MyConst.canUseShapeTarget(this._mapType, this._shape2)) {
+					return { ok: false, error: LevelError.INVALID_SHAPE,
+						message: `mapType=${this._mapType} 不支持次目标形状 ${this._shape2}，请先配置 MyConst.SHAPE_TEMPLATE_MAP` }
+				}
 			}
 		}
 		if (this._bef.length === 0) {

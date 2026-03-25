@@ -763,6 +763,134 @@ class MyConst {
 		},
 	]
 
+	// mapType 语义映射：1=正方形玩法，2=三角形玩法；999=等式玩法
+	private static readonly MAP_TYPE_PATTERN: { [mapType: number]: { kind: number, rows: number, cols: number } } = {
+		// 正方形（正）
+		7:  { kind: 1, rows: 2, cols: 2 },
+		1:  { kind: 1, rows: 3, cols: 3 },
+		2:  { kind: 1, rows: 3, cols: 4 },
+		5:  { kind: 1, rows: 4, cols: 4 },
+		11: { kind: 1, rows: 4, cols: 5 },
+		8:  { kind: 1, rows: 5, cols: 4 },
+		12: { kind: 1, rows: 5, cols: 5 },
+		17: { kind: 1, rows: 5, cols: 6 },
+		20: { kind: 1, rows: 5, cols: 7 },
+		23: { kind: 1, rows: 5, cols: 8 },
+		22: { kind: 1, rows: 5, cols: 9 },
+		18: { kind: 1, rows: 6, cols: 4 },
+		15: { kind: 1, rows: 6, cols: 5 },
+		13: { kind: 1, rows: 6, cols: 6 },
+		21: { kind: 1, rows: 6, cols: 7 },
+		24: { kind: 1, rows: 7, cols: 5 },
+		25: { kind: 1, rows: 7, cols: 7 },
+		28: { kind: 1, rows: 7, cols: 6 },
+		// 三角形（三）
+		3:  { kind: 2, rows: 2, cols: 2 },
+		10: { kind: 2, rows: 2, cols: 4 },
+		6:  { kind: 2, rows: 3, cols: 2 },
+		14: { kind: 2, rows: 3, cols: 3 },
+		16: { kind: 2, rows: 4, cols: 2 },
+		19: { kind: 2, rows: 4, cols: 4 },
+		9:  { kind: 2, rows: 4, cols: 3 },
+		26: { kind: 2, rows: 4, cols: 5 },
+		27: { kind: 2, rows: 4, cols: 6 },
+	}
+
+	/**
+	 * 形状模板映射（用于“正方形+三角形混合规则”）：
+	 * key1: 当前关卡 mapType
+	 * key2: 目标形状 1=正方形 2=三角形
+	 * value: 对应可用于该形状识别的模板 mapType
+	 *
+	 * 说明：
+	 * - 未配置时，默认仅支持“当前 mapType 的原生形状”
+	 * - 目前稳定支持跨形状混合的组合为 1 <-> 10；mapType=3 支持共用 map3
+	 */
+	private static readonly SHAPE_TEMPLATE_MAP: { [mapType: number]: { [shapeType: number]: number } } = {
+		1:  { 1: 1, 2: 10 },
+		2:  { 1: 2 },
+		3:  { 1: 3, 2: 3 },
+		10: { 1: 1, 2: 10 },
+	}
+
+	public static isEqualityMapType(mapType: number): boolean {
+		return mapType == 999
+	}
+
+	public static getMapTypePattern(mapType: number): { kind: number, rows: number, cols: number } | null {
+		if (MyConst.isEqualityMapType(mapType)) {
+			return { kind: 0, rows: 0, cols: 0 }
+		}
+		return MyConst.MAP_TYPE_PATTERN[mapType] || null
+	}
+
+	public static getMapTypeShapeType(mapType: number): number {
+		const p = MyConst.getMapTypePattern(mapType)
+		if (!p) return -1
+		if (p.kind == 1) return 1
+		if (p.kind == 2) return 2
+		return -1
+	}
+
+	/**
+	 * 按 mapType + 目标形状 获取可用模板 mapType。
+	 * 目标形状：1=正方形 2=三角形
+	 */
+	public static getShapeTemplateMapType(mapType: number, shapeType: number): number {
+		if (shapeType != 1 && shapeType != 2) return -1
+		const row = MyConst.SHAPE_TEMPLATE_MAP[mapType]
+		if (row && row[shapeType]) return row[shapeType]
+		// 未显式配置时，只允许原生形状使用当前模板
+		const nativeShape = MyConst.getMapTypeShapeType(mapType)
+		return nativeShape == shapeType ? mapType : -1
+	}
+
+	/** 获取当前 mapType 可识别的形状集合（1/2） */
+	public static getSupportedShapeTypes(mapType: number): number[] {
+		const row = MyConst.SHAPE_TEMPLATE_MAP[mapType]
+		const ret: number[] = []
+		if (row) {
+			if (row[1]) ret.push(1)
+			if (row[2]) ret.push(2)
+		}
+		if (ret.length > 0) return ret
+		const nativeShape = MyConst.getMapTypeShapeType(mapType)
+		if (nativeShape == 1 || nativeShape == 2) return [nativeShape]
+		return []
+	}
+
+	/** mapType 是否支持该目标形状（1/2） */
+	public static canUseShapeTarget(mapType: number, shapeType: number): boolean {
+		return MyConst.getShapeTemplateMapType(mapType, shapeType) > 0
+	}
+
+	/** mapType => 可读标签，例如：正3*4 / 三2*2 / 等式 */
+	public static getMapTypeTag(mapType: number): string {
+		if (MyConst.isEqualityMapType(mapType)) return "等式"
+		const p = MyConst.getMapTypePattern(mapType)
+		if (!p) return "未知"
+		const prefix = p.kind == 1 ? "正" : (p.kind == 2 ? "三" : "?")
+		return prefix + p.rows + "*" + p.cols
+	}
+
+	/** 标签反查 mapType，例如：三2*2、正3*4 */
+	public static parseMapTypeTag(tag: string): number {
+		if (!tag) return -1
+		const s = tag.replace(/\s+/g, "")
+		if (s == "等式") return 999
+		const m = /^([正三])(\d+)\*(\d+)$/.exec(s)
+		if (!m) return -1
+		const kind = m[1] == "正" ? 1 : 2
+		const rows = parseInt(m[2], 10) || 0
+		const cols = parseInt(m[3], 10) || 0
+		for (const k in MyConst.MAP_TYPE_PATTERN) {
+			const mt = parseInt(k, 10)
+			const p = MyConst.MAP_TYPE_PATTERN[mt]
+			if (p.kind == kind && p.rows == rows && p.cols == cols) return mt
+		}
+		return -1
+	}
+
 	private static _sorted = false
 	static ensureDifficultyOrder(): void {
 		if (MyConst._sorted || !MyConst.MapData || MyConst.MapData.length < 2) return

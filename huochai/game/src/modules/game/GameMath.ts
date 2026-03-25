@@ -306,10 +306,7 @@ class GameMath extends mylib.UIBase {
 	}
 	private GameComplete(e) {
 		var bWin = e.data.bWin
-		var tagNum = e.data.tagNum
 		if (bWin) {
-			if (tagNum == MyConst.MathMapData[this.curLv].rule[3] || tagNum == -1) // 条件达成
-			{
 				if (MainUIManager.getInstance().bHelp == false) {
 					this.curLv++
 					var bGetAward = false
@@ -357,10 +354,6 @@ class GameMath extends mylib.UIBase {
 						}, this, "回主界面");
 					}
 				}
-			} else {
-				this.ShowTips("挑战失败！")
-			}
-
 		} else {
 			this.ShowTips("挑战失败！有尚未形成的图形。")
 			mylib.GmGlobal.sound.playSoundEffect("sound/snd_07.mp3");
