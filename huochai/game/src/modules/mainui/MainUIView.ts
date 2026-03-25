@@ -78,9 +78,9 @@ class MainUIView extends mylib.UIBase {
 		this.popallitem()
 		this.zsPanel.visible = true
 		this.signIn.visible = false
-		// MainUIManager.getInstance().score = 10000   // 测试代码加财富
-		// MainUIManager.getInstance().guanqia = MyConst.MapData.length -1
-		// MainUIManager.getInstance().saveData()
+		MainUIManager.getInstance().score = 10000   // 测试代码加财富
+		MainUIManager.getInstance().guanqia = MyConst.MapData.length -1
+		MainUIManager.getInstance().saveData()
 		this.loadData()
 
 		this.score_num.text = MainUIManager.getInstance().score.toString()

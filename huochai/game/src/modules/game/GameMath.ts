@@ -320,9 +320,9 @@ class GameMath extends mylib.UIBase {
 
 					// 挑战成功 弹出 插屏广告
 					// 小于15关 不弹
-					if (this.curLv > 30){
-						pfCommand("showRectAd", null, null, this);
-					}
+					// if (this.curLv > 30){
+					// 	pfCommand("showRectAd", null, null, this);
+					// }
 			
 				}
 
