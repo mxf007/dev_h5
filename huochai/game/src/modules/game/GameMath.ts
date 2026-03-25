@@ -81,11 +81,13 @@ class GameMath extends mylib.UIBase {
 	private onShowVideo:eui.Group
 	private show_video_ok:OneStateButton
 	private show_video_cancel :OneStateButton
+	private video_tips: eui.Label
 
 	private bRetry: boolean
 	private gp_rule_debug: eui.Group
 	private txt_rule_debug: eui.Label
 	private _ruleDebugToken: number = 0
+	private static readonly WIN_BGM_ID: string = "sound/snd_08.mp3"
 	public constructor(curlv) {
 		super("GameUISkin");
 		this.curLv = curlv//MainUIManager.getInstance().selectId - 1
@@ -95,6 +97,7 @@ class GameMath extends mylib.UIBase {
 	}
 
 	private popallitem() {
+		this._stopWinBgm()
 		this.step = 0 // 初始化 步数
 		this.bClickTip = false
 		this.bLightHintShown = false
@@ -278,11 +281,59 @@ class GameMath extends mylib.UIBase {
 	}
 
 	public OnShowVideoOk(){
-			pfCommand("pfViewAd", null, this.OnShowResult, this);
-			this.onShowVideo.visible = false
+		if (MainUIManager.getInstance().score < 200) {
+			this.ShowTips("星星不足,请改用看视频")
+			return
+		}
+		this.onShowVideo.visible = false
+		this._consumeStarsAndShowResult()
 	}
 	public OnShowVideoCancel(){
 		this.onShowVideo.visible = false
+		pfCommand("pfViewAd", null, this.OnShowResult, this);
+	}
+
+	private _openResultChoiceDialog(): void {
+		this.gp_GetRst.visible = false
+		this.onShowVideo.visible = true
+		const canPay = MainUIManager.getInstance().score >= 200
+		if (this.video_tips) {
+			this.video_tips.text = canPay
+				? "选择获取答案方式：\n右侧消耗200星星 / 左侧看视频"
+				: "星星不足200，可看视频直接查看答案"
+		}
+		if (this.show_video_ok) {
+			this.show_video_ok.label = canPay ? "200星星" : "星星不足"
+			this.show_video_ok.$setTouchEnabled(canPay)
+		}
+		if (this.show_video_cancel) {
+			this.show_video_cancel.label = "看视频"
+		}
+	}
+
+	private _showResultOnly(): void {
+		this.bClickTip = true
+		this.gp_GetRst.visible = false
+		this.onShowVideo.visible = false
+		if (this._map && this._map.CloseHighlight) this._map.CloseHighlight()
+		this._map.ShowTipResult()
+		this.gameMenue.visible = false
+		this.btn_tip_close.visible = true
+	}
+
+	private _consumeStarsAndShowResult(): void {
+		MainUIManager.getInstance().score -= 200
+		MainUIManager.getInstance().saveData()
+		this.score_num.text = MainUIManager.getInstance().score.toString()
+		this._showResultOnly()
+	}
+
+	private _playWinBgm(): void {
+		mylib.GmGlobal.sound.playBgm(GameMath.WIN_BGM_ID, 0.4, 0)
+	}
+
+	private _stopWinBgm(): void {
+		mylib.GmGlobal.sound.clearBgm()
 	}
 	public showAt(p: egret.DisplayObjectContainer): void {
 		super.showAt(p);
@@ -300,7 +351,7 @@ class GameMath extends mylib.UIBase {
 	}
 
 	private onClickNext(e) {
-
+		this._stopWinBgm()
 		egret.Tween.removeAllTweens()
 		this.popallitem()
 	}
@@ -412,6 +463,7 @@ class GameMath extends mylib.UIBase {
 	}
 
 	private onClickRetry() { // 重试
+		this._stopWinBgm()
 		this.gp_tip.visible = false
 		if (this.btn_next.visible == true) {
 			this.curLv--
@@ -426,40 +478,15 @@ class GameMath extends mylib.UIBase {
 		this._map.BackStep()
 	}
 	public OnShowResult(ok): void {
-		if (ok == 1)
-		{
-			this.bClickTip = true
-			this.gp_GetRst.visible = false
-			if (this._map && this._map.CloseHighlight) this._map.CloseHighlight()
-			this._map.ShowTipResult()
-			this.gameMenue.visible = false
-			this.btn_tip_close.visible = true
-			// 刷新显示的金币
-			//this.score_num.text = MainUIManager.getInstance().score.toString()
-			//this.showSocreChange(MainUIManager.getInstance().score)
-			// MainUIManager.getInstance().score -= 200
-			// MainUIManager.getInstance().saveData()
-			// this.score_num.text = MainUIManager.getInstance().score.toString()
-			//egret.Tween.get(this, { loop: false }).wait(1000).call(this.createSelWord, this,[this.sz[this._level]]); //下一题
-		}
+		if (ok == 1) this._showResultOnly()
 	}
 
 	private onClickRemind() {
-		if (!this.bLightHintShown) {
-			this.bLightHintShown = true
-			if (this._map && this._map.HighlightOperableCells) {
-				this._map.HighlightOperableCells()
-			}
-			this.gameMenue.visible = false
-			this.btn_tip_close.visible = true
+		if (this.bClickTip) {
+			this.ShowTips("答案已显示")
 			return
 		}
-		if (MainUIManager.getInstance().score < 200) {
-			this.ShowTips("星星不足,去获得更多星星吧!")
-			this.onShowVideo.visible = true
-			return
-		}
-		this.gp_GetRst.visible = true
+		this._openResultChoiceDialog()
 	}
 
 	private onClickTipClose() {
@@ -520,7 +547,7 @@ class GameMath extends mylib.UIBase {
 			this.first_tongguan.visible = true
 			egret.Tween.get(this, { loop: false }).wait(2100).call(this.GameUpdateStates)
 		}
-		mylib.GmGlobal.sound.playSoundEffect("sound/snd_08.mp3");
+		this._playWinBgm()
 	}
 
 	public GameUpdateStates() {
@@ -540,6 +567,7 @@ class GameMath extends mylib.UIBase {
 	}
 
 	public onClickGoHome() {
+		this._stopWinBgm()
 		this._stopRuleDebugTicker()
 		this._map.removeAllImgEvent()
 		this.gameGroup.removeChild(this._map)
@@ -550,17 +578,15 @@ class GameMath extends mylib.UIBase {
 	}
 	private onClickGetRstClose() {
 		this.gp_GetRst.visible = false
+		this._openResultChoiceDialog()
 	}
 	private onClickGetRstOk() {
-		this.bClickTip = true
-		this.gp_GetRst.visible = false
-		if (this._map && this._map.CloseHighlight) this._map.CloseHighlight()
-		this._map.ShowTipResult()
-		this.gameMenue.visible = false
-		this.btn_tip_close.visible = true
-		MainUIManager.getInstance().score -= 200
-		MainUIManager.getInstance().saveData()
-		this.score_num.text = MainUIManager.getInstance().score.toString()
+		if (MainUIManager.getInstance().score < 200) {
+			this.ShowTips("星星不足,请改用看视频")
+			this._openResultChoiceDialog()
+			return
+		}
+		this._consumeStarsAndShowResult()
 	}
 
 	private showSocreChange(score: number) {

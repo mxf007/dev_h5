@@ -12,6 +12,7 @@ class MapGroup extends eui.Component {
 	private mapId: number
 	private stepData: any
 	private bReverse: boolean = false
+	private readonly _selectedFilter: egret.GlowFilter = new egret.GlowFilter(0x32C5FF, 1, 28, 28, 2, 1, false, false)
 
 	// mapId → 对应的形状模板数组，集中管理，O(1) 查找
 	private static readonly TEMPLATE_MAP: { [id: number]: number[][] } = {
@@ -121,15 +122,18 @@ class MapGroup extends eui.Component {
 			if (szMap[i] == 1) {
 				var img_path = RES.getRes(("huochai_json.ingame_matches"))
 				this.szImg[i].$setTexture(img_path)
+				this.szImg[i].filters = null
 			}
 			else if (szMap[i] == 0) {
 				var img_path = RES.getRes(("huochai_json.game_map"))
 
 				this.szImg[i].$setTexture(img_path)
+				this.szImg[i].filters = null
 			} else if (szMap[i] == 3) {
 				var img_path = RES.getRes(("huochai_json.game_select"))
 				this.moveTagert = this.szImg[i]
 				this.szImg[i].$setTexture(img_path)
+				this.szImg[i].filters = [this._selectedFilter]
 			}
 		}
 	}
@@ -169,6 +173,7 @@ class MapGroup extends eui.Component {
 				if (this.stepData[curStep][i] == 1) {
 					this.moveTagert = obj
 					this.szImg[i].$setTexture(RES.getRes("huochai_json.game_select"))
+					this.szImg[i].filters = [this._selectedFilter]
 					const sz = this.stepData[curStep].slice()
 					sz[i] = 3
 					this.stepData.push(sz)
@@ -179,6 +184,7 @@ class MapGroup extends eui.Component {
 			} else {
 				if (this.moveTagert == obj) { // 取消选取
 					this.szImg[i].$setTexture(RES.getRes("huochai_json.ingame_matches"))
+					this.szImg[i].filters = null
 					this.stepData.pop()
 					this.moveTagert = null
 					this._playClickEffect(obj, true)
@@ -192,8 +198,10 @@ class MapGroup extends eui.Component {
 					this.stepData.push(sz)
 					this.step++
 					this.moveTagert.$setTexture(RES.getRes("huochai_json.game_map"))
+					this.moveTagert.filters = null
 					this.moveTagert = null
 					obj.$setTexture(RES.getRes("huochai_json.ingame_matches"))
+					obj.filters = null
 					this._playClickEffect(obj, true)
 					mylib.GmGlobal.sound.playSoundEffect("sound/snd_04.mp3");
 					const ret = this.GetTriangleNum()
@@ -210,6 +218,7 @@ class MapGroup extends eui.Component {
 			this.stepData.push(sz)
 			this.step++
 			this.szImg[i].$setTexture(RES.getRes("huochai_json.ingame_matches"))
+			this.szImg[i].filters = null
 			this._playClickEffect(this.szImg[i], true)
 			mylib.GmGlobal.sound.playSoundEffect("sound/snd_04.mp3");
 			const ret = this.GetTriangleNum()
@@ -223,6 +232,7 @@ class MapGroup extends eui.Component {
 			this.stepData.push(sz)
 			this.step++
 			this.szImg[i].$setTexture(RES.getRes("huochai_json.game_map"))
+			this.szImg[i].filters = null
 			this._playClickEffect(this.szImg[i], false)
 			mylib.GmGlobal.sound.playSoundEffect("sound/snd_04.mp3");
 			const ret = this.GetTriangleNum()

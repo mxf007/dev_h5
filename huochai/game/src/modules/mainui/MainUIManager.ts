@@ -33,6 +33,8 @@ class MainUIManager {
 	// ===== 限时挑战 =====
 	public bTimedChallenge: boolean = false;
 	public timedChallengeStartTime: number = 0;
+	// 限时挑战内部重排后的关卡ID（与真实 selectId 解耦）
+	public timedChallengeLevelId: number = 0;
 
 	// ===== 连续闯关 =====
 	public bEndlessMode: boolean = false;

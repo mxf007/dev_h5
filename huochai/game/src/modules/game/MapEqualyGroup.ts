@@ -18,6 +18,7 @@ class MapEqualyGroup extends eui.Component {
 
 	private stepData: any
 	private curLv: number
+	private readonly _selectedFilter: egret.GlowFilter = new egret.GlowFilter(0x32C5FF, 1, 28, 28, 2, 1, false, false)
 
 	// 七段显示器：key = 段位十进制编码(各段用十位权重), value = 数字
 	// 编码方式：段[0..6] 各贡献 10^(6-i)，求和得 tmpNum
@@ -188,6 +189,7 @@ class MapEqualyGroup extends eui.Component {
 					this.moveTagert = obj
 					var img_path = RES.getRes(("huochai_json.game_select"))
 					obj.$setTexture(img_path)
+					obj.filters = [this._selectedFilter]
 					var sz = []
 					for (var j = 0; j < this.stepData[curStep].length; j++) {  // 拷贝复制地图数据
 						sz[j] = this.stepData[curStep][j]
@@ -203,6 +205,7 @@ class MapEqualyGroup extends eui.Component {
 			if (this.moveTagert == obj) { // 还原即可 不计算步数
 				var img_path_match = RES.getRes(("huochai_json.ingame_matches"))
 				obj.$setTexture(img_path_match)
+				obj.filters = null
 				this.moveTagert = null
 				this.stepData.pop()  // 弹出"选中"中间态，恢复到选中前的状态
 				mylib.GmGlobal.sound.playSoundEffect("sound/snd_02.mp3");
@@ -213,7 +216,9 @@ class MapEqualyGroup extends eui.Component {
 					var img_path_match = RES.getRes(("huochai_json.ingame_matches"))
 					var img_path_normal = RES.getRes(("huochai_json.game_map"))
 					obj.$setTexture(img_path_match)
+					obj.filters = null
 					this.moveTagert.$setTexture(img_path_normal)
+					this.moveTagert.filters = null
 					this.moveTagert = null
 
 					var sz = []
@@ -239,6 +244,7 @@ class MapEqualyGroup extends eui.Component {
 			if (this.stepData[curStep][i] == 0) {
 				var img_path = RES.getRes(("huochai_json.ingame_matches"))
 				obj.$setTexture(img_path)
+				obj.filters = null
 				//this.stepData[curStep][i] == 1
 				var sz = []
 				for (var j = 0; j < this.stepData[curStep].length; j++) {  // 拷贝复制地图数据
@@ -258,6 +264,7 @@ class MapEqualyGroup extends eui.Component {
 			if (this.stepData[curStep][i] == 1) {
 				var img_path = RES.getRes(("huochai_json.game_map"))
 				obj.$setTexture(img_path)
+				obj.filters = null
 				var sz = []
 				for (var j = 0; j < this.stepData[curStep].length; j++) {  // 拷贝复制地图数据
 					sz[j] = this.stepData[curStep][j]
@@ -369,6 +376,7 @@ class MapEqualyGroup extends eui.Component {
 			var obj = this["img_" + (i + 1).toString()]
 			if (obj != null) {
 				obj.visible = true
+				obj.filters = null
 				if (szMap[i] == 0) {
 					obj.$setTexture(img_path_normal)
 				}
@@ -382,6 +390,7 @@ class MapEqualyGroup extends eui.Component {
 				}
 				else if (szMap[i] == 4) {
 					obj.$setTexture(img_path_select)
+					obj.filters = [this._selectedFilter]
 					this.moveTagert = obj
 				}
 			}

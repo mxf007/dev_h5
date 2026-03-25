@@ -81,6 +81,7 @@ class GameView extends mylib.UIBase {
 	private onShowVideo:eui.Group
 	private show_video_ok:OneStateButton
 	private show_video_cancel :OneStateButton
+	private video_tips: eui.Label
 
 	private bRetry: boolean
 	private txt_timer: eui.Label
@@ -89,6 +90,8 @@ class GameView extends mylib.UIBase {
 	private _timerToken: number = 0
 	private _timerStart: number = 0
 	private _ruleDebugToken: number = 0
+	private static readonly TIMED_RANK_KEY: string = "huochaiTimedRankV2"
+	private static readonly WIN_BGM_ID: string = "sound/snd_08.mp3"
 	public constructor() {
 		super("GameUISkin");
 		this.curLv = MainUIManager.getInstance().selectId - 1
@@ -98,6 +101,7 @@ class GameView extends mylib.UIBase {
 	}
 
 	private popallitem() {
+		this._stopWinBgm()
 		this.step = 0 // 初始化 步数
 		this.bClickTip = false
 		this.bLightHintShown = false
@@ -121,7 +125,19 @@ class GameView extends mylib.UIBase {
 		this.btn_remind.visible = !(dailyActive && constraint == 3)
 		this.btn_tip_close.visible = false
 		this.score_num.text = mainMgr.score.toString()
-		this.guankaLv.text = mainMgr.bEndlessMode ? ("连续闯关 第" + (this.curLv + 1) + "关") : (mainMgr.bReverseMode ? ("反转挑战 第" + (this.curLv + 1) + "关") : ("关卡:" + (this.curLv + 1).toString()));
+		if (mainMgr.bEndlessMode) {
+			this.guankaLv.text = "连续闯关 第" + (this.curLv + 1) + "关"
+		} else if (mainMgr.bReverseMode) {
+			this.guankaLv.text = "反转挑战 第" + (this.curLv + 1) + "关"
+		} else if (mainMgr.bTimedChallenge) {
+			const timedId = mainMgr.timedChallengeLevelId > 0 ? mainMgr.timedChallengeLevelId : (this.curLv + 1)
+			const mt = MyConst.MapData[this.curLv].mapType
+			const mode = mt == 999 ? "等式玩法" : "经典玩法"
+			const tag = MyConst.getMapTypeTag ? MyConst.getMapTypeTag(mt) : ("mapType=" + mt)
+			this.guankaLv.text = "限时挑战 T-" + timedId + " · " + mode + " · " + tag
+		} else {
+			this.guankaLv.text = "关卡:" + (this.curLv + 1).toString()
+		}
 		this.onhelp.visible = false
 		this.onShowVideo.visible = false
 
@@ -306,11 +322,158 @@ class GameView extends mylib.UIBase {
 	}
 
 	public OnShowVideoOk(){
-			pfCommand("pfViewAd", null, this.OnShowResult, this);
-			this.onShowVideo.visible = false
+		if (MainUIManager.getInstance().score < 200) {
+			this.ShowTips("星星不足,请改用看视频")
+			return
+		}
+		this.onShowVideo.visible = false
+		this._consumeStarsAndShowResult()
 	}
 	public OnShowVideoCancel(){
 		this.onShowVideo.visible = false
+		pfCommand("pfViewAd", null, this.OnShowResult, this);
+	}
+
+	private _openResultChoiceDialog(): void {
+		this.gp_GetRst.visible = false
+		this.onShowVideo.visible = true
+		const canPay = MainUIManager.getInstance().score >= 200
+		if (this.video_tips) {
+			this.video_tips.text = canPay
+				? "选择获取答案方式：\n右侧消耗200星星 / 左侧看视频"
+				: "星星不足200，可看视频直接查看答案"
+		}
+		if (this.show_video_ok) {
+			this.show_video_ok.label = canPay ? "200星星" : "星星不足"
+			this.show_video_ok.$setTouchEnabled(canPay)
+		}
+		if (this.show_video_cancel) {
+			this.show_video_cancel.label = "看视频"
+		}
+	}
+
+	private _showResultOnly(): void {
+		this.bClickTip = true
+		this.gp_GetRst.visible = false
+		this.onShowVideo.visible = false
+		if (this._map && this._map.CloseHighlight) this._map.CloseHighlight()
+		this._map.ShowTipResult()
+		this.gameMenue.visible = false
+		this.btn_tip_close.visible = true
+	}
+
+	private _consumeStarsAndShowResult(): void {
+		MainUIManager.getInstance().score -= 200
+		MainUIManager.getInstance().saveData()
+		this.score_num.text = MainUIManager.getInstance().score.toString()
+		this._showResultOnly()
+	}
+
+	private _playWinBgm(): void {
+		mylib.GmGlobal.sound.playBgm(GameView.WIN_BGM_ID, 0.4, 0)
+	}
+
+	private _stopWinBgm(): void {
+		mylib.GmGlobal.sound.clearBgm()
+	}
+
+	private _timedBonus(sec: number): number {
+		if (sec <= 20) return 8
+		if (sec <= 30) return 5
+		if (sec <= 45) return 3
+		if (sec <= 60) return 2
+		return 0
+	}
+
+	private _loadTimedRanks(): any[] {
+		const raw = egret.localStorage.getItem(GameView.TIMED_RANK_KEY)
+		if (!raw) return []
+		try {
+			const arr = JSON.parse(raw)
+			return Array.isArray(arr) ? arr : []
+		} catch (e) {
+			return []
+		}
+	}
+
+	private _saveTimedRanks(ranks: any[]): void {
+		egret.localStorage.setItem(GameView.TIMED_RANK_KEY, JSON.stringify(ranks || []))
+	}
+
+	private _formatTimedMapMode(mapType: number): string {
+		const mode = mapType == 999 ? "等式" : "经典"
+		const tag = MyConst.getMapTypeTag ? MyConst.getMapTypeTag(mapType) : ("mapType=" + mapType)
+		return mode + "/" + tag
+	}
+
+	private _recordTimedResult(sec: number): { rank: number, list: any[], bonus: number, qualified: boolean } {
+		const mapType = MyConst.MapData[this.curLv].mapType
+		const timedId = MainUIManager.getInstance().timedChallengeLevelId > 0 ? MainUIManager.getInstance().timedChallengeLevelId : (this.curLv + 1)
+		const qualified = sec <= 60
+		const bonus = qualified ? this._timedBonus(sec) : 0
+		const list = this._loadTimedRanks()
+		if (!qualified) {
+			return { rank: -1, list, bonus, qualified }
+		}
+		list.push({
+			sec: sec,
+			timedId: timedId,
+			level: this.curLv + 1,
+			mapType: mapType,
+			ts: Date.now()
+		})
+		list.sort((a, b) => {
+			if (a.sec != b.sec) return a.sec - b.sec
+			return (a.ts || 0) - (b.ts || 0)
+		})
+		const top = list.slice(0, 5)
+		this._saveTimedRanks(top)
+		let rank = -1
+		for (let i = 0; i < top.length; i++) {
+			if (top[i].sec == sec && top[i].timedId == timedId && top[i].level == (this.curLv + 1) && top[i].mapType == mapType) {
+				rank = i + 1
+				break
+			}
+		}
+		return { rank, list: top, bonus, qualified }
+	}
+
+	private _buildTimedResultText(sec: number, record: { rank: number, list: any[], bonus: number, qualified: boolean }): string {
+		const mapType = MyConst.MapData[this.curLv].mapType
+		const timedId = MainUIManager.getInstance().timedChallengeLevelId > 0 ? MainUIManager.getInstance().timedChallengeLevelId : (this.curLv + 1)
+		const lines: string[] = []
+		lines.push("【限时挑战排行榜】")
+		lines.push("规则：60秒内完成可上榜，按用时升序，仅保留前5名")
+		lines.push("奖励：<=20秒+8星，<=30秒+5星，<=45秒+3星，<=60秒+2星")
+		lines.push("")
+		lines.push("本次：T-" + timedId + "｜" + this._formatTimedMapMode(mapType) + "｜" + (record.qualified ? (sec + "秒") : "超时"))
+		if (record.rank > 0) lines.push("本次排名：第" + record.rank + "名")
+		lines.push("")
+		lines.push("Top5：")
+		if (!record.list || record.list.length <= 0) {
+			lines.push("暂无记录")
+		} else {
+			for (let i = 0; i < record.list.length; i++) {
+				const r = record.list[i]
+				lines.push((i + 1) + ". " + r.sec + "秒｜T-" + r.timedId + "｜" + this._formatTimedMapMode(r.mapType))
+			}
+		}
+		if (record.bonus > 0) lines.push("\n获得" + record.bonus + "星星奖励！")
+		else if (!record.qualified) lines.push("\n本次超时，未进入排行榜")
+		return lines.join("\n")
+	}
+
+	private _showTimedChallengeResult(sec: number): void {
+		const mgr = MainUIManager.getInstance()
+		const record = this._recordTimedResult(sec)
+		if (record.bonus > 0) {
+			mgr.score += record.bonus
+			mgr.saveData()
+		}
+		mgr.bTimedChallenge = false
+		mgr.timedChallengeLevelId = 0
+		const rankText = this._buildTimedResultText(sec, record)
+		AlertBox.alert(rankText, () => this.onClickGoHome(), this, "回主界面")
 	}
 	public showAt(p: egret.DisplayObjectContainer): void {
 		super.showAt(p);
@@ -368,6 +531,7 @@ class GameView extends mylib.UIBase {
 	}
 
 	private onClickNext(e) {
+		this._stopWinBgm()
 		const mgr = MainUIManager.getInstance();
 		if (mgr.bEndlessMode) {
 			mgr.selectId = mgr.endlessLevel;
@@ -413,17 +577,8 @@ class GameView extends mylib.UIBase {
 				if (mgrRef.bReverseMode) mgrRef.bReverseMode = false;
 				if (mgrRef.bTimedChallenge) {
 					this._stopTimer();
-					mgrRef.bTimedChallenge = false;
-					const elapsed = (Date.now() - mgrRef.timedChallengeStartTime) / 1000;
-					let bonus = 0;
-					if (elapsed <= 30) bonus = 5;
-					else if (elapsed <= 60) bonus = 2;
-					if (bonus > 0) {
-						mgrRef.score += bonus;
-						mgrRef.saveData();
-					}
-					const rankText = this._getTimedLeaderboardText(Math.ceil(elapsed));
-					AlertBox.alert(rankText, () => this.onClickGoHome(), this, "回主界面");
+					const elapsed = Math.max(1, Math.ceil((Date.now() - mgrRef.timedChallengeStartTime) / 1000));
+					this._showTimedChallengeResult(elapsed);
 					return;
 				}
 
@@ -493,45 +648,11 @@ class GameView extends mylib.UIBase {
 			if (this.txt_timer) this.txt_timer.text = left + "s";
 			if (left <= 0) {
 				this._stopTimer();
-				MainUIManager.getInstance().bTimedChallenge = false;
-				const rankText = this._getTimedLeaderboardText(61);
-				AlertBox.alert(rankText, () => this.onClickGoHome(), this, "回主界面");
+				this._showTimedChallengeResult(61);
 			}
 		};
 		tick();
 		this._timerToken = egret.setInterval(tick, this, 1000);
-	}
-	private _getTimedLeaderboardText(mySec: number): string {
-		const fake = [
-			{ n: "火柴王者", s: 18 },
-			{ n: "智慧达人", s: 24 },
-			{ n: "拼图之星", s: 32 },
-			{ n: "巧手玩家", s: 38 },
-			{ n: "挑战先锋", s: 45 },
-		];
-		let rank = 1;
-		for (let i = 0; i < fake.length; i++) {
-			if (mySec > fake[i].s) rank = i + 2;
-			else break;
-		}
-		if (rank > 5) rank = 5;
-		const lines = ["【限时挑战排行榜】\n"];
-		let fi = 0;
-		for (let i = 1; i <= 5; i++) {
-			const prefix = i + ".";
-			if (i === rank) {
-				lines.push(prefix + " 你 " + (mySec <= 60 ? mySec + "秒" : "超时"));
-			} else {
-				lines.push(prefix + " " + fake[fi].n + " " + fake[fi].s + "秒");
-				fi++;
-			}
-		}
-		let bonus = 0;
-		if (mySec <= 30) bonus = 5;
-		else if (mySec <= 60) bonus = 2;
-		if (bonus > 0) lines.push("\n获得" + bonus + "星星奖励！");
-		else if (mySec > 60) lines.push("\n再接再厉，下次更快！");
-		return lines.join("\n");
 	}
 
 	private _stopTimer(): void {
@@ -574,6 +695,7 @@ class GameView extends mylib.UIBase {
 	}
 
 	private onClickRetry() { // 重试
+		this._stopWinBgm()
 		this.gp_tip.visible = false
 		if (this.btn_next.visible == true) {
 			this.curLv--
@@ -588,42 +710,16 @@ class GameView extends mylib.UIBase {
 		this._map.BackStep()
 	}
 	public OnShowResult(ok): void {
-		if (ok == 1)
-		{
-			this.bClickTip = true
-			this.gp_GetRst.visible = false
-			if (this._map && this._map.CloseHighlight) this._map.CloseHighlight()
-			this._map.ShowTipResult()
-			this.gameMenue.visible = false
-			this.btn_tip_close.visible = true
-			// 刷新显示的金币
-			//this.score_num.text = MainUIManager.getInstance().score.toString()
-			//this.showSocreChange(MainUIManager.getInstance().score)
-			// MainUIManager.getInstance().score -= 200
-			// MainUIManager.getInstance().saveData()
-			// this.score_num.text = MainUIManager.getInstance().score.toString()
-			//egret.Tween.get(this, { loop: false }).wait(1000).call(this.createSelWord, this,[this.sz[this._level]]); //下一题
-		}
+		if (ok == 1) this._showResultOnly()
 	}
 
 	private onClickRemind() {
-		// 第一次：轻提示（免费高亮可操作格子）
-		if (!this.bLightHintShown) {
-			this.bLightHintShown = true
-			if (this._map && this._map.HighlightOperableCells) {
-				this._map.HighlightOperableCells()
-			}
-			this.gameMenue.visible = false
-			this.btn_tip_close.visible = true
+		if (this.bClickTip) {
+			this.ShowTips("答案已显示")
 			return
 		}
-		// 第二次：查看答案（200星星或视频）
-		if (MainUIManager.getInstance().score < 200) {
-			this.ShowTips("星星不足,去获得更多星星吧!")
-			this.onShowVideo.visible = true
-			return
-		}
-		this.gp_GetRst.visible = true
+		// 直接二选一弹窗（200星星 / 看视频）
+		this._openResultChoiceDialog()
 	}
 
 	private onClickTipClose() {
@@ -686,7 +782,7 @@ class GameView extends mylib.UIBase {
 			this.first_tongguan.visible = true
 			egret.Tween.get(this, { loop: false }).wait(2100).call(this.GameUpdateStates)
 		}
-		mylib.GmGlobal.sound.playSoundEffect("sound/snd_08.mp3");
+		this._playWinBgm()
 	}
 
 	public GameUpdateStates() {
@@ -706,10 +802,12 @@ class GameView extends mylib.UIBase {
 	}
 
 	public onClickGoHome() {
+		this._stopWinBgm()
 		this._stopTimer();
 		this._stopRuleDebugTicker();
 		const mgr = MainUIManager.getInstance();
 		mgr.bTimedChallenge = false;
+		mgr.timedChallengeLevelId = 0;
 		mgr.bReverseMode = false;
 		this._map.removeAllImgEvent()
 		this.gameGroup.removeChild(this._map)
@@ -720,17 +818,15 @@ class GameView extends mylib.UIBase {
 	}
 	private onClickGetRstClose() {
 		this.gp_GetRst.visible = false
+		this._openResultChoiceDialog()
 	}
 	private onClickGetRstOk() {
-		this.bClickTip = true
-		this.gp_GetRst.visible = false
-		if (this._map && this._map.CloseHighlight) this._map.CloseHighlight()
-		this._map.ShowTipResult()
-		this.gameMenue.visible = false
-		this.btn_tip_close.visible = true
-		MainUIManager.getInstance().score -= 200
-		MainUIManager.getInstance().saveData()
-		this.score_num.text = MainUIManager.getInstance().score.toString()
+		if (MainUIManager.getInstance().score < 200) {
+			this.ShowTips("星星不足,请改用看视频")
+			this._openResultChoiceDialog()
+			return
+		}
+		this._consumeStarsAndShowResult()
 	}
 
 	private TouchMoreStep() {

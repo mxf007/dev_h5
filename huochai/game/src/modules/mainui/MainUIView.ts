@@ -563,6 +563,7 @@ class MainUIView extends mylib.UIBase {
 		super.showAt(p);
 		this.other.visible = false	
 		this.syncRuleDebugBtn()
+		this.syncModeToggleBtn()
 		const high = MainUIManager.getInstance().getEndlessHighScore();
 		if (this.endlessBtn) this.endlessBtn.label = this.getEndlessBtnText(high);
 
@@ -616,6 +617,11 @@ class MainUIView extends mylib.UIBase {
 	private syncRuleDebugBtn(): void {
 		if (!this.ruleDebugBtn) return
 		this.ruleDebugBtn.label = MainUIManager.getInstance().isRuleDebugEnabled() ? "规则调试:开" : "规则调试:关"
+	}
+
+	private syncModeToggleBtn(): void {
+		if (!this.reverseBtn) return
+		this.reverseBtn.label = MainUIManager.getInstance().special == 1 ? "经典玩法" : "数字玩法"
 	}
 
 	private onToggleRuleDebug(): void {
@@ -682,6 +688,7 @@ class MainUIView extends mylib.UIBase {
 		MainUIManager.getInstance().special = 1
 		this.other.visible = false
 		this.pintu.visible = true
+		this.syncModeToggleBtn()
 		this.resetLevelList(false);
 	}
 
@@ -690,6 +697,7 @@ class MainUIView extends mylib.UIBase {
 		//this.other.visible = true
 		//this.pintu.visible = false
 		MainUIManager.getInstance().special = 0
+		this.syncModeToggleBtn()
 		//this.showUILeft(new GameMath(0));
 		this.resetLevelList(false);
 	}
@@ -745,8 +753,17 @@ class MainUIView extends mylib.UIBase {
 	private onTimedChallenge(): void {
 		const mgr = MainUIManager.getInstance();
 		const max = Math.max(1, Math.min(mgr.guanqia || 1, MyConst.MapData ? MyConst.MapData.length : 1));
-		const lv = 1 + Math.floor(Math.random() * max);
+		const classicIndices = MainUIManager.getClassicLevelMapIndices();
+		const unlockedClassic = classicIndices.filter((idx: number) => (idx + 1) <= max);
+		if (unlockedClassic.length <= 0) {
+			AlertBox.alert("暂无可用经典关卡，先通关后再来挑战！");
+			return;
+		}
+		const randomPos = Math.floor(Math.random() * unlockedClassic.length);
+		const actualMapIndex = unlockedClassic[randomPos];
+		const lv = actualMapIndex + 1;
 		mgr.bTimedChallenge = true;
+		mgr.timedChallengeLevelId = randomPos + 1;
 		mgr.selectId = lv;
 		mgr.bHelp = false;
 		mgr.special = 0;
@@ -773,6 +790,7 @@ class MainUIView extends mylib.UIBase {
 		const mgr = MainUIManager.getInstance();
 		mgr.bReverseMode = false;
 		mgr.special = (mgr.special == 1) ? 0 : 1;
+		this.syncModeToggleBtn()
 		this.resetLevelList(false);
 	}
 }
