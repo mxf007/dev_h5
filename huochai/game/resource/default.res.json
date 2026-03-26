@@ -1,6 +1,6 @@
 {
 	"groups":[{
-			"keys":"huochai_json,sign_json,btres_json,scale9_json",
+			"keys":"huochai_json,sign_json,btres_json,scale9_json,gold_star_png",
 			"name":"preload"
 		}],
 	"resources":[
@@ -38,6 +38,11 @@
 			"name":"bg1_png",
 			"type":"image",
 			"url":"bg1.png"
+		},
+		{
+			"name":"gold_star_png",
+			"type":"image",
+			"url":"gold_star.png"
 		},
 		{
 			"name":"huochai_json",

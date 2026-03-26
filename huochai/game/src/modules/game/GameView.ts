@@ -2,7 +2,19 @@ class GameView extends mylib.UIBase {
 
 	private score_num: eui.Label
 	private guankaLv: eui.Label
+	private reverseDiffGroup: eui.Group
+	private reverseDiffStar1: eui.Image
+	private reverseDiffStar2: eui.Image
+	private reverseDiffStar3: eui.Image
+	private reverseDiffStar4: eui.Image
+	private reverseDiffStar5: eui.Image
 	private gameGroup: eui.Group
+	private readonly _inactiveStarFilter: egret.ColorMatrixFilter = new egret.ColorMatrixFilter([
+		0.30, 0.59, 0.11, 0.00, -12,
+		0.30, 0.59, 0.11, 0.00, -12,
+		0.30, 0.59, 0.11, 0.00, -12,
+		0.00, 0.00, 0.00, 1.00, 0
+	])
 
 	private step: number      // 标题显示步数
 	private back_step: number  // 返回的步数
@@ -118,6 +130,7 @@ class GameView extends mylib.UIBase {
 		this.gameEnd.visible = false
 		var img_path = RES.getRes(("huochai_json.ingame_bt_back1"))
 		this.btn_back_step.$setTexture(img_path)
+		this.completeTxt.text = "完成挑战"
 		this.completeTxt.visible = false   // 完成挑战
 
 		this.btn_next.visible = false
@@ -127,10 +140,13 @@ class GameView extends mylib.UIBase {
 		this.btn_remind.visible = !(dailyActive && constraint == 3)
 		this.btn_tip_close.visible = false
 		this.score_num.text = mainMgr.score.toString()
+		this.syncReverseDifficultyStars(0, false)
 		if (mainMgr.bEndlessMode) {
 			this.guankaLv.text = "连续闯关 第" + (this.curLv + 1) + "关"
 		} else if (mainMgr.bReverseMode) {
-			this.guankaLv.text = "反转挑战 第" + (this.curLv + 1) + "关"
+			const reverseId = mainMgr.reverseChallengeLevelId > 0 ? mainMgr.reverseChallengeLevelId : mainMgr.getReverseCurrentLevel()
+			this.guankaLv.text = "反转挑战 第" + reverseId + "关"
+			this.syncReverseDifficultyStars(mainMgr.getReverseDifficultyValue(reverseId), true)
 		} else if (mainMgr.bTimedChallenge) {
 			const timedId = mainMgr.timedChallengeLevelId > 0 ? mainMgr.timedChallengeLevelId : (this.curLv + 1)
 			const mt = MyConst.MapData[this.curLv].mapType
@@ -535,6 +551,15 @@ class GameView extends mylib.UIBase {
 	private onClickNext(e) {
 		this._stopWinBgm()
 		const mgr = MainUIManager.getInstance();
+		if (mgr.bReverseMode) {
+			const nextSelectId = mgr.getReverseActualSelectId(mgr.getReverseCurrentLevel())
+			mgr.reverseChallengeLevelId = mgr.getReverseCurrentLevel()
+			mgr.selectId = nextSelectId
+			this.curLv = nextSelectId - 1
+			egret.Tween.removeAllTweens()
+			this.popallitem()
+			return
+		}
 		if (mgr.bEndlessMode) {
 			mgr.selectId = mgr.endlessLevel;
 			if (mgr.endlessLevel > (MyConst.MapData ? MyConst.MapData.length : 1)) {
@@ -556,6 +581,18 @@ class GameView extends mylib.UIBase {
 		var bWin = e.data.bWin
 		const completedLevel = this.curLv + 1
 		if (bWin) {
+				const mgrRef = MainUIManager.getInstance();
+				if (mgrRef.bReverseMode) {
+					const ret = mgrRef.onReverseChallengeWin()
+					this.score_num.text = mgrRef.score.toString()
+					this.completeTxt.text = "还原成功"
+					this.OnGameEnd(false)
+					let msg = ret.firstPass ? "首次通关 +5星" : "重复通关 +1星"
+					if (ret.comboBonus > 0) msg += "，3连胜额外 +" + ret.comboBonus + "星"
+					if (ret.finishedAll) msg += "，已通关全部反转关卡"
+					this.ShowTips(msg)
+					return
+				}
 				if (MainUIManager.getInstance().bHelp == false) {
 					this.curLv++
 					var bGetAward = false
@@ -576,8 +613,6 @@ class GameView extends mylib.UIBase {
 				}
 
 				// 限时挑战：停止计时，按时间发奖励
-				const mgrRef = MainUIManager.getInstance();
-				if (mgrRef.bReverseMode) mgrRef.bReverseMode = false;
 				if (mgrRef.bTimedChallenge) {
 					this._stopTimer();
 					const elapsed = Math.max(1, Math.ceil((Date.now() - mgrRef.timedChallengeStartTime) / 1000));
@@ -633,6 +668,11 @@ class GameView extends mylib.UIBase {
 
 	private _onFail(msg: string): void {
 		const mgr = MainUIManager.getInstance();
+		if (mgr.bReverseMode) {
+			mgr.onReverseChallengeFail()
+			this.ShowTips("反转失败，未扣星")
+			return
+		}
 		if (mgr.bEndlessMode) {
 			const passed = mgr.endlessLevel - 1;
 			const oldHigh = mgr.getEndlessHighScore();
@@ -658,6 +698,18 @@ class GameView extends mylib.UIBase {
 		};
 		tick();
 		this._timerToken = egret.setInterval(tick, this, 1000);
+	}
+
+	private syncReverseDifficultyStars(active: number, visible: boolean): void {
+		if (!this.reverseDiffGroup) return
+		this.reverseDiffGroup.visible = visible
+		for (let i = 1; i <= 5; i++) {
+			const star = this["reverseDiffStar" + i] as eui.Image
+			if (!star) continue
+			const lit = i <= active
+			star.alpha = lit ? 1 : 0.7
+			star.filters = lit ? null : [this._inactiveStarFilter]
+		}
 	}
 
 	private _stopTimer(): void {
@@ -814,6 +866,7 @@ class GameView extends mylib.UIBase {
 		mgr.bTimedChallenge = false;
 		mgr.timedChallengeLevelId = 0;
 		mgr.bReverseMode = false;
+		mgr.reverseChallengeLevelId = 0;
 		this._map.removeAllImgEvent()
 		this.gameGroup.removeChild(this._map)
 		egret.Tween.removeAllTweens();

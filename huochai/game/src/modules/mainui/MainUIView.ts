@@ -50,10 +50,23 @@ class MainUIView extends mylib.UIBase {
 	private pintu: OneStateButton
 	private dailyBtn: OneStateButton
 	private timedBtn: OneStateButton
+	private reverseInfo: eui.Label
+	private reverseStars: eui.Group
+	private reverseStar1: eui.Image
+	private reverseStar2: eui.Image
+	private reverseStar3: eui.Image
+	private reverseStar4: eui.Image
+	private reverseStar5: eui.Image
 	private endlessBtn: OneStateButton
 	private endlessInfo: eui.Label
 	private reverseBtn: OneStateButton
 	private ruleDebugBtn: OneStateButton
+	private readonly _inactiveStarFilter: egret.ColorMatrixFilter = new egret.ColorMatrixFilter([
+		0.30, 0.59, 0.11, 0.00, -12,
+		0.30, 0.59, 0.11, 0.00, -12,
+		0.30, 0.59, 0.11, 0.00, -12,
+		0.00, 0.00, 0.00, 1.00, 0
+	])
 
 	private _targetTotal: number = 0;
 	private _loadedCount: number = 0;
@@ -67,6 +80,7 @@ class MainUIView extends mylib.UIBase {
 			guanqia: 0,
 			selectId: 0,
 			guanqia1: 0,
+			guanqiaReverse: 0,
 		}
 		this.signDate = {
 			year: 0,
@@ -567,6 +581,8 @@ class MainUIView extends mylib.UIBase {
 		this.syncModeToggleBtn()
 		const high = MainUIManager.getInstance().getEndlessHighScore();
 		if (this.endlessBtn) this.endlessBtn.label = this.getEndlessBtnText(high);
+		if (this.timedBtn) this.timedBtn.label = "反转挑战"
+		this.syncReverseInfo()
 		this.syncEndlessInfo()
 
 		if (MainUIManager.getInstance().special == 0) {
@@ -641,6 +657,25 @@ class MainUIView extends mylib.UIBase {
 		this.reverseBtn.label = MainUIManager.getInstance().special == 1 ? "经典玩法" : "数字玩法"
 	}
 
+	private syncReverseInfo(): void {
+		if (!this.reverseInfo) return
+		const mgr = MainUIManager.getInstance()
+		this.reverseInfo.text = mgr.getReverseInfoText()
+		this.syncReverseStars(mgr.getReverseDifficultyValue())
+	}
+
+	private syncReverseStars(active: number): void {
+		if (!this.reverseStars) return
+		this.reverseStars.visible = true
+		for (let i = 1; i <= 5; i++) {
+			const star = this["reverseStar" + i] as eui.Image
+			if (!star) continue
+			const lit = i <= active
+			star.alpha = lit ? 1 : 0.7
+			star.filters = lit ? null : [this._inactiveStarFilter]
+		}
+	}
+
 	private onToggleRuleDebug(): void {
 		const on = MainUIManager.getInstance().toggleRuleDebug()
 		this.syncRuleDebugBtn()
@@ -656,6 +691,7 @@ class MainUIView extends mylib.UIBase {
 			MainUIManager.getInstance().selectId = this._data.selectId
 			MainUIManager.getInstance().scrollV = this._data.scrollV
 			MainUIManager.getInstance().guanqia1 = this._data.guanqia1
+			MainUIManager.getInstance().guanqiaReverse = this._data.guanqiaReverse || 1
 		}
 
 	}
@@ -769,28 +805,17 @@ class MainUIView extends mylib.UIBase {
 
 	private onTimedChallenge(): void {
 		const mgr = MainUIManager.getInstance();
-		const max = Math.max(1, Math.min(mgr.guanqia || 1, MyConst.MapData ? MyConst.MapData.length : 1));
-		const classicIndices = MainUIManager.getClassicLevelMapIndices();
-		const unlockedClassic = classicIndices.filter((idx: number) => (idx + 1) <= max);
-		if (unlockedClassic.length <= 0) {
-			AlertBox.alert("暂无可用经典关卡，先通关后再来挑战！");
-			return;
-		}
-		const randomPos = Math.floor(Math.random() * unlockedClassic.length);
-		const actualMapIndex = unlockedClassic[randomPos];
-		const lv = actualMapIndex + 1;
-		mgr.bTimedChallenge = true;
-		mgr.timedChallengeLevelId = randomPos + 1;
-		mgr.selectId = lv;
-		mgr.bHelp = false;
-		mgr.special = 0;
-		const idx = lv - 1;
-		const mapType = MyConst.MapData[idx].mapType;
-		if (mapType == 999) {
-			this.showUILeft(new GameView());
-		} else {
-			this.showUILeft(new Mission(idx));
-		}
+		AlertBox.alert(mgr.getReverseRuleText(), () => {
+			mgr.startReverseChallenge()
+			this.syncReverseInfo()
+			const idx = mgr.selectId - 1
+			const mapType = MyConst.MapData[idx].mapType;
+			if (mapType == 999) {
+				this.showUILeft(new GameView());
+			} else {
+				this.showUILeft(new Mission(idx));
+			}
+		}, this, "开始挑战");
 	}
 
 	private onEndlessChallenge(): void {
