@@ -266,11 +266,13 @@ class GameView extends mylib.UIBase {
 			}
 		}
 		this.gameRule.text = strRule
-		// 当前的数量
-		//this.txt_target.text = num.toString()
+		this.txt_target.text = "0 / " + num.toString()
 		this.gameTitleRule.visible = false
 		this.txt_target_rule.text = strRule
 		this.txt_target_rule.lineSpacing = 10
+		if (this._map && this._map.UpDateDisplaytagNum) {
+			this._map.UpDateDisplaytagNum()
+		}
 
 		this.first_tongguan.visible = false
 		//this.tongguanZs.visible = false

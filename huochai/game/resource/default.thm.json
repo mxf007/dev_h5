@@ -51,6 +51,7 @@
 		"resource/eui_skins/MapSkin8.exml",
 		"resource/eui_skins/MapSkin9.exml",
 		"resource/eui_skins/MissionSkin.exml",
+		"resource/eui_skins/ReversePreviewSkin.exml",
 		"resource/eui_skins/ScrollerSkin.exml",
 		"resource/eui_skins/VScrollBarSkin.exml"
 	],
