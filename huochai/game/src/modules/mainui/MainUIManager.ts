@@ -49,9 +49,11 @@ class MainUIManager {
 	public endlessLevel: number = 1;
 	private static readonly ENDLESS_HIGH_KEY = "huochaiEndlessHigh";
 	private static readonly ENDLESS_TIME_KEY = "huochaiEndlessTimeStats";
+	private static readonly MATH_TIME_KEY = "huochaiMathTimeStats";
 	private static readonly RULE_DEBUG_KEY = "huochaiRuleDebug";
 	private _ruleDebugLoaded: boolean = false;
 	private _ruleDebug: boolean = false;
+	public lastMainTab: string = "mode";
 	public getEndlessHighScore(): number {
 		const raw = egret.localStorage.getItem(MainUIManager.ENDLESS_HIGH_KEY);
 		return raw ? parseInt(raw, 10) || 0 : 0;
@@ -104,6 +106,46 @@ class MainUIManager {
 		const max = Math.max(1, (MyConst && MyConst.MapData) ? MyConst.MapData.length : 1);
 		const next = this.getEndlessHighScore() + 1;
 		return Math.max(1, Math.min(next, max));
+	}
+
+	private loadMathTimeStats(): { [level: string]: { best: number, total: number, count: number } } {
+		const raw = egret.localStorage.getItem(MainUIManager.MATH_TIME_KEY);
+		if (!raw) return {};
+		try {
+			const data = JSON.parse(raw);
+			return data && typeof data === "object" ? data : {};
+		} catch (e) {
+			return {};
+		}
+	}
+
+	private saveMathTimeStats(data: { [level: string]: { best: number, total: number, count: number } }): void {
+		egret.localStorage.setItem(MainUIManager.MATH_TIME_KEY, JSON.stringify(data || {}));
+	}
+
+	public recordMathLevelTime(level: number, sec: number): void {
+		if (level <= 0 || sec <= 0) return;
+		const stats = this.loadMathTimeStats();
+		const key = "" + level;
+		const prev = stats[key] || { best: 0, total: 0, count: 0 };
+		const best = prev.best > 0 ? Math.min(prev.best, sec) : sec;
+		stats[key] = {
+			best: Math.round(best * 100) / 100,
+			total: Math.round((prev.total + sec) * 100) / 100,
+			count: (prev.count || 0) + 1,
+		};
+		this.saveMathTimeStats(stats);
+	}
+
+	public getMathLevelBestTime(level: number): number {
+		const row = this.loadMathTimeStats()["" + level];
+		return row && row.best > 0 ? row.best : 0;
+	}
+
+	public getMathLevelAvgTime(level: number): number {
+		const row = this.loadMathTimeStats()["" + level];
+		if (!row || !row.count) return 0;
+		return Math.round((row.total / row.count) * 100) / 100;
 	}
 
 	private buildReverseChallengePool(): number[] {

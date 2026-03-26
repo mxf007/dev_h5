@@ -2,6 +2,7 @@ class GameView extends mylib.UIBase {
 
 	private score_num: eui.Label
 	private guankaLv: eui.Label
+	private runtimeStats: eui.Label
 	private reverseDiffGroup: eui.Group
 	private reverseDiffStar1: eui.Image
 	private reverseDiffStar2: eui.Image
@@ -103,6 +104,7 @@ class GameView extends mylib.UIBase {
 	private _timerStart: number = 0
 	private _ruleDebugToken: number = 0
 	private _levelStartAt: number = 0
+	private _winSoundPlayed: boolean = false
 	private static readonly TIMED_RANK_KEY: string = "huochaiTimedRankV2"
 	private static readonly WIN_BGM_ID: string = "sound/snd_08.mp3"
 	public constructor() {
@@ -115,6 +117,7 @@ class GameView extends mylib.UIBase {
 
 	private popallitem() {
 		this._stopWinBgm()
+		this._winSoundPlayed = false
 		this._levelStartAt = Date.now()
 		this.step = 0 // 初始化 步数
 		this.bClickTip = false
@@ -141,8 +144,10 @@ class GameView extends mylib.UIBase {
 		this.btn_tip_close.visible = false
 		this.score_num.text = mainMgr.score.toString()
 		this.syncReverseDifficultyStars(0, false)
+		this.syncRuntimeStats("", false)
 		if (mainMgr.bEndlessMode) {
 			this.guankaLv.text = "连续闯关 第" + (this.curLv + 1) + "关"
+			this.syncRuntimeStats(this.buildRuntimeStatsText(mainMgr.getEndlessLevelBestTime(this.curLv + 1), mainMgr.getEndlessLevelAvgTime(this.curLv + 1)), true)
 		} else if (mainMgr.bReverseMode) {
 			const reverseId = mainMgr.reverseChallengeLevelId > 0 ? mainMgr.reverseChallengeLevelId : mainMgr.getReverseCurrentLevel()
 			this.guankaLv.text = "反转挑战 第" + reverseId + "关"
@@ -388,11 +393,25 @@ class GameView extends mylib.UIBase {
 	}
 
 	private _playWinBgm(): void {
-		mylib.GmGlobal.sound.playBgm(GameView.WIN_BGM_ID, 0.4, 0)
+		if (this._winSoundPlayed) return
+		this._winSoundPlayed = true
+		mylib.GmGlobal.sound.playSoundEffect(GameView.WIN_BGM_ID)
 	}
 
 	private _stopWinBgm(): void {
-		mylib.GmGlobal.sound.clearBgm()
+		this._winSoundPlayed = false
+	}
+
+	private buildRuntimeStatsText(best: number, avg: number): string {
+		if (best > 0 && avg > 0) return "最高用时 " + best.toFixed(2) + "s    平均用时 " + avg.toFixed(2) + "s"
+		if (best > 0) return "最高用时 " + best.toFixed(2) + "s"
+		return "暂无用时记录"
+	}
+
+	private syncRuntimeStats(text: string, visible: boolean): void {
+		if (!this.runtimeStats) return
+		this.runtimeStats.visible = visible
+		if (visible) this.runtimeStats.text = text
 	}
 
 	private _timedBonus(sec: number): number {

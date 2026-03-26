@@ -3,7 +3,12 @@
 	<w:Config id="17120d5285b" scale9Grid="40,45,2,35"/>
 	<e:Image fillMode="scale" verticalCenter="68" height="1416" width="720" horizontalCenter="0" source="scenebg_png" anchorOffsetY="0"/>
 
-	<e:Scroller id="scoll" anchorOffsetY="0" bounces="false" top="318" bottom="140" width="660" horizontalCenter="0">
+	<e:Image id="contentCardBg" top="248" bottom="140" width="690" horizontalCenter="0" source="huochai_json.bg2" scale9Grid="12,12,76,76" alpha="0.97"/>
+	<e:Group id="tabPageGroup" top="278" bottom="156" width="620" horizontalCenter="0" visible="false">
+		<e:Label id="tabPageTitle" top="34" horizontalCenter="0" width="580" height="46" text="玩法介绍" size="34" bold="true" textColor="0x2E2C2D" textAlign="center" verticalAlign="middle"/>
+		<e:Label id="tabPageDesc" left="40" right="40" top="106" bottom="44" text="说明" size="26" lineSpacing="12" textColor="0x4A4038" textAlign="left" verticalAlign="top"/>
+	</e:Group>
+	<e:Scroller id="scoll" anchorOffsetY="0" bounces="false" top="274" bottom="150" width="650" horizontalCenter="0">
 		<e:List id="itemList" anchorOffsetY="0"  itemRendererSkinName="contentsItem">
 			<e:layout>
 				<e:TileLayout orientation="rows" verticalGap="30" horizontalGap="40" paddingLeft="30" paddingRight="30" paddingTop="30"/>
@@ -40,6 +45,10 @@
 		</ns1:skinName>
 	</ns1:OneStateButton>
 	<e:Group id="modeBtns" x="15" y="205" width="690" height="100">
+		<e:Image width="690" height="52" x="0" y="-2" source="huochai_json.bg2" alpha="0.85" scale9Grid="12,12,76,76"/>
+		<e:Rect x="0" y="48" width="690" height="2" fillColor="0xA66C2C" alpha="0.55"/>
+		<e:Image id="tabSelectedBg" x="-2" y="-8" width="169" height="60" source="huochai_json.bg2" alpha="0.97" scale9Grid="12,12,76,76"/>
+		<e:Image id="tabSelectedBridge" x="8" y="46" width="149" height="18" source="huochai_json.bg2" alpha="0.97" scale9Grid="12,12,76,76"/>
 		<ns1:OneStateButton id="timedBtn" x="0" y="0" width="165" height="48" label="反转挑战">
 			<ns1:skinName>
 				<e:Skin states="up,down,disabled">
@@ -48,6 +57,7 @@
 				</e:Skin>
 			</ns1:skinName>
 		</ns1:OneStateButton>
+		<e:Rect id="timedTabLine" x="22" y="46" width="120" height="5" fillColor="0xFFE082" ellipseWidth="5" ellipseHeight="5" alpha="0"/>
 		<e:Label id="reverseInfo" x="0" y="52" width="165" height="22" text="当前Lv1/24 非常简单" size="15" textColor="0xFFF4CF" stroke="1" strokeColor="0x5C3A12" textAlign="center" verticalAlign="middle"/>
 		<e:Group id="reverseStars" x="22" y="76" width="122" height="18">
 			<e:Image id="reverseStar1" x="0" y="0" width="18" height="18" source="gold_star_png"/>
@@ -56,14 +66,15 @@
 			<e:Image id="reverseStar4" x="78" y="0" width="18" height="18" source="gold_star_png"/>
 			<e:Image id="reverseStar5" x="104" y="0" width="18" height="18" source="gold_star_png"/>
 		</e:Group>
-		<ns1:OneStateButton id="endlessBtn" x="172" y="0" width="165" height="48" label="连续闯关">
+		<ns1:OneStateButton id="endlessBtn" x="172" y="0" width="165" height="48" label="连续挑战">
 			<ns1:skinName>
 				<e:Skin states="up,down,disabled">
 					<e:Image width="100%" height="100%" source="btres_json.bg_orange" source.down="btres_json.bg_orange" source.disabled="btres_json.bg_orange"/>
-					<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0" text="连续闯关" textColor="0x2E2C2D" size="22" fontFamily="Microsoft YaHei" textAlign="center" verticalAlign="middle" bold="true"/>
+					<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0" text="连续挑战" textColor="0x2E2C2D" size="22" fontFamily="Microsoft YaHei" textAlign="center" verticalAlign="middle" bold="true"/>
 				</e:Skin>
 			</ns1:skinName>
 		</ns1:OneStateButton>
+		<e:Rect id="endlessTabLine" x="194" y="46" width="120" height="5" fillColor="0xFFE082" ellipseWidth="5" ellipseHeight="5" alpha="0"/>
 		<e:Label id="endlessInfo" x="172" y="52" width="165" height="28" text="当前关卡Lv1 暂无记录" size="16" textColor="0xFFF4CF" stroke="1" strokeColor="0x5C3A12" textAlign="center" verticalAlign="middle"/>
 		<ns1:OneStateButton id="dailyBtn" x="344" y="0" width="165" height="48" label="每日挑战">
 			<ns1:skinName>
@@ -73,6 +84,7 @@
 				</e:Skin>
 			</ns1:skinName>
 		</ns1:OneStateButton>
+		<e:Rect id="dailyTabLine" x="366" y="46" width="120" height="5" fillColor="0xFFE082" ellipseWidth="5" ellipseHeight="5" alpha="0"/>
 <ns1:OneStateButton id="reverseBtn" x="516" y="0" width="165" height="48" label="数字玩法">
 		<ns1:skinName>
 			<e:Skin states="up,down,disabled">
@@ -81,6 +93,7 @@
 			</e:Skin>
 		</ns1:skinName>
 	</ns1:OneStateButton>
+		<e:Rect id="modeTabLine" x="538" y="46" width="120" height="5" fillColor="0xFFE082" ellipseWidth="5" ellipseHeight="5" alpha="0"/>
 	</e:Group>
 	<e:Group id = "zsPanel" width="200" height="58" y="40" horizontalCenter="-231" visible="true">
 		<e:Image width="200" height="58" x="0" y="0" source="huochai_json.bg2" scale9Grid="12,12,76,76"/>
@@ -120,11 +133,11 @@
 				</e:Skin>
 			</ns1:skinName>
 		</ns1:OneStateButton>
-		<ns1:OneStateButton id="other" x="31.83" y="14" width="295" height="103" label="经典玩法" anchorOffsetX="0" anchorOffsetY="0" visible="false">
+		<ns1:OneStateButton id="other" x="31.83" y="14" width="295" height="103" label="切换数字玩法" anchorOffsetX="0" anchorOffsetY="0" visible="false">
 			<ns1:skinName>
 				<e:Skin states="up,down,disabled">
 				<e:Image width="100%" height="100%" source="btres_json.bg_orange" source.down="btres_json.bg_orange" source.disabled="btres_json.bg_orange"/>
-				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0.5" text="经典玩法" textColor="0x2E2C2D" width="206.113" height="48" size="42" fontFamily="Microsoft YaHei" textAlign="center" verticalAlign="middle" bold="true"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0.5" text="切换数字玩法" textColor="0x2E2C2D" width="250" height="48" size="34" fontFamily="Microsoft YaHei" textAlign="center" verticalAlign="middle" bold="true"/>
 				</e:Skin>
 			</ns1:skinName>
 		</ns1:OneStateButton>
@@ -137,7 +150,7 @@
 			</ns1:skinName>
 		</ns1:OneStateButton>
 		<e:Image id="img_box" width="125" height="114" x="42" source="sign_json.icon_daka_4" y="8.5" anchorOffsetX="0" anchorOffsetY="0"/>
-		<e:Label text="奖励" x="136.54" y="89.5" fontFamily="Microsoft YaHei" textColor="0xe2c116" anchorOffsetY="0" height="55"/>
+		<e:Label id="rewardLabel" text="奖励" x="136.54" y="89.5" fontFamily="Microsoft YaHei" textColor="0xe2c116" anchorOffsetY="0" height="55"/>
 	</e:Group>
     <e:Group id="newsignIn" width="720" height="1280" y="176.541" horizontalCenter="0" visible="false">
 		<e:Image width="664" height="865" x="28.71" y="0" alpha="1" source="sign_json.signtoday"/>

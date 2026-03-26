@@ -101,6 +101,7 @@
 		<e:Image id="reverseDiffStar4" x="90" y="0" width="24" height="24" source="gold_star_png"/>
 		<e:Image id="reverseDiffStar5" x="120" y="0" width="24" height="24" source="gold_star_png"/>
 	</e:Group>
+	<e:Label id="runtimeStats" bottom="110" horizontalCenter="0" width="470" height="28" size="22" visible="false" textColor="0xFFF4CF" stroke="1" strokeColor="0x5C3A12" textAlign="center" verticalAlign="middle" text="最佳 12.34s  平均 15.67s"/>
 	<e:Label id="txt_timer" text="" bottom="148" right="20" size="36" visible="false" height="40" fontFamily="Microsoft YaHei" textAlign="right" verticalAlign="middle" textColor="0xff6600"/>
 	<e:Group id="gp_rule_debug" left="12" right="12" top="252" height="220" visible="false" touchEnabled="false" touchChildren="false">
 		<e:Rect left="0" right="0" top="0" bottom="0" fillColor="0x000000" alpha="0.58"/>

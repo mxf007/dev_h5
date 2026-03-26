@@ -2,6 +2,7 @@ class GameMath extends mylib.UIBase {
 
 	private score_num: eui.Label
 	private guankaLv: eui.Label
+	private runtimeStats: eui.Label
 	private gameGroup: eui.Group
 
 	private step: number      // 标题显示步数
@@ -87,6 +88,8 @@ class GameMath extends mylib.UIBase {
 	private gp_rule_debug: eui.Group
 	private txt_rule_debug: eui.Label
 	private _ruleDebugToken: number = 0
+	private _levelStartAt: number = 0
+	private _winSoundPlayed: boolean = false
 	private static readonly WIN_BGM_ID: string = "sound/snd_08.mp3"
 	public constructor(curlv) {
 		super("GameUISkin");
@@ -98,6 +101,8 @@ class GameMath extends mylib.UIBase {
 
 	private popallitem() {
 		this._stopWinBgm()
+		this._winSoundPlayed = false
+		this._levelStartAt = Date.now()
 		this.step = 0 // 初始化 步数
 		this.bClickTip = false
 		this.bLightHintShown = false
@@ -119,6 +124,7 @@ class GameMath extends mylib.UIBase {
 		this.btn_tip_close.visible = false
 		this.score_num.text = MainUIManager.getInstance().score.toString()
 		this.guankaLv.text = "关卡:" + (this.curLv + 1).toString()//MainUIManager.getInstance().guanqia.toString()
+		this.syncRuntimeStats(this.buildRuntimeStatsText(MainUIManager.getInstance().getMathLevelBestTime(this.curLv + 1), MainUIManager.getInstance().getMathLevelAvgTime(this.curLv + 1)), true)
 		this.onhelp.visible = false
 		this.onShowVideo.visible = false
 
@@ -329,11 +335,25 @@ class GameMath extends mylib.UIBase {
 	}
 
 	private _playWinBgm(): void {
-		mylib.GmGlobal.sound.playBgm(GameMath.WIN_BGM_ID, 0.4, 0)
+		if (this._winSoundPlayed) return
+		this._winSoundPlayed = true
+		mylib.GmGlobal.sound.playSoundEffect(GameMath.WIN_BGM_ID)
 	}
 
 	private _stopWinBgm(): void {
-		mylib.GmGlobal.sound.clearBgm()
+		this._winSoundPlayed = false
+	}
+
+	private buildRuntimeStatsText(best: number, avg: number): string {
+		if (best > 0 && avg > 0) return "最高用时 " + best.toFixed(2) + "s    平均用时 " + avg.toFixed(2) + "s"
+		if (best > 0) return "最高用时 " + best.toFixed(2) + "s"
+		return "暂无用时记录"
+	}
+
+	private syncRuntimeStats(text: string, visible: boolean): void {
+		if (!this.runtimeStats) return
+		this.runtimeStats.visible = visible
+		if (visible) this.runtimeStats.text = text
 	}
 	public showAt(p: egret.DisplayObjectContainer): void {
 		super.showAt(p);
@@ -358,6 +378,8 @@ class GameMath extends mylib.UIBase {
 	private GameComplete(e) {
 		var bWin = e.data.bWin
 		if (bWin) {
+				const elapsed = Math.max(0.01, (Date.now() - this._levelStartAt) / 1000)
+				MainUIManager.getInstance().recordMathLevelTime(this.curLv + 1, elapsed)
 				if (MainUIManager.getInstance().bHelp == false) {
 					this.curLv++
 					var bGetAward = false

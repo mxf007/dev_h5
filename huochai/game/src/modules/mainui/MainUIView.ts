@@ -7,6 +7,10 @@ class MainUIView extends mylib.UIBase {
 	protected scoll: eui.Scroller;
 	protected itemList: eui.List;
 	private _arrayCollection: eui.ArrayCollection;
+	private contentCardBg: eui.Image
+	private tabPageGroup: eui.Group
+	private tabPageTitle: eui.Label
+	private tabPageDesc: eui.Label
 
 	// 
 	/////////
@@ -48,8 +52,12 @@ class MainUIView extends mylib.UIBase {
 
 	private other: OneStateButton
 	private pintu: OneStateButton
+	private rewardLabel: eui.Label
 	private dailyBtn: OneStateButton
 	private timedBtn: OneStateButton
+	private timedTabLine: eui.Rect
+	private tabSelectedBg: eui.Image
+	private tabSelectedBridge: eui.Image
 	private reverseInfo: eui.Label
 	private reverseStars: eui.Group
 	private reverseStar1: eui.Image
@@ -58,9 +66,13 @@ class MainUIView extends mylib.UIBase {
 	private reverseStar4: eui.Image
 	private reverseStar5: eui.Image
 	private endlessBtn: OneStateButton
+	private endlessTabLine: eui.Rect
 	private endlessInfo: eui.Label
+	private dailyTabLine: eui.Rect
 	private reverseBtn: OneStateButton
+	private modeTabLine: eui.Rect
 	private ruleDebugBtn: OneStateButton
+	private readonly _tabSelectedFilter: egret.GlowFilter = new egret.GlowFilter(0xFFF3A6, 0.9, 18, 18, 2, 1, false, false)
 	private readonly _inactiveStarFilter: egret.ColorMatrixFilter = new egret.ColorMatrixFilter([
 		0.30, 0.59, 0.11, 0.00, -12,
 		0.30, 0.59, 0.11, 0.00, -12,
@@ -93,9 +105,9 @@ class MainUIView extends mylib.UIBase {
 		this.popallitem()
 		this.zsPanel.visible = true
 		this.signIn.visible = false
-		MainUIManager.getInstance().score = 10000   // 测试代码加财富
-		MainUIManager.getInstance().guanqia = MyConst.MapData.length -1
-		MainUIManager.getInstance().saveData()
+		// MainUIManager.getInstance().score = 10000   // 测试代码加财富
+		// MainUIManager.getInstance().guanqia = MyConst.MapData.length -1
+		// MainUIManager.getInstance().saveData()
 		this.loadData()
 
 		this.score_num.text = MainUIManager.getInstance().score.toString()
@@ -175,7 +187,8 @@ class MainUIView extends mylib.UIBase {
 
 		this.loadData();
 		this.resetLevelList(false);
-		this.other.visible = false	
+		this.other.visible = false
+		this.pintu.visible = false
 	}
 
 	private getTotalLevelCount(): number {
@@ -343,8 +356,7 @@ class MainUIView extends mylib.UIBase {
 		this.quickStart.addEventListener(egret.TouchEvent.TOUCH_END, this.OnClickQuickStart, this); // 快速开始
 
 		// 经典玩法
-		this.other.addEventListener(egret.TouchEvent.TOUCH_END, this.OnClickOther, this); // 经典玩法
-		this.pintu.addEventListener(egret.TouchEvent.TOUCH_END, this.OnClickPintu, this);
+		this.other.addEventListener(egret.TouchEvent.TOUCH_END, this.OnClickOther, this);
 	}
 
 	public rmEvts(): void {
@@ -372,8 +384,7 @@ class MainUIView extends mylib.UIBase {
 		this.img_sign.removeEventListener(egret.TouchEvent.TOUCH_END, this.OnClickSignBtn, this);
 		this.quickStart.removeEventListener(egret.TouchEvent.TOUCH_END, this.OnClickQuickStart, this); // 快速开始
 
-		this.other.removeEventListener(egret.TouchEvent.TOUCH_END, this.OnClickOther, this); // 经典玩法
-		this.pintu.removeEventListener(egret.TouchEvent.TOUCH_END, this.OnClickPintu, this);
+		this.other.removeEventListener(egret.TouchEvent.TOUCH_END, this.OnClickOther, this);
 	}
 
 	public OnClickSign() {
@@ -576,26 +587,23 @@ class MainUIView extends mylib.UIBase {
 
 	public showAt(p: egret.DisplayObjectContainer): void {
 		super.showAt(p);
-		this.other.visible = false	
+		const mgr = MainUIManager.getInstance()
+		const keepTab = mgr.lastMainTab
+		this.other.visible = false
+		this.pintu.visible = false
 		this.syncRuleDebugBtn()
 		this.syncModeToggleBtn()
-		const high = MainUIManager.getInstance().getEndlessHighScore();
+		const high = mgr.getEndlessHighScore();
 		if (this.endlessBtn) this.endlessBtn.label = this.getEndlessBtnText(high);
 		if (this.timedBtn) this.timedBtn.label = "反转挑战"
 		this.syncReverseInfo()
 		this.syncEndlessInfo()
+		this.resetLevelList(false);
 
-		if (MainUIManager.getInstance().special == 0) {
-			// this.other.visible = false
-			// this.pintu.visible = true
-			this.OnClickPintu()
-		} else {
-			this.OnClickOther()
-			// this.other.visible = true
-			// this.pintu.visible = false
-		}
-
-		MainUIManager.getInstance().bHelp = false
+		mgr.lastMainTab = keepTab
+		this.syncMainTabs()
+		this.syncTabPage()
+		mgr.bHelp = false
 		mylib.GmGlobal.page.setPage({ page: "help" }, this.jumpPage, this);
 		this.LoadStartBlinkAction()
 		// 如果是第一次进游戏 直接进游戏
@@ -623,9 +631,9 @@ class MainUIView extends mylib.UIBase {
 	}
 
 	private getEndlessBtnText(high: number): string {
-		if (!high || high <= 0) return "连续闯关"
-		if (high > 999) return "连续闯关·999+"
-		return "连续闯关·" + high
+		if (!high || high <= 0) return "连续挑战"
+		if (high > 999) return "连续挑战·999+"
+		return "连续挑战·" + high
 	}
 
 	private syncEndlessInfo(): void {
@@ -654,7 +662,150 @@ class MainUIView extends mylib.UIBase {
 
 	private syncModeToggleBtn(): void {
 		if (!this.reverseBtn) return
-		this.reverseBtn.label = MainUIManager.getInstance().special == 1 ? "经典玩法" : "数字玩法"
+		this.reverseBtn.label = MainUIManager.getInstance().special == 1 ? "数字玩法" : "经典玩法"
+	}
+
+	private syncMainTabs(): void {
+		const mgr = MainUIManager.getInstance()
+		this.applyTabState(this.timedBtn, mgr.lastMainTab == "reverse")
+		this.applyTabState(this.endlessBtn, mgr.lastMainTab == "endless")
+		this.applyTabState(this.dailyBtn, mgr.lastMainTab == "daily")
+		this.applyTabState(this.reverseBtn, mgr.lastMainTab == "mode")
+		this.applyTabLine(this.timedTabLine, mgr.lastMainTab == "reverse")
+		this.applyTabLine(this.endlessTabLine, mgr.lastMainTab == "endless")
+		this.applyTabLine(this.dailyTabLine, mgr.lastMainTab == "daily")
+		this.applyTabLine(this.modeTabLine, mgr.lastMainTab == "mode")
+		this.syncSelectedTabCard(mgr.lastMainTab || "mode")
+	}
+
+	private syncTabPage(): void {
+		const mgr = MainUIManager.getInstance()
+		const tab = mgr.lastMainTab || "mode"
+		const isMode = tab == "mode"
+		if (this.scoll) this.scoll.visible = isMode
+		if (this.tabPageGroup) this.tabPageGroup.visible = !isMode
+		if (this.reverseInfo) this.reverseInfo.visible = tab == "reverse"
+		if (this.reverseStars) this.reverseStars.visible = tab == "reverse"
+		if (this.endlessInfo) this.endlessInfo.visible = tab == "endless"
+		if (this.other) {
+			this.other.visible = isMode
+			this.other.label = mgr.special == 1 ? "切换经典玩法" : "切换数字玩法"
+		}
+		if (this.pintu) this.pintu.visible = false
+		if (this.img_box) this.img_box.visible = !isMode
+		if (this.rewardLabel) this.rewardLabel.visible = !isMode
+		if (this.quickStart) {
+			this.quickStart.enabled = true
+			this.quickStart.label = this.getQuickStartLabel(tab)
+		}
+		this.syncReverseInfo()
+		this.syncEndlessInfo()
+		if (isMode) {
+			this.resetLevelList(false)
+			return
+		}
+		if (!this.tabPageTitle || !this.tabPageDesc) return
+		if (tab == "reverse") {
+			this.tabPageTitle.text = "反转挑战"
+			this.tabPageDesc.text = this.buildReverseTabDesc()
+			return
+		}
+		if (tab == "endless") {
+			this.tabPageTitle.text = "连续挑战"
+			this.tabPageDesc.text = this.buildEndlessTabDesc()
+			return
+		}
+		this.tabPageTitle.text = "每日挑战"
+		this.tabPageDesc.text = this.buildDailyTabDesc()
+		const action = mgr.getDailyActionLabel()
+		this.quickStart.label = action
+		this.quickStart.enabled = action != "已完成"
+	}
+
+	private getQuickStartLabel(tab: string): string {
+		if (tab == "reverse") return "开始反转挑战"
+		if (tab == "endless") return "开始连续挑战"
+		if (tab == "daily") return MainUIManager.getInstance().getDailyActionLabel()
+		return "开始当前玩法"
+	}
+
+	private buildReverseTabDesc(): string {
+		const mgr = MainUIManager.getInstance()
+		const lv = mgr.getReverseCurrentLevel()
+		return [
+			"从完成态出发，在限定步数内还原到初始图形。",
+			"",
+			"当前进度：" + lv + "/" + mgr.getReverseTotalLevels(),
+			"当前难度：" + mgr.getReverseDifficultyLabel(lv) + " " + mgr.getReverseDifficultyStars(lv),
+			"",
+			"奖励规则：",
+			"首次通关 +5星",
+			"重复通关 +1星",
+			"连续成功3关额外 +3星",
+			"失败不扣星"
+		].join("\n")
+	}
+
+	private buildEndlessTabDesc(): string {
+		const mgr = MainUIManager.getInstance()
+		const lv = mgr.getEndlessDisplayLevel()
+		const best = mgr.getEndlessLevelBestTime(lv)
+		const avg = mgr.getEndlessLevelAvgTime(lv)
+		const lines: string[] = []
+		lines.push("按顺序连续闯关，失败即结算本轮成绩。")
+		lines.push("")
+		lines.push("当前挑战关卡：Lv" + lv)
+		if (best > 0 && avg > 0) {
+			lines.push("最高用时：" + best.toFixed(2) + "s")
+			lines.push("平均用时：" + avg.toFixed(2) + "s")
+		} else if (best > 0) {
+			lines.push("最高用时：" + best.toFixed(2) + "s")
+		} else {
+			lines.push("当前关卡暂无记录")
+		}
+		return lines.join("\n")
+	}
+
+	private buildDailyTabDesc(): string {
+		return MainUIManager.getInstance().getDailySummaryText()
+	}
+
+	private applyTabState(btn: OneStateButton, selected: boolean): void {
+		if (!btn) return
+		btn.scaleX = btn.scaleY = selected ? 1.04 : 0.98
+		btn.y = selected ? -2 : 0
+		btn.alpha = selected ? 1 : 0.72
+		btn.filters = selected ? [this._tabSelectedFilter] : null
+		const anyBtn: any = btn as any
+		const lb = anyBtn.labelDisplay as eui.Label
+		if (lb) {
+			lb.textColor = selected ? 0xFFF8E1 : 0xE8D4A6
+			lb.bold = true
+		}
+	}
+
+	private applyTabLine(line: eui.Rect, selected: boolean): void {
+		if (!line) return
+		line.visible = true
+		line.alpha = selected ? 1 : 0
+	}
+
+	private syncSelectedTabCard(tab: string): void {
+		if (!this.tabSelectedBg || !this.tabSelectedBridge) return
+		const map: any = {
+			reverse: 0,
+			endless: 172,
+			daily: 344,
+			mode: 516
+		}
+		const x = map[tab] != null ? map[tab] : 516
+		this.tabSelectedBg.x = x - 2
+		this.tabSelectedBridge.x = x + 8
+		this.tabSelectedBg.visible = true
+		this.tabSelectedBridge.visible = true
+		this.tabSelectedBg.alpha = 0.97
+		this.tabSelectedBridge.alpha = 0.97
+		if (this.contentCardBg) this.contentCardBg.alpha = 0.97
 	}
 
 	private syncReverseInfo(): void {
@@ -705,6 +856,21 @@ class MainUIView extends mylib.UIBase {
 	}
 
 	private OnClickQuickStart() {
+		const tab = MainUIManager.getInstance().lastMainTab || "mode"
+		if (tab == "reverse") {
+			this.startReverseChallenge()
+			return
+		}
+		if (tab == "endless") {
+			this.startEndlessChallenge()
+			return
+		}
+		if (tab == "daily") {
+			if (MainUIManager.getInstance().getDailyActionLabel() != "已完成") {
+				this.onDailyAction()
+			}
+			return
+		}
 		if (MainUIManager.getInstance().special == 0) {
 			const classicIndices = MainUIManager.getClassicLevelMapIndices();
 			const guanqia = MainUIManager.getInstance().guanqia || 0;
@@ -738,28 +904,18 @@ class MainUIView extends mylib.UIBase {
 	}
 
 	private OnClickOther() {
-		MainUIManager.getInstance().special = 1
-		this.other.visible = false
-		this.pintu.visible = true
+		MainUIManager.getInstance().special = MainUIManager.getInstance().special == 1 ? 0 : 1
+		MainUIManager.getInstance().lastMainTab = "mode"
 		this.syncModeToggleBtn()
-		this.resetLevelList(false);
-	}
-
-	private OnClickPintu() {
-
-		//this.other.visible = true
-		//this.pintu.visible = false
-		MainUIManager.getInstance().special = 0
-		this.syncModeToggleBtn()
-		//this.showUILeft(new GameMath(0));
-		this.resetLevelList(false);
+		this.syncMainTabs()
+		this.syncTabPage()
 	}
 
 	private onDailyChallenge(): void {
 		const mgr = MainUIManager.getInstance();
-		const txt = mgr.getDailySummaryText();
-		const btn = mgr.getDailyActionLabel();
-		AlertBox.alert(txt, this.onDailyAction, this, btn);
+		mgr.lastMainTab = "daily"
+		this.syncMainTabs()
+		this.syncTabPage()
 	}
 
 	private onDailyAction(): void {
@@ -805,6 +961,28 @@ class MainUIView extends mylib.UIBase {
 
 	private onTimedChallenge(): void {
 		const mgr = MainUIManager.getInstance();
+		mgr.lastMainTab = "reverse"
+		this.syncMainTabs()
+		this.syncTabPage()
+	}
+
+	private onEndlessChallenge(): void {
+		const mgr = MainUIManager.getInstance();
+		mgr.lastMainTab = "endless"
+		this.syncMainTabs()
+		this.syncTabPage()
+	}
+
+	private onReverseChallenge(): void {
+		const mgr = MainUIManager.getInstance();
+		mgr.lastMainTab = "mode"
+		this.syncModeToggleBtn()
+		this.syncMainTabs()
+		this.syncTabPage()
+	}
+
+	private startReverseChallenge(): void {
+		const mgr = MainUIManager.getInstance()
 		AlertBox.alert(mgr.getReverseRuleText(), () => {
 			mgr.startReverseChallenge()
 			this.syncReverseInfo()
@@ -818,7 +996,7 @@ class MainUIView extends mylib.UIBase {
 		}, this, "开始挑战");
 	}
 
-	private onEndlessChallenge(): void {
+	private startEndlessChallenge(): void {
 		const mgr = MainUIManager.getInstance();
 		mgr.bEndlessMode = true;
 		mgr.endlessLevel = 1;
@@ -826,13 +1004,5 @@ class MainUIView extends mylib.UIBase {
 		mgr.bHelp = false;
 		mgr.special = 0;
 		this.showUILeft(new Mission(0));
-	}
-
-	private onReverseChallenge(): void {
-		const mgr = MainUIManager.getInstance();
-		mgr.bReverseMode = false;
-		mgr.special = (mgr.special == 1) ? 0 : 1;
-		this.syncModeToggleBtn()
-		this.resetLevelList(false);
 	}
 }
