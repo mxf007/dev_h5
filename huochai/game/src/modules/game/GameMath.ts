@@ -159,13 +159,13 @@ class GameMath extends mylib.UIBase {
 			var img_path_add = RES.getRes("huochai_json.ingame_ui_add")
 			this.txt_huochai1.text = this.step.toString() + " / " + this.constStep.toString()
 			if (this.gameType == 1) {
-				this.txt_condition1.text = "增加火柴"
+				this.txt_condition1.text = "增加"
 			} else if (this.gameType == 2) {
 				img_path_add = RES.getRes("huochai_json.ingame_ui_move")
-				this.txt_condition1.text = "移动火柴"
+				this.txt_condition1.text = "移动"
 			} else if (this.gameType == 3) {
 				img_path_add = RES.getRes("huochai_json.ingame_ui_delete")
-				this.txt_condition1.text = "删除火柴"
+				this.txt_condition1.text = "删除"
 			}
 			this.img_target_bg1.$setTexture(img_path_add)
 			this._startRuleDebugTicker()
