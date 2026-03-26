@@ -105,9 +105,14 @@ class MainUIView extends mylib.UIBase {
 		this.popallitem()
 		this.zsPanel.visible = true
 		this.signIn.visible = false
-		// MainUIManager.getInstance().score = 10000   // 测试代码加财富
-		// MainUIManager.getInstance().guanqia = MyConst.MapData.length -1
-		// MainUIManager.getInstance().saveData()
+
+		if (MainUIManager.getInstance().score < 10000) {
+			MainUIManager.getInstance().score = 10000   // 测试代码加财富
+			MainUIManager.getInstance().guanqia = MyConst.MapData.length - 1
+			MainUIManager.getInstance().guanqia1 = 25 // 数字玩法关卡
+			MainUIManager.getInstance().guanqiaReverse = 20 //反转玩法关卡
+			MainUIManager.getInstance().saveData()
+		}
 		this.loadData()
 
 		this.score_num.text = MainUIManager.getInstance().score.toString()
@@ -631,24 +636,15 @@ class MainUIView extends mylib.UIBase {
 	}
 
 	private getEndlessBtnText(high: number): string {
-		if (!high || high <= 0) return "连续挑战"
-		if (high > 999) return "连续挑战·999+"
-		return "连续挑战·" + high
+		return "经典玩法"
 	}
 
 	private syncEndlessInfo(): void {
 		if (!this.endlessInfo) return
 		const mgr = MainUIManager.getInstance()
-		const lv = mgr.getEndlessDisplayLevel()
-		const best = mgr.getEndlessLevelBestTime(lv)
-		const avg = mgr.getEndlessLevelAvgTime(lv)
-		if (best > 0 && avg > 0) {
-			this.endlessInfo.text = "当前Lv" + lv + " 最佳" + best.toFixed(2) + "s 均" + avg.toFixed(2) + "s"
-		} else if (best > 0) {
-			this.endlessInfo.text = "当前Lv" + lv + " 最佳" + best.toFixed(2) + "s"
-		} else {
-			this.endlessInfo.text = "当前Lv" + lv + " 暂无记录"
-		}
+		const total = MainUIManager.getClassicLevelMapIndices().length
+		const current = MainUIManager.getClassicListIndexForSelectId(mgr.guanqia || 1)
+		this.endlessInfo.text = "当前进度 " + current + "/" + total
 	}
 
 	private jumpPage(view) {
@@ -662,7 +658,7 @@ class MainUIView extends mylib.UIBase {
 
 	private syncModeToggleBtn(): void {
 		if (!this.reverseBtn) return
-		this.reverseBtn.label = MainUIManager.getInstance().special == 1 ? "数字玩法" : "经典玩法"
+		this.reverseBtn.label = "数字玩法"
 	}
 
 	private syncMainTabs(): void {
@@ -681,26 +677,26 @@ class MainUIView extends mylib.UIBase {
 	private syncTabPage(): void {
 		const mgr = MainUIManager.getInstance()
 		const tab = mgr.lastMainTab || "mode"
-		const isMode = tab == "mode"
-		if (this.scoll) this.scoll.visible = isMode
-		if (this.tabPageGroup) this.tabPageGroup.visible = !isMode
+		const isLevelList = tab == "endless" || tab == "mode"
+		if (this.scoll) this.scoll.visible = isLevelList
+		if (this.tabPageGroup) this.tabPageGroup.visible = !isLevelList
 		if (this.reverseInfo) this.reverseInfo.visible = tab == "reverse"
 		if (this.reverseStars) this.reverseStars.visible = tab == "reverse"
 		if (this.endlessInfo) this.endlessInfo.visible = tab == "endless"
 		if (this.other) {
-			this.other.visible = isMode
+			this.other.visible = false
 			this.other.label = mgr.special == 1 ? "切换经典玩法" : "切换数字玩法"
 		}
 		if (this.pintu) this.pintu.visible = false
-		if (this.img_box) this.img_box.visible = !isMode
-		if (this.rewardLabel) this.rewardLabel.visible = !isMode
+		if (this.img_box) this.img_box.visible = !isLevelList
+		if (this.rewardLabel) this.rewardLabel.visible = !isLevelList
 		if (this.quickStart) {
 			this.quickStart.enabled = true
 			this.quickStart.label = this.getQuickStartLabel(tab)
 		}
 		this.syncReverseInfo()
 		this.syncEndlessInfo()
-		if (isMode) {
+		if (isLevelList) {
 			this.resetLevelList(false)
 			return
 		}
@@ -711,7 +707,7 @@ class MainUIView extends mylib.UIBase {
 			return
 		}
 		if (tab == "endless") {
-			this.tabPageTitle.text = "连续挑战"
+			this.tabPageTitle.text = "经典玩法"
 			this.tabPageDesc.text = this.buildEndlessTabDesc()
 			return
 		}
@@ -724,9 +720,9 @@ class MainUIView extends mylib.UIBase {
 
 	private getQuickStartLabel(tab: string): string {
 		if (tab == "reverse") return "开始记忆挑战"
-		if (tab == "endless") return "开始连续挑战"
+		if (tab == "endless") return "开始经典玩法"
 		if (tab == "daily") return MainUIManager.getInstance().getDailyActionLabel()
-		return "开始当前玩法"
+		return "开始数字玩法"
 	}
 
 	private buildReverseTabDesc(): string {
@@ -748,22 +744,14 @@ class MainUIView extends mylib.UIBase {
 
 	private buildEndlessTabDesc(): string {
 		const mgr = MainUIManager.getInstance()
-		const lv = mgr.getEndlessDisplayLevel()
-		const best = mgr.getEndlessLevelBestTime(lv)
-		const avg = mgr.getEndlessLevelAvgTime(lv)
-		const lines: string[] = []
-		lines.push("按顺序连续闯关，失败即结算本轮成绩。")
-		lines.push("")
-		lines.push("当前挑战关卡：Lv" + lv)
-		if (best > 0 && avg > 0) {
-			lines.push("最高用时：" + best.toFixed(2) + "s")
-			lines.push("平均用时：" + avg.toFixed(2) + "s")
-		} else if (best > 0) {
-			lines.push("最高用时：" + best.toFixed(2) + "s")
-		} else {
-			lines.push("当前关卡暂无记录")
-		}
-		return lines.join("\n")
+		const total = MainUIManager.getClassicLevelMapIndices().length
+		const current = MainUIManager.getClassicListIndexForSelectId(mgr.guanqia || 1)
+		return [
+			"经典火柴关卡列表。",
+			"",
+			"当前进度：" + current + "/" + total,
+			"点击关卡可直接进入挑战。"
+		].join("\n")
 	}
 
 	private buildDailyTabDesc(): string {
@@ -968,6 +956,7 @@ class MainUIView extends mylib.UIBase {
 
 	private onEndlessChallenge(): void {
 		const mgr = MainUIManager.getInstance();
+		mgr.special = 0
 		mgr.lastMainTab = "endless"
 		this.syncMainTabs()
 		this.syncTabPage()
@@ -975,6 +964,7 @@ class MainUIView extends mylib.UIBase {
 
 	private onReverseChallenge(): void {
 		const mgr = MainUIManager.getInstance();
+		mgr.special = 1
 		mgr.lastMainTab = "mode"
 		this.syncModeToggleBtn()
 		this.syncMainTabs()
@@ -990,11 +980,26 @@ class MainUIView extends mylib.UIBase {
 
 	private startEndlessChallenge(): void {
 		const mgr = MainUIManager.getInstance();
-		mgr.bEndlessMode = true;
+		const classicIndices = MainUIManager.getClassicLevelMapIndices();
+		if (classicIndices.length == 0) {
+			AlertBox.alert("暂无可用关卡！");
+			return;
+		}
+		const guanqia = mgr.guanqia || 0;
+		const targetMapIndex = Math.max(0, guanqia - 1);
+		let nextIdx = -1;
+		for (let j = 0; j < classicIndices.length; j++) {
+			if (classicIndices[j] >= targetMapIndex) {
+				nextIdx = j;
+				break;
+			}
+		}
+		const actualIdx = nextIdx >= 0 ? classicIndices[nextIdx] : classicIndices[classicIndices.length - 1];
+		mgr.bEndlessMode = false;
 		mgr.endlessLevel = 1;
-		mgr.selectId = 1;
+		mgr.selectId = actualIdx + 1;
 		mgr.bHelp = false;
 		mgr.special = 0;
-		this.showUILeft(new Mission(0));
+		this.showUILeft(new Mission(actualIdx));
 	}
 }
