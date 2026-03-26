@@ -150,7 +150,7 @@ class GameView extends mylib.UIBase {
 			this.syncRuntimeStats(this.buildRuntimeStatsText(mainMgr.getEndlessLevelBestTime(this.curLv + 1), mainMgr.getEndlessLevelAvgTime(this.curLv + 1)), true)
 		} else if (mainMgr.bReverseMode) {
 			const reverseId = mainMgr.reverseChallengeLevelId > 0 ? mainMgr.reverseChallengeLevelId : mainMgr.getReverseCurrentLevel()
-			this.guankaLv.text = "反转挑战 第" + reverseId + "关"
+			this.guankaLv.text = "记忆挑战 第" + reverseId + "关"
 			this.syncReverseDifficultyStars(mainMgr.getReverseDifficultyValue(reverseId), true)
 		} else if (mainMgr.bTimedChallenge) {
 			const timedId = mainMgr.timedChallengeLevelId > 0 ? mainMgr.timedChallengeLevelId : (this.curLv + 1)
@@ -608,7 +608,7 @@ class GameView extends mylib.UIBase {
 					this.OnGameEnd(false)
 					let msg = ret.firstPass ? "首次通关 +5星" : "重复通关 +1星"
 					if (ret.comboBonus > 0) msg += "，3连胜额外 +" + ret.comboBonus + "星"
-					if (ret.finishedAll) msg += "，已通关全部反转关卡"
+					if (ret.finishedAll) msg += "，已通关全部记忆关卡"
 					this.ShowTips(msg)
 					return
 				}
@@ -689,7 +689,7 @@ class GameView extends mylib.UIBase {
 		const mgr = MainUIManager.getInstance();
 		if (mgr.bReverseMode) {
 			mgr.onReverseChallengeFail()
-			this.ShowTips("反转失败，未扣星")
+			this.ShowTips("记忆挑战失败，未扣星")
 			return
 		}
 		if (mgr.bEndlessMode) {

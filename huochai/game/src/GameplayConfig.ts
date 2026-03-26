@@ -31,7 +31,7 @@ export enum GameplayMode {
 	Daily = 2,        // 每日挑战
 	Timed = 3,        // 限时挑战
 	Endless = 4,      // 连续闯关
-	Reverse = 5,      // 反转挑战
+	Reverse = 5,      // 记忆挑战
 }
 
 /** 操作类型 */

@@ -49,11 +49,11 @@
 		<e:Rect x="0" y="48" width="690" height="2" fillColor="0xA66C2C" alpha="0.55"/>
 		<e:Image id="tabSelectedBg" x="-2" y="-8" width="169" height="60" source="huochai_json.bg2" alpha="0.97" scale9Grid="12,12,76,76"/>
 		<e:Image id="tabSelectedBridge" x="8" y="46" width="149" height="18" source="huochai_json.bg2" alpha="0.97" scale9Grid="12,12,76,76"/>
-		<ns1:OneStateButton id="timedBtn" x="0" y="0" width="165" height="48" label="反转挑战">
+		<ns1:OneStateButton id="timedBtn" x="0" y="0" width="165" height="48" label="记忆挑战">
 			<ns1:skinName>
 				<e:Skin states="up,down,disabled">
 					<e:Image width="100%" height="100%" source="btres_json.bg_orange" source.down="btres_json.bg_orange" source.disabled="btres_json.bg_orange"/>
-					<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0" text="反转挑战" textColor="0x2E2C2D" size="22" fontFamily="Microsoft YaHei" textAlign="center" verticalAlign="middle" bold="true"/>
+					<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0" text="记忆挑战" textColor="0x2E2C2D" size="22" fontFamily="Microsoft YaHei" textAlign="center" verticalAlign="middle" bold="true"/>
 				</e:Skin>
 			</ns1:skinName>
 		</ns1:OneStateButton>

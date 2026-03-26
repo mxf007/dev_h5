@@ -595,7 +595,7 @@ class MainUIView extends mylib.UIBase {
 		this.syncModeToggleBtn()
 		const high = mgr.getEndlessHighScore();
 		if (this.endlessBtn) this.endlessBtn.label = this.getEndlessBtnText(high);
-		if (this.timedBtn) this.timedBtn.label = "反转挑战"
+		if (this.timedBtn) this.timedBtn.label = "记忆挑战"
 		this.syncReverseInfo()
 		this.syncEndlessInfo()
 		this.resetLevelList(false);
@@ -706,7 +706,7 @@ class MainUIView extends mylib.UIBase {
 		}
 		if (!this.tabPageTitle || !this.tabPageDesc) return
 		if (tab == "reverse") {
-			this.tabPageTitle.text = "反转挑战"
+			this.tabPageTitle.text = "记忆挑战"
 			this.tabPageDesc.text = this.buildReverseTabDesc()
 			return
 		}
@@ -723,7 +723,7 @@ class MainUIView extends mylib.UIBase {
 	}
 
 	private getQuickStartLabel(tab: string): string {
-		if (tab == "reverse") return "开始反转挑战"
+		if (tab == "reverse") return "开始记忆挑战"
 		if (tab == "endless") return "开始连续挑战"
 		if (tab == "daily") return MainUIManager.getInstance().getDailyActionLabel()
 		return "开始当前玩法"
@@ -983,17 +983,9 @@ class MainUIView extends mylib.UIBase {
 
 	private startReverseChallenge(): void {
 		const mgr = MainUIManager.getInstance()
-		AlertBox.alert(mgr.getReverseRuleText(), () => {
-			mgr.startReverseChallenge()
-			this.syncReverseInfo()
-			const idx = mgr.selectId - 1
-			const mapType = MyConst.MapData[idx].mapType;
-			if (mapType == 999) {
-				this.showUILeft(new GameView());
-			} else {
-				this.showUILeft(new Mission(idx));
-			}
-		}, this, "开始挑战");
+		mgr.startReverseChallenge()
+		this.syncReverseInfo()
+		this.showUILeft(new ReversePreviewView())
 	}
 
 	private startEndlessChallenge(): void {

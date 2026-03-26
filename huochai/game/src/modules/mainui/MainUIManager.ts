@@ -232,7 +232,7 @@ class MainUIManager {
 
 	public getReverseRuleText(): string {
 		const lines: string[] = []
-		lines.push("【反转挑战规则】")
+		lines.push("【记忆挑战规则】")
 		lines.push("从完成态出发，在限定步数内还原到初始图形")
 		lines.push("关卡分层：非常简单 ★☆☆☆☆ / 中等 ★★★☆☆ / 偏难 ★★★★★")
 		lines.push("首次通关：+5星")
