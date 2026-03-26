@@ -304,7 +304,7 @@ class MainUIManager {
 	}
 
 	private createDailyTasks(): any {
-		// 策略：2 个拼图（尽量 1 添加 + 1 移动/删除，避开等式关）+ 1 个数字玩法
+		// 策略：从对应玩法 10 关以上的关卡中随机选择
 		const maxClassic = Math.max(1, Math.min(this.guanqia || 1, (MyConst.MapData ? MyConst.MapData.length : 1)));
 		const maxMath = Math.max(1, Math.min(this.guanqia1 || 1, (MyConst.MathMapData ? MyConst.MathMapData.length : 1)));
 
@@ -323,9 +323,22 @@ class MainUIManager {
 			}
 		}
 
-		// 优先：添加1个 + 移动/删除1个；若某类不足则从其他类补
+		// 筛选 10 关以上的关卡池
+		const poolsAbove10: { [k: number]: number[] } = { 1: [], 2: [], 3: [] };
+		for (let k = 1; k <= 3; k++) {
+			if (pools[k]) {
+				poolsAbove10[k] = pools[k].filter(lv => lv > 10);
+			}
+		}
+
+		// 优先：添加 1 个 + 移动/删除 1 个；若某类不足则从其他类补
 		const allClassic: number[] = [];
 		for (let k = 1; k <= 3; k++) allClassic.push.apply(allClassic, pools[k] || []);
+		
+		// 10 关以上的全部关卡
+		const allAbove10: number[] = [];
+		for (let k = 1; k <= 3; k++) allAbove10.push.apply(allAbove10, poolsAbove10[k] || []);
+		
 		const pickFrom = (arr: number[], exclude: number[]): number => {
 			const ok = arr.filter(x => exclude.indexOf(x) < 0);
 			if (ok.length <= 0) return arr.length > 0 ? arr[Math.floor(rnd() * arr.length)] : 1;
@@ -333,28 +346,48 @@ class MainUIManager {
 		};
 
 		const classic: number[] = [];
-		// 第一关：优先添加
-		if (pools[1] && pools[1].length > 0) {
+		// 第一关：优先从 10 关以上的添加类型中选择
+		if (poolsAbove10[1] && poolsAbove10[1].length > 0) {
+			classic.push(pickFrom(poolsAbove10[1], []));
+		} else if (pools[1] && pools[1].length > 0) {
+			// 如果 10 关以上没有添加类型，从所有添加类型中选择
 			classic.push(pickFrom(pools[1], []));
 		}
-		// 第二关：优先移动或删除
-		const moveOrDel = (pools[2] || []).concat(pools[3] || []);
-		if (moveOrDel.length > 0) {
-			classic.push(pickFrom(moveOrDel, classic));
+		
+		// 第二关：优先从 10 关以上的移动或删除类型中选择
+		const moveOrDelAbove10 = (poolsAbove10[2] || []).concat(poolsAbove10[3] || []);
+		if (moveOrDelAbove10.length > 0) {
+			classic.push(pickFrom(moveOrDelAbove10, classic));
+		} else {
+			// 如果 10 关以上没有移动/删除类型，从所有移动/删除类型中选择
+			const moveOrDel = (pools[2] || []).concat(pools[3] || []);
+			if (moveOrDel.length > 0) {
+				classic.push(pickFrom(moveOrDel, classic));
+			}
 		}
-		// 不足 2 个时从全部已解锁补
+		
+		// 不足 2 个时从全部 10 关以上已解锁补
+		while (classic.length < 2 && allAbove10.length > 0) {
+			const n = pickFrom(allAbove10, classic);
+			if (classic.indexOf(n) < 0) classic.push(n);
+			else break;
+		}
+		
+		// 如果还是不足 2 个，从全部已解锁补
 		while (classic.length < 2 && allClassic.length > 0) {
 			const n = pickFrom(allClassic, classic);
 			if (classic.indexOf(n) < 0) classic.push(n);
 			else break;
 		}
+		
 		if (classic.length < 1) classic.push(1);
 		if (classic.length < 2) classic.push(classic[0]);
 
-		// 数字玩法：从已解锁范围随机 1 个
-		const mathLv = maxMath > 0 ? 1 + Math.floor(rnd() * maxMath) : 1;
+		// 数字玩法：从 10 关以上已解锁范围随机 1 个，如果不足 10 关则从已解锁范围随机
+		const mathPool = maxMath > 10 ? Array.from({length: maxMath - 10}, (_, i) => i + 11) : Array.from({length: maxMath}, (_, i) => i + 1);
+		const mathLv = mathPool.length > 0 ? mathPool[Math.floor(rnd() * mathPool.length)] : 1;
 
-		// 限制条件：0无 1仅删除 2仅移动 3禁用提示
+		// 限制条件：0 无 1 仅删除 2 仅移动 3 禁用提示
 		const constraint = Math.floor(rnd() * 4);
 		let finalClassic = classic;
 		if (constraint == 1 && pools[3] && pools[3].length >= 2) {
@@ -602,7 +635,7 @@ class MainUIManager {
 	}
 
 	/**
-	 * guanqia / selectId 为 MapData 下标+1。
+	 * guanqia / selectId 为 MapData 下标 +1。
 	 * 返回经典主界面列表上从 1 开始的格子序号（与 item.index 一致），用于滚动、高亮、「当前关」与快速开始。
 	 */
 	public static getClassicListIndexForSelectId(selectId: number): number {
@@ -618,5 +651,50 @@ class MainUIManager {
 		}
 		if (nextIdx < 0) return classic.length;
 		return nextIdx + 1;
+	}
+
+	/**
+	 * 调试方法：单独调用 createDailyTasks 并输出结果到控制台
+	 * 可以在浏览器控制台通过 MainUIManager.getInstance().debugDailyTasks() 调用
+	 */
+	public debugDailyTasks(): void {
+		console.log("=== 每日挑战任务调试信息 ===");
+		console.log("当前日期:", this.getTodayStr());
+		console.log("玩家已解锁 - 经典关卡:", this.guanqia, "数字关卡:", this.guanqia1);
+		
+		const dailyData = this.createDailyTasks();
+		
+		console.log("\n生成的每日任务:");
+		console.log("日期:", dailyData.date);
+		console.log("限制条件:", dailyData.constraint, this.getConstraintText(dailyData.constraint));
+		console.log("\n任务列表:");
+		
+		dailyData.tasks.forEach((task: any, index: number) => {
+			const taskType = task.mode === 1 ? "数字玩法" : "拼图玩法";
+			const level = task.level;
+			const mapData = task.mode === 1 ? MyConst.MathMapData[level - 1] : MyConst.MapData[level - 1];
+			
+			console.log(`\n任务${index + 1}:`);
+			console.log(`  类型：${taskType}`);
+		 console.log(`  关卡：${level}`);
+			if (mapData) {
+				console.log(`  地图类型：${mapData.mapType}`);
+				if (mapData.rule) {
+					const ruleNames = ["未知", "添加", "移动", "删除"];
+					console.log(`  规则类型：${ruleNames[mapData.rule[0]] || '未知'}`);
+					console.log(`  步数：${mapData.rule[1]}`);
+				}
+			}
+		});
+		
+		console.log("\n=== 调试信息结束 ===");
+	}
+
+	/**
+	 * 获取限制条件的文字描述
+	 */
+	private getConstraintText(constraint: number): string {
+		const texts = ["无限制", "仅删除", "仅移动", "禁用提示"];
+		return texts[constraint] || "未知";
 	}
 }
