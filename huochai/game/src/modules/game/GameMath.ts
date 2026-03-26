@@ -133,7 +133,7 @@ class GameMath extends mylib.UIBase {
 		this.gameGroup.removeChildren()
 		this._map = null
 		var mapType = MyConst.MathMapData[this.curLv].mapType
-		const fit = this.calcMapFit()
+		const fit = mapType == 999 ? this.calcEquationMapFit() : this.calcMapFit()
 		if (mapType != 999) {
 			this._map = new MapGroup(this.curLv, mapType)
 			this._map.x = fit.x
@@ -428,6 +428,29 @@ class GameMath extends mylib.UIBase {
 		const scale  = Math.min(scaleW, scaleH)
 		const x = (DESIGN_W - DESIGN_W * scale) / 2
 		return { scale, x, y: 0 }
+	}
+
+	/**
+	 * 等式数字玩法专用排版：
+	 * - 允许轻微放大，让数字更饱满
+	 * - 在 gameGroup 可用高度内偏上居中，视觉上更贴近题面区域
+	 */
+	private calcEquationMapFit(): { scale: number, x: number, y: number } {
+		const stage = egret.MainContext.instance.stage
+		const stageW = (stage && stage.stageWidth) ? stage.stageWidth : 720
+		const stageH = (stage && stage.stageHeight) ? stage.stageHeight : 1280
+		const DESIGN_W = 720
+		const DESIGN_H = 800
+		const UI_TOP = 177
+		const UI_BOTTOM = 150
+		const availH = stageH - UI_TOP - UI_BOTTOM
+		const targetScale = 1.04
+		const scaleW = (stageW + 20) / DESIGN_W
+		const scaleH = availH / DESIGN_H
+		const scale = Math.min(targetScale, scaleW, scaleH)
+		const x = Math.round((stageW - DESIGN_W * scale) / 2)
+		const y = Math.round(Math.max(0, (availH - DESIGN_H * scale) / 2 - 24))
+		return { scale, x, y }
 	}
 
 	private _startRuleDebugTicker(): void {

@@ -19,6 +19,13 @@ class MapEqualyGroup extends eui.Component {
 	private stepData: any
 	private curLv: number
 	private readonly _selectedFilter: egret.GlowFilter = new egret.GlowFilter(0x32C5FF, 1, 28, 28, 2, 1, false, false)
+	private readonly _fixedFilter: egret.ColorMatrixFilter = new egret.ColorMatrixFilter([
+		0.84, 0.06, 0.00, 0.00, 8,
+		0.06, 0.82, 0.00, 0.00, 6,
+		0.00, 0.05, 0.72, 0.00, 0,
+		0.00, 0.00, 0.00, 1.00, 0
+	])
+	private readonly _fixedGlow: egret.GlowFilter = new egret.GlowFilter(0xF5C56B, 0.32, 6, 6, 1, 1, false, false)
 
 	// 七段显示器：key = 段位十进制编码(各段用十位权重), value = 数字
 	// 编码方式：段[0..6] 各贡献 10^(6-i)，求和得 tmpNum
@@ -387,6 +394,7 @@ class MapEqualyGroup extends eui.Component {
 				}
 				else if (szMap[i] == 2) {
 					obj.$setTexture(img_path_fix)
+					obj.filters = [this._fixedFilter, this._fixedGlow]
 				}
 				else if (szMap[i] == 4) {
 					obj.$setTexture(img_path_select)
