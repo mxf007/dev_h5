@@ -90,6 +90,7 @@ class GameView extends mylib.UIBase {
 	private _timerToken: number = 0
 	private _timerStart: number = 0
 	private _ruleDebugToken: number = 0
+	private _levelStartAt: number = 0
 	private static readonly TIMED_RANK_KEY: string = "huochaiTimedRankV2"
 	private static readonly WIN_BGM_ID: string = "sound/snd_08.mp3"
 	public constructor() {
@@ -102,6 +103,7 @@ class GameView extends mylib.UIBase {
 
 	private popallitem() {
 		this._stopWinBgm()
+		this._levelStartAt = Date.now()
 		this.step = 0 // 初始化 步数
 		this.bClickTip = false
 		this.bLightHintShown = false
@@ -552,6 +554,7 @@ class GameView extends mylib.UIBase {
 	}
 	private GameComplete(e) {
 		var bWin = e.data.bWin
+		const completedLevel = this.curLv + 1
 		if (bWin) {
 				if (MainUIManager.getInstance().bHelp == false) {
 					this.curLv++
@@ -584,6 +587,8 @@ class GameView extends mylib.UIBase {
 
 				// 连续闯关：推进关卡，每关+5星星
 				if (mgrRef.bEndlessMode) {
+					const elapsed = Math.max(0.01, (Date.now() - this._levelStartAt) / 1000)
+					mgrRef.recordEndlessLevelTime(completedLevel, elapsed)
 					mgrRef.endlessLevel = this.curLv + 1;
 					mgrRef.score += 5;
 					mgrRef.saveData();

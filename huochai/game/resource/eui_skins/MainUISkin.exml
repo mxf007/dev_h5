@@ -3,7 +3,7 @@
 	<w:Config id="17120d5285b" scale9Grid="40,45,2,35"/>
 	<e:Image fillMode="scale" verticalCenter="68" height="1416" width="720" horizontalCenter="0" source="scenebg_png" anchorOffsetY="0"/>
 
-	<e:Scroller id="scoll" anchorOffsetY="0" bounces="false" top="270" bottom="140" width="660" horizontalCenter="0">
+	<e:Scroller id="scoll" anchorOffsetY="0" bounces="false" top="300" bottom="140" width="660" horizontalCenter="0">
 		<e:List id="itemList" anchorOffsetY="0"  itemRendererSkinName="contentsItem">
 			<e:layout>
 				<e:TileLayout orientation="rows" verticalGap="30" horizontalGap="40" paddingLeft="30" paddingRight="30" paddingTop="30"/>
@@ -39,7 +39,7 @@
 			</e:Skin>
 		</ns1:skinName>
 	</ns1:OneStateButton>
-	<e:Group id="modeBtns" x="15" y="205" width="690" height="55">
+	<e:Group id="modeBtns" x="15" y="205" width="690" height="82">
 		<ns1:OneStateButton id="timedBtn" x="0" y="0" width="165" height="48" label="限时挑战">
 			<ns1:skinName>
 				<e:Skin states="up,down,disabled">
@@ -56,6 +56,7 @@
 				</e:Skin>
 			</ns1:skinName>
 		</ns1:OneStateButton>
+		<e:Label id="endlessInfo" x="172" y="52" width="165" height="28" text="当前关卡Lv1 暂无记录" size="16" textColor="0xFFF4CF" stroke="1" strokeColor="0x5C3A12" textAlign="center" verticalAlign="middle"/>
 		<ns1:OneStateButton id="dailyBtn" x="344" y="0" width="165" height="48" label="每日挑战">
 			<ns1:skinName>
 				<e:Skin states="up,down,disabled">

@@ -51,6 +51,7 @@ class MainUIView extends mylib.UIBase {
 	private dailyBtn: OneStateButton
 	private timedBtn: OneStateButton
 	private endlessBtn: OneStateButton
+	private endlessInfo: eui.Label
 	private reverseBtn: OneStateButton
 	private ruleDebugBtn: OneStateButton
 
@@ -566,6 +567,7 @@ class MainUIView extends mylib.UIBase {
 		this.syncModeToggleBtn()
 		const high = MainUIManager.getInstance().getEndlessHighScore();
 		if (this.endlessBtn) this.endlessBtn.label = this.getEndlessBtnText(high);
+		this.syncEndlessInfo()
 
 		if (MainUIManager.getInstance().special == 0) {
 			// this.other.visible = false
@@ -608,6 +610,21 @@ class MainUIView extends mylib.UIBase {
 		if (!high || high <= 0) return "连续闯关"
 		if (high > 999) return "连续闯关·999+"
 		return "连续闯关·" + high
+	}
+
+	private syncEndlessInfo(): void {
+		if (!this.endlessInfo) return
+		const mgr = MainUIManager.getInstance()
+		const lv = mgr.getEndlessDisplayLevel()
+		const best = mgr.getEndlessLevelBestTime(lv)
+		const avg = mgr.getEndlessLevelAvgTime(lv)
+		if (best > 0 && avg > 0) {
+			this.endlessInfo.text = "当前Lv" + lv + " 最佳" + best.toFixed(2) + "s 均" + avg.toFixed(2) + "s"
+		} else if (best > 0) {
+			this.endlessInfo.text = "当前Lv" + lv + " 最佳" + best.toFixed(2) + "s"
+		} else {
+			this.endlessInfo.text = "当前Lv" + lv + " 暂无记录"
+		}
 	}
 
 	private jumpPage(view) {

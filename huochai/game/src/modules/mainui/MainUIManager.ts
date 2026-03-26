@@ -40,6 +40,7 @@ class MainUIManager {
 	public bEndlessMode: boolean = false;
 	public endlessLevel: number = 1;
 	private static readonly ENDLESS_HIGH_KEY = "huochaiEndlessHigh";
+	private static readonly ENDLESS_TIME_KEY = "huochaiEndlessTimeStats";
 	private static readonly RULE_DEBUG_KEY = "huochaiRuleDebug";
 	private _ruleDebugLoaded: boolean = false;
 	private _ruleDebug: boolean = false;
@@ -49,6 +50,52 @@ class MainUIManager {
 	}
 	public setEndlessHighScore(v: number): void {
 		egret.localStorage.setItem(MainUIManager.ENDLESS_HIGH_KEY, "" + v);
+	}
+
+	private loadEndlessTimeStats(): { [level: string]: { best: number, total: number, count: number } } {
+		const raw = egret.localStorage.getItem(MainUIManager.ENDLESS_TIME_KEY);
+		if (!raw) return {};
+		try {
+			const data = JSON.parse(raw);
+			return data && typeof data === "object" ? data : {};
+		} catch (e) {
+			return {};
+		}
+	}
+
+	private saveEndlessTimeStats(data: { [level: string]: { best: number, total: number, count: number } }): void {
+		egret.localStorage.setItem(MainUIManager.ENDLESS_TIME_KEY, JSON.stringify(data || {}));
+	}
+
+	public recordEndlessLevelTime(level: number, sec: number): void {
+		if (level <= 0 || sec <= 0) return;
+		const stats = this.loadEndlessTimeStats();
+		const key = "" + level;
+		const prev = stats[key] || { best: 0, total: 0, count: 0 };
+		const best = prev.best > 0 ? Math.min(prev.best, sec) : sec;
+		stats[key] = {
+			best: Math.round(best * 100) / 100,
+			total: Math.round((prev.total + sec) * 100) / 100,
+			count: (prev.count || 0) + 1,
+		};
+		this.saveEndlessTimeStats(stats);
+	}
+
+	public getEndlessLevelBestTime(level: number): number {
+		const row = this.loadEndlessTimeStats()["" + level];
+		return row && row.best > 0 ? row.best : 0;
+	}
+
+	public getEndlessLevelAvgTime(level: number): number {
+		const row = this.loadEndlessTimeStats()["" + level];
+		if (!row || !row.count) return 0;
+		return Math.round((row.total / row.count) * 100) / 100;
+	}
+
+	public getEndlessDisplayLevel(): number {
+		const max = Math.max(1, (MyConst && MyConst.MapData) ? MyConst.MapData.length : 1);
+		const next = this.getEndlessHighScore() + 1;
+		return Math.max(1, Math.min(next, max));
 	}
 
 	private ensureRuleDebugLoaded(): void {
