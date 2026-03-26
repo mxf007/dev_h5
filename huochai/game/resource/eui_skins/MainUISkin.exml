@@ -59,7 +59,7 @@
 		</ns1:OneStateButton>
 		<e:Rect id="timedTabLine" x="22" y="46" width="120" height="5" fillColor="0xFFE082" ellipseWidth="5" ellipseHeight="5" alpha="0"/>
 		<e:Label id="reverseInfo" x="0" y="52" width="165" height="22" text="当前Lv1/24 非常简单" size="15" textColor="0xFFF4CF" stroke="1" strokeColor="0x5C3A12" textAlign="center" verticalAlign="middle"/>
-		<e:Group id="reverseStars" x="22" y="76" width="122" height="18">
+		<e:Group id="reverseStars" x="22" y="76" width="122" height="18" visible="false">
 			<e:Image id="reverseStar1" x="0" y="0" width="18" height="18" source="gold_star_png"/>
 			<e:Image id="reverseStar2" x="26" y="0" width="18" height="18" source="gold_star_png"/>
 			<e:Image id="reverseStar3" x="52" y="0" width="18" height="18" source="gold_star_png"/>

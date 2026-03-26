@@ -800,7 +800,7 @@ class MainUIView extends mylib.UIBase {
 		if (!this.reverseInfo) return
 		const mgr = MainUIManager.getInstance()
 		this.reverseInfo.text = mgr.getReverseInfoText()
-		this.syncReverseStars(mgr.getReverseDifficultyValue())
+		//this.syncReverseStars(mgr.getReverseDifficultyValue())
 	}
 
 	private syncReverseStars(active: number): void {
