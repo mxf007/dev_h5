@@ -74,6 +74,8 @@ declare class MapSkin9 extends eui.Skin{
 }
 declare class MissionSkin extends eui.Skin{
 }
+declare class ReversePreviewSkin extends eui.Skin{
+}
 declare module skins{
 	class ScrollerSkin extends eui.Skin{
 	}
