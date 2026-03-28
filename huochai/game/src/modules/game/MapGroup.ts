@@ -8,10 +8,20 @@ class MapGroup extends eui.Component {
 
 	private constStep: number// 消耗步数
 	private gameType: number	//1 add 2 remove  3 delete 4 chellenge	
+	/** 实际点击交互类型：记忆挑战下与经典关相反（原增加→按删除还原，原删除→按增加还原） */
+	private _interactionGameType: number
 
 	private mapId: number
 	private stepData: any
 	private bReverse: boolean = false
+	/** 记忆玩法：使用 MapJiyiData；表内「新增/删除」与实际操作对调（1↔3） */
+	private _useJiyiMemory(): boolean {
+		return !!(this.bReverse && MyConst.MapJiyiData && this.curLv >= 0
+			&& this.curLv < MyConst.MapJiyiData.length && MyConst.MapJiyiData[this.curLv])
+	}
+	private _levelRow(): any {
+		return this._useJiyiMemory() ? MyConst.MapJiyiData[this.curLv] : MyConst.MapData[this.curLv]
+	}
 	private readonly _selectedFilter: egret.GlowFilter = new egret.GlowFilter(0x32C5FF, 1, 28, 28, 2, 1, false, false)
 
 	// mapId → 对应的形状模板数组，集中管理，O(1) 查找
@@ -69,8 +79,19 @@ class MapGroup extends eui.Component {
 		var mapSkin = "MapSkin" + mapType.toString()
 		this.skinName = mapSkin;
 		this.curLv = lv
-		this.gameType = MyConst.MapData[this.curLv].rule[0]
-		this.constStep = MyConst.MapData[this.curLv].rule[1]
+		const row = this._levelRow()
+		let g = row.rule[0]
+		if (this._useJiyiMemory()) {
+			if (g == 1) g = 3
+			else if (g == 3) g = 1
+		}
+		this.gameType = g
+		this._interactionGameType = g
+		if (this.bReverse && !this._useJiyiMemory()) {
+			if (this.gameType == 1) this._interactionGameType = 3
+			else if (this.gameType == 3) this._interactionGameType = 1
+		}
+		this.constStep = row.rule[1]
 		this.step = 0
 		this.moveTagert = null
 
@@ -92,9 +113,11 @@ class MapGroup extends eui.Component {
 		}
 	}
 	public initStepData() {
-		const m = MyConst.MapData[this.curLv];
+		const m = this._levelRow()
 		const objLen = m.bef.length
-		const initState = this.bReverse && m.rst && m.rst[0] ? m.rst[0] : m.bef
+		const initState = (this.bReverse && this._useJiyiMemory())
+			? m.bef
+			: (this.bReverse && m.rst && m.rst[0] ? m.rst[0] : m.bef)
 		this.stepData.push(initState)
 		var lllen = this.numChildren
 		for (var i: number = 0; i < objLen; i++) {
@@ -107,15 +130,27 @@ class MapGroup extends eui.Component {
 				break
 			}
 			const val = this.stepData[0][i]
-			if (this.gameType == 1) {
+			if (this._interactionGameType == 1) {
 				if (val != 1) this.szImg[i].addEventListener(egret.TouchEvent.TOUCH_END, this.onClickItemOk, this);
-			} else if (this.gameType == 3) {
+			} else if (this._interactionGameType == 3) {
 				if (val == 1) this.szImg[i].addEventListener(egret.TouchEvent.TOUCH_END, this.onClickItemOk, this);
-			} else if (this.gameType == 2) {
+			} else if (this._interactionGameType == 2) {
 				this.szImg[i].addEventListener(egret.TouchEvent.TOUCH_END, this.onClickItemOk, this);
 			}
 		}
 	}
+	/**
+	 * 强制显示指定盘面（用于记忆挑战预览等，与 bReverseMode 时机无关）。
+	 * 须在本组件皮肤子节点就绪后调用（例如 egret.callLater）。
+	 */
+	public showStaticMapState(szMap: number[]): void {
+		if (!szMap || szMap.length < 1) return
+		this.moveTagert = null
+		this.stepData = [szMap.slice()]
+		this.step = 0
+		this.LoadMap(this.stepData[0])
+	}
+
 	public LoadMap(szMap) {
 		this.moveTagert = null
 		for (var i = 0; i < this.szImg.length; i++) {
@@ -212,7 +247,7 @@ class MapGroup extends eui.Component {
 				}
 			}
 			return
-		} else if (this.stepData[curStep][i] == 0 && this.gameType == 1) {
+		} else if (this.stepData[curStep][i] == 0 && this._interactionGameType == 1) {
 			const sz = this.stepData[curStep].slice()
 			sz[i] = 1
 			this.stepData.push(sz)
@@ -226,7 +261,7 @@ class MapGroup extends eui.Component {
 			if (this.step == this.constStep) {
 				mylib.EvtBus.dispatchEvt(EvtType.TouchCommplete, { lv: this.curLv, bWin: this.CheckComplete(), tagNum: ret[0] });
 			}
-		} else if (this.stepData[curStep][i] == 1 && this.gameType == 3) {
+		} else if (this.stepData[curStep][i] == 1 && this._interactionGameType == 3) {
 			const sz = this.stepData[curStep].slice()
 			sz[i] = 0
 			this.stepData.push(sz)
@@ -250,7 +285,7 @@ class MapGroup extends eui.Component {
 			var dr = this.GetDualTargetNum()
 			return dr && dr[0] && dr[1]
 		}
-		const target = MyConst.MapData[this.curLv].rule[3]
+		const target = this._levelRow().rule[3]
 		const ret = this.GetTriangleNum()
 		return !!(ret && ret[0] == target)
 	}
@@ -258,16 +293,17 @@ class MapGroup extends eui.Component {
 	private CheckReverseComplete(): boolean {
 		if (this.stepData.length < 1) return false
 		const cur = this.stepData[this.stepData.length - 1]
-		const bef = MyConst.MapData[this.curLv].bef
-		if (cur.length !== bef.length) return false
+		const m = this._levelRow()
+		const target = (this._useJiyiMemory() && m.rst && m.rst[0]) ? m.rst[0] : m.bef
+		if (cur.length !== target.length) return false
 		for (let i = 0; i < cur.length; i++) {
-			if (cur[i] !== bef[i]) return false
+			if (cur[i] !== target[i]) return false
 		}
 		return true
 	}
 
 	private isDualTarget(): boolean {
-		const r = MyConst.MapData[this.curLv].rule
+		const r = this._levelRow().rule
 		return r && r.length >= 6 && r[4] > 0 && r[5] > 0
 	}
 
@@ -278,7 +314,7 @@ class MapGroup extends eui.Component {
 	}
 
 	private getPrimaryShapeType(): number {
-		const r = MyConst.MapData[this.curLv].rule
+		const r = this._levelRow().rule
 		if (r && (r[2] == 1 || r[2] == 2)) return r[2]
 		const byMap = MyConst.getMapTypeShapeType ? MyConst.getMapTypeShapeType(this.mapId) : -1
 		return (byMap == 1 || byMap == 2) ? byMap : 1
@@ -315,7 +351,7 @@ class MapGroup extends eui.Component {
 	}
 
 	private GetDualTargetNum(): [boolean, boolean] | null {
-		const r = MyConst.MapData[this.curLv].rule
+		const r = this._levelRow().rule
 		if (!r || r.length < 6) return null
 		const target1 = r[3], target2 = r[5]
 		const shape1 = (r[2] == 1 || r[2] == 2) ? r[2] : this.getPrimaryShapeType()
@@ -339,8 +375,9 @@ class MapGroup extends eui.Component {
 	}
 
 	public ShowTipResult() {
-		const m = MyConst.MapData[this.curLv]
-		this.LoadMap(this.bReverse ? m.bef : (m.rst && m.rst[0] ? m.rst[0] : m.bef))
+		const m = this._levelRow()
+		// 记忆玩法（MapJiyiData）：答案为 rst[0]；经典反转无 Jiyi 时与开局 rst 一致
+		this.LoadMap(m.rst && m.rst[0] ? m.rst[0] : m.bef)
 	}
 	public CloseTipResult() {
 		if (this.stepData.length < 1) {
@@ -357,9 +394,9 @@ class MapGroup extends eui.Component {
 		const cur = this.stepData[this.stepData.length - 1]
 		for (let i = 0; i < this.szImg.length && i < cur.length; i++) {
 			let canOperate = false
-			if (this.gameType == 1 && cur[i] == 0) canOperate = true
-			else if (this.gameType == 3 && cur[i] == 1) canOperate = true
-			else if (this.gameType == 2 && cur[i] == 1) canOperate = true
+			if (this._interactionGameType == 1 && cur[i] == 0) canOperate = true
+			else if (this._interactionGameType == 3 && cur[i] == 1) canOperate = true
+			else if (this._interactionGameType == 2 && cur[i] == 1) canOperate = true
 			if (canOperate && this.szImg[i]) {
 				const obj = this.szImg[i]
 				egret.Tween.removeTweens(obj)
@@ -531,8 +568,8 @@ class MapGroup extends eui.Component {
 	}
 
 	public GetRuleDebugText(): string {
-		const r = MyConst.MapData[this.curLv].rule
-		const modeName = this.gameType == 1 ? "添加" : (this.gameType == 2 ? "移动" : "删除")
+		const r = this._levelRow().rule
+		const modeName = this._interactionGameType == 1 ? "添加" : (this._interactionGameType == 2 ? "移动" : "删除")
 		const mapData: number[] = this.stepData.length > 0 ? this.stepData[this.stepData.length - 1] : []
 		let active = 0
 		let selected = 0

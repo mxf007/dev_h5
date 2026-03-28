@@ -3,12 +3,8 @@ class GameView extends mylib.UIBase {
 	private score_num: eui.Label
 	private guankaLv: eui.Label
 	private runtimeStats: eui.Label
-	private reverseDiffGroup: eui.Group
-	private reverseDiffStar1: eui.Image
-	private reverseDiffStar2: eui.Image
-	private reverseDiffStar3: eui.Image
-	private reverseDiffStar4: eui.Image
-	private reverseDiffStar5: eui.Image
+
+	private txt_memory_difficulty: eui.Label
 	private gameGroup: eui.Group
 	private readonly _inactiveStarFilter: egret.ColorMatrixFilter = new egret.ColorMatrixFilter([
 		0.30, 0.59, 0.11, 0.00, -12,
@@ -94,6 +90,7 @@ class GameView extends mylib.UIBase {
 	private onShowVideo:eui.Group
 	private show_video_ok:OneStateButton
 	private show_video_cancel :OneStateButton
+	private show_video_close: OneStateButton
 	private video_tips: eui.Label
 
 	private bRetry: boolean
@@ -105,6 +102,8 @@ class GameView extends mylib.UIBase {
 	private _ruleDebugToken: number = 0
 	private _levelStartAt: number = 0
 	private _winSoundPlayed: boolean = false
+	/** 记忆挑战：上一局通关是否推进了 guanqiaReverse（末关通关不推进，重试时不可再减进度） */
+	private _reverseLastWinAdvanced: boolean = false
 	private static readonly TIMED_RANK_KEY: string = "huochaiTimedRankV2"
 	private static readonly WIN_BGM_ID: string = "sound/snd_08.mp3"
 	public constructor() {
@@ -115,6 +114,15 @@ class GameView extends mylib.UIBase {
 		this.popallitem()
 	}
 
+	/** 当前关卡行：记忆玩法读 MapJiyiData，其它读 MapData */
+	private _playLevelRow(): any {
+		const mgr = MainUIManager.getInstance()
+		if (mgr.bReverseMode && MyConst.MapJiyiData && this.curLv >= 0 && this.curLv < MyConst.MapJiyiData.length) {
+			return MyConst.MapJiyiData[this.curLv]
+		}
+		return MyConst.MapData[this.curLv]
+	}
+
 	private popallitem() {
 		this._stopWinBgm()
 		this._winSoundPlayed = false
@@ -122,12 +130,25 @@ class GameView extends mylib.UIBase {
 		this.step = 0 // 初始化 步数
 		this.bClickTip = false
 		this.bLightHintShown = false
-		if (this.curLv >= MyConst.MapData.length) {
+		this._reverseLastWinAdvanced = false
+		const mainMgrEarly = MainUIManager.getInstance()
+		if (mainMgrEarly.bReverseMode) {
+			if (!MyConst.MapJiyiData || this.curLv < 0 || this.curLv >= MyConst.MapJiyiData.length || !MyConst.MapJiyiData[this.curLv]) {
+				this.ShowTips("记忆玩法 MapJiyiData 缺少本关配置")
+				return
+			}
+		} else if (this.curLv < 0 || this.curLv >= MyConst.MapData.length) {
 			this.ShowTips("您已经达到最大关卡配置，请等待程序更新！")
 			return
 		}
-		this.constStep = MyConst.MapData[this.curLv].rule[1]
-		this.gameType = MyConst.MapData[this.curLv].rule[0]	// 类型： 1 add 2 remove  3 delete 4 chellenge	
+		const playRow = this._playLevelRow()
+		this.constStep = playRow.rule[1]
+		let gt = playRow.rule[0]
+		if (mainMgrEarly.bReverseMode && MyConst.MapJiyiData && this.curLv >= 0 && this.curLv < MyConst.MapJiyiData.length && MyConst.MapJiyiData[this.curLv]) {
+			if (gt == 1) gt = 3
+			else if (gt == 3) gt = 1
+		}
+		this.gameType = gt	// 类型： 1 add 2 move  3 delete 4 chellenge（记忆关 Jiyi 已对调 1↔3）
 
 		this.btn_back_step.$setTouchEnabled(false) // 设置按钮灰色
 		this.gameEnd.visible = false
@@ -144,6 +165,7 @@ class GameView extends mylib.UIBase {
 		this.btn_tip_close.visible = false
 		this.score_num.text = mainMgr.score.toString()
 		this.syncReverseDifficultyStars(0, false)
+		if (this.txt_memory_difficulty) this.txt_memory_difficulty.visible = false
 		this.syncRuntimeStats("", false)
 		if (mainMgr.bEndlessMode) {
 			this.guankaLv.text = "连续闯关 第" + (this.curLv + 1) + "关"
@@ -151,10 +173,15 @@ class GameView extends mylib.UIBase {
 		} else if (mainMgr.bReverseMode) {
 			const reverseId = mainMgr.reverseChallengeLevelId > 0 ? mainMgr.reverseChallengeLevelId : mainMgr.getReverseCurrentLevel()
 			this.guankaLv.text = "记忆挑战 第" + reverseId + "关"
-			this.syncReverseDifficultyStars(mainMgr.getReverseDifficultyValue(reverseId), true)
+			const memStars = ReverseChallengeConfig.memoryDifficultyActiveFromRow(playRow)
+			this.syncReverseDifficultyStars(memStars, true)
+			if (this.txt_memory_difficulty) {
+				this.txt_memory_difficulty.text = ReverseChallengeConfig.memoryDifficultyStarsOnlyFromRow(playRow)
+				this.txt_memory_difficulty.visible = true
+			}
 		} else if (mainMgr.bTimedChallenge) {
 			const timedId = mainMgr.timedChallengeLevelId > 0 ? mainMgr.timedChallengeLevelId : (this.curLv + 1)
-			const mt = MyConst.MapData[this.curLv].mapType
+			const mt = this._playLevelRow().mapType
 			const mode = mt == 999 ? "等式玩法" : "经典玩法"
 			const tag = MyConst.getMapTypeTag ? MyConst.getMapTypeTag(mt) : ("mapType=" + mt)
 			this.guankaLv.text = "限时挑战 T-" + timedId + " · " + mode + " · " + tag
@@ -185,7 +212,7 @@ class GameView extends mylib.UIBase {
 
 		this.gameGroup.removeChildren()
 		this._map = null
-		var mapType = MyConst.MapData[this.curLv].mapType
+		var mapType = playRow.mapType
 		const fit = this.calcMapFit()
 		if (mapType != 999) {
 			this._map = new MapGroup(this.curLv, mapType, MainUIManager.getInstance().bReverseMode)
@@ -241,14 +268,37 @@ class GameView extends mylib.UIBase {
 			img_path_add = RES.getRes("huochai_json.ingame_ui_delete")
 		}
 		this.img_target_bg.$setTexture(img_path_add)
-		const r = MyConst.MapData[this.curLv].rule
+		const r = playRow.rule
 		var xz = r[2]
 		var num = r[3]
 		var img_path_triangle = RES.getRes(("huochai_json.ingame_mission_triangle"))
 		var img_path_square = RES.getRes(("huochai_json.ingame_mission_square"))
 		if (mainMgr.bReverseMode) {
-			strRule = "用" + this.constStep.toString() + "步内\n还原到初始状态"
+			const useJiyi = !!(MyConst.MapJiyiData && MyConst.MapJiyiData[this.curLv])
+			strRule = useJiyi
+				? ("用" + this.constStep.toString() + "步内\n还原到预览中的目标图形")
+				: ("用" + this.constStep.toString() + "步内\n还原到初始状态")
 			this.target_rect.$setTexture(img_path_square)
+			if (useJiyi) {
+				if (this.gameType == 1) {
+					this.txt_condition.text = "增加"
+					this.img_target_bg.$setTexture(RES.getRes("huochai_json.ingame_ui_add"))
+				} else if (this.gameType == 3) {
+					this.txt_condition.text = "删除"
+					this.img_target_bg.$setTexture(RES.getRes("huochai_json.ingame_ui_delete"))
+				} else if (this.gameType == 2) {
+					this.txt_condition.text = "移动"
+					this.img_target_bg.$setTexture(RES.getRes("huochai_json.ingame_ui_move"))
+				}
+			} else {
+				if (this.gameType == 1) {
+					this.txt_condition.text = "删除"
+					this.img_target_bg.$setTexture(RES.getRes("huochai_json.ingame_ui_delete"))
+				} else if (this.gameType == 3) {
+					this.txt_condition.text = "增加"
+					this.img_target_bg.$setTexture(RES.getRes("huochai_json.ingame_ui_add"))
+				}
+			}
 		} else {
 			strRule += this.constStep.toString() + "根火柴\n变成"
 			if (r.length >= 6 && r[4] > 0 && r[5] > 0) {
@@ -313,6 +363,9 @@ class GameView extends mylib.UIBase {
 				// 看视频
 		this.show_video_ok.addEventListener(egret.TouchEvent.TOUCH_END, this.OnShowVideoOk, this);
 		this.show_video_cancel.addEventListener(egret.TouchEvent.TOUCH_END, this.OnShowVideoCancel, this);
+		if (this.show_video_close) {
+			this.show_video_close.addEventListener(egret.TouchEvent.TOUCH_END, this.OnShowVideoClose, this);
+		}
 
 		//this.gameTitleEquation.addEventListener(egret.TouchEvent.TOUCH_END, this.onClickMenu, this);
 		mylib.EvtBus.addListener(EvtType.TouchStep, this.onSetpUpdate, this);
@@ -339,6 +392,9 @@ class GameView extends mylib.UIBase {
 		// 看视频
 		this.show_video_ok.removeEventListener(egret.TouchEvent.TOUCH_END, this.OnShowVideoOk, this);
 		this.show_video_cancel.removeEventListener(egret.TouchEvent.TOUCH_END, this.OnShowVideoCancel, this);
+		if (this.show_video_close) {
+			this.show_video_close.removeEventListener(egret.TouchEvent.TOUCH_END, this.OnShowVideoClose, this);
+		}
 		//this.gameTitleEquation.removeEventListener(egret.TouchEvent.TOUCH_END, this.onClickMenu, this);
 		mylib.EvtBus.rmListener(EvtType.TouchStep, this.onSetpUpdate, this);
 		mylib.EvtBus.rmListener(EvtType.TouchCommplete, this.GameComplete, this);
@@ -358,6 +414,10 @@ class GameView extends mylib.UIBase {
 		this.onShowVideo.visible = false
 		pfCommand("pfViewAd", null, this.OnShowResult, this);
 	}
+	/** 右上角关闭：仅关闭弹窗，不播视频 */
+	public OnShowVideoClose(): void {
+		this.onShowVideo.visible = false
+	}
 
 	private _openResultChoiceDialog(): void {
 		this.gp_GetRst.visible = false
@@ -365,11 +425,11 @@ class GameView extends mylib.UIBase {
 		const canPay = MainUIManager.getInstance().score >= 200
 		if (this.video_tips) {
 			this.video_tips.text = canPay
-				? "选择获取答案方式：\n右侧消耗200星星 / 左侧看视频"
+				? "立即获取结果(消耗200星星)"
 				: "星星不足200，可看视频直接查看答案"
 		}
 		if (this.show_video_ok) {
-			this.show_video_ok.label = canPay ? "200星星" : "星星不足"
+			this.show_video_ok.label = canPay ? "立即获取结果" : "星星不足"
 			this.show_video_ok.$setTouchEnabled(canPay)
 		}
 		if (this.show_video_cancel) {
@@ -412,8 +472,9 @@ class GameView extends mylib.UIBase {
 
 	private syncRuntimeStats(text: string, visible: boolean): void {
 		if (!this.runtimeStats) return
-		this.runtimeStats.visible = visible
-		if (visible) this.runtimeStats.text = text
+		const show = visible && text !== "暂无用时记录"
+		this.runtimeStats.visible = show
+		if (show) this.runtimeStats.text = text
 	}
 
 	private _timedBonus(sec: number): number {
@@ -446,7 +507,7 @@ class GameView extends mylib.UIBase {
 	}
 
 	private _recordTimedResult(sec: number): { rank: number, list: any[], bonus: number, qualified: boolean } {
-		const mapType = MyConst.MapData[this.curLv].mapType
+		const mapType = this._playLevelRow().mapType
 		const timedId = MainUIManager.getInstance().timedChallengeLevelId > 0 ? MainUIManager.getInstance().timedChallengeLevelId : (this.curLv + 1)
 		const qualified = sec <= 60
 		const bonus = qualified ? this._timedBonus(sec) : 0
@@ -478,7 +539,7 @@ class GameView extends mylib.UIBase {
 	}
 
 	private _buildTimedResultText(sec: number, record: { rank: number, list: any[], bonus: number, qualified: boolean }): string {
-		const mapType = MyConst.MapData[this.curLv].mapType
+		const mapType = this._playLevelRow().mapType
 		const timedId = MainUIManager.getInstance().timedChallengeLevelId > 0 ? MainUIManager.getInstance().timedChallengeLevelId : (this.curLv + 1)
 		const lines: string[] = []
 		lines.push("【限时挑战排行榜】")
@@ -517,7 +578,7 @@ class GameView extends mylib.UIBase {
 	public showAt(p: egret.DisplayObjectContainer): void {
 		super.showAt(p);
 		this.validateNow();
-		if (this._map != null && MyConst.MapData[this.curLv].mapType != 999) { // 
+		if (this._map != null && this._playLevelRow().mapType != 999) { // 
 			this._map.UpDateDisplaytagNum()
 		}
 		this.refreshRuleDebugPanel()
@@ -532,8 +593,8 @@ class GameView extends mylib.UIBase {
 	/**
 	 * 根据当前 stageHeight 计算地图的适配比例与居中位置。
 	 *
-	 * 设计画布: 720×1280，GameUISkin.exml 中 gameGroup 上方保留 177px、下方保留 150px。
-	 * 地图皮肤(MapSkin*)固定设计尺寸 720×800。
+	 * 设计画布: 与 GameDesign.CONTENT_WIDTH×CONTENT_HEIGHT 一致，GameUISkin.exml 中 gameGroup 上方保留 177px、下方保留 150px。
+	 * 地图皮肤(MapSkin*)固定设计宽度与舞台设计宽一致、高度 800。
 	 *
 	 * 适配策略：
 	 * - 水平：留 48px 总边距（左右各 24px），确保边缘火柴在刘海/圆角屏上始终可点到。
@@ -542,10 +603,10 @@ class GameView extends mylib.UIBase {
 	 */
 	private calcMapFit(): { scale: number, x: number, y: number } {
 		const stage = egret.MainContext.instance.stage
-		const stageW = (stage && stage.stageWidth)  ? stage.stageWidth  : 720
-		const stageH = (stage && stage.stageHeight) ? stage.stageHeight : 1280
+		const stageW = (stage && stage.stageWidth)  ? stage.stageWidth  : GameDesign.CONTENT_WIDTH
+		const stageH = (stage && stage.stageHeight) ? stage.stageHeight : GameDesign.CONTENT_HEIGHT
 
-		// 实际设计宽度（Egret fixedWidth 模式下 stageWidth 即设计宽 720）
+		// 实际设计宽度（Egret fixedWidth 模式下 stageWidth 即设计宽）
 		const DESIGN_W = stageW
 		const DESIGN_H = 800  // 地图皮肤高度
 
@@ -605,6 +666,8 @@ class GameView extends mylib.UIBase {
 				const mgrRef = MainUIManager.getInstance();
 				if (mgrRef.bReverseMode) {
 					const ret = mgrRef.onReverseChallengeWin()
+					this._reverseLastWinAdvanced = !!ret.didAdvanceProgress
+					this.curLv = mgrRef.selectId - 1
 					this.score_num.text = mgrRef.score.toString()
 					this.completeTxt.text = "还原成功"
 					this.OnGameEnd(false)
@@ -722,8 +785,7 @@ class GameView extends mylib.UIBase {
 	}
 
 	private syncReverseDifficultyStars(active: number, visible: boolean): void {
-		if (!this.reverseDiffGroup) return
-		this.reverseDiffGroup.visible = visible
+
 		for (let i = 1; i <= 5; i++) {
 			const star = this["reverseDiffStar" + i] as eui.Image
 			if (!star) continue
@@ -776,7 +838,18 @@ class GameView extends mylib.UIBase {
 		this._stopWinBgm()
 		this.gp_tip.visible = false
 		if (this.btn_next.visible == true) {
-			this.curLv--
+			const mgr = MainUIManager.getInstance()
+			if (!mgr.bReverseMode) {
+				this.curLv--
+			} else {
+				// 通关后若已推进 guanqiaReverse，重试需回退并与 selectId 对齐；末关通关未推进则只同步地图
+				if (this._reverseLastWinAdvanced) {
+					mgr.guanqiaReverse = Math.max(1, (mgr.guanqiaReverse || 1) - 1)
+				}
+				mgr.selectId = mgr.getReverseActualSelectId(mgr.getReverseCurrentLevel())
+				mgr.reverseChallengeLevelId = mgr.getReverseCurrentLevel()
+				this.curLv = mgr.selectId - 1
+			}
 		}
 		this.bRetry = true
 		egret.Tween.removeAllTweens();		// 清除缓动画
@@ -811,7 +884,7 @@ class GameView extends mylib.UIBase {
 	private onSetpUpdate(e) { // 更新步数
 		var tagNum = e.data.tagNum
 		if (tagNum != -1) { // 更新tagNum			
-			this.txt_target.text = tagNum.toString() + " / " + MyConst.MapData[this.curLv].rule[3].toString()
+			this.txt_target.text = tagNum.toString() + " / " + this._playLevelRow().rule[3].toString()
 		}
 
 		this.step = e.data.step
@@ -921,20 +994,22 @@ class GameView extends mylib.UIBase {
 
 	private onClickHelp() {
 		var strTitle = MainUIManager.getInstance().getShareTitle()
-		var mapType = MyConst.MapData[this.curLv].mapType
+		var mapType = this._playLevelRow().mapType
 		if (mapType != 999) {
 			strTitle = "求助...第 " + (this.curLv + 1).toString() + " 关" + this.txt_target_rule.text
 		}
+		const sc = GameDesign.shareCropParams();
 		mylib.GmGlobal.cutImg("imgShare", {
 			level: this.curLv,
 			type:0,
-			page: "help", title: strTitle, x: 0, y: 300, width: 720, height: 568.0, destWidth: 720, destHeight: 576
+			page: "help", title: strTitle, x: sc.x, y: sc.y, width: sc.width, height: sc.height, destWidth: sc.destWidth, destHeight: sc.destHeight
 		}, null, null);
 
 	}
 	private onClickShare() {
 		var title = "第" + (this.curLv + 1).toString() + "关答案"
-		mylib.GmGlobal.cutImg("imgShare", { page: "", title: title, x: 0, y: 300, width: 720, height: 568.0, destWidth: 720, destHeight: 576 }, null, null);
+		const sc2 = GameDesign.shareCropParams();
+		mylib.GmGlobal.cutImg("imgShare", { page: "", title: title, x: sc2.x, y: sc2.y, width: sc2.width, height: sc2.height, destWidth: sc2.destWidth, destHeight: sc2.destHeight }, null, null);
 	}
 
 	private onClickHelpOk() {

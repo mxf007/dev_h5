@@ -92,7 +92,7 @@ const config: ResourceManagerConfig = {
                             templateFilePath: "template/web/index.html"
                         },
                         open: false,
-                        port: 7001
+                        port: 7000
                     }),
                 ]
             }

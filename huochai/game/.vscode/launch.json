@@ -1,15 +1,46 @@
 {
     "configurations": [
         {
-            "type": "Egret",
+            "name": "网页调试 (750×1400 窗口)",
+            "type": "pwa-chrome",
             "request": "launch",
-            "name": "Egret Debugger",
-            "url": "http://localhost:${command:WebsitePort}",
+            "url": "http://127.0.0.1:7001/",
             "webRoot": "${workspaceFolder}",
             "sourceMaps": true,
-            "userDataDir": "${tmpdir}"
+            "runtimeArgs": [
+                "--window-size=750,2400"
+            ]
         },
-
+        {
+            "name": "网页调试 (大窗口)",
+            "type": "pwa-chrome",
+            "request": "launch",
+            "url": "http://127.0.0.1:7000/",
+            "webRoot": "${workspaceFolder}",
+            "sourceMaps": true,
+            "runtimeArgs": [
+                "--window-size=1280,900"
+            ]
+        },
+        {
+            "name": "网页调试 (不设窗口大小)",
+            "type": "pwa-chrome",
+            "request": "launch",
+            "url": "http://127.0.0.1:7000/",
+            "webRoot": "${workspaceFolder}",
+            "sourceMaps": true
+        },
+        {
+            "name": "网页调试 chrome 备用 (750×1400)",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://127.0.0.1:7000/index.html",
+            "webRoot": "${workspaceFolder}",
+            "sourceMaps": true,
+            "runtimeArgs": [
+                "--window-size=750,1400"
+            ]
+        },
         {
             "type": "Egret",
             "request": "launch",
@@ -17,17 +48,6 @@
             "url": "http://localhost:3000",
             "webRoot": "${workspaceFolder}",
             "preLaunchTask": "egret: build"
-        },
-        {
-            "type": "chrome",
-            "request": "launch",
-            "name": "Egret Debug(chrome)",
-            "url": "http://127.0.0.1:7001/index.html",
-            "webRoot": "${workspaceFolder}",
-            "presentation": {
-                "hidden": false,
-                "group": "egret-helper"
-            }
         }
     ],
     "version": "0.2.0"

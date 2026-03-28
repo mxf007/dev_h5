@@ -82,6 +82,7 @@ class GameMath extends mylib.UIBase {
 	private onShowVideo:eui.Group
 	private show_video_ok:OneStateButton
 	private show_video_cancel :OneStateButton
+	private show_video_close: OneStateButton
 	private video_tips: eui.Label
 
 	private bRetry: boolean
@@ -90,13 +91,14 @@ class GameMath extends mylib.UIBase {
 	private _ruleDebugToken: number = 0
 	private _levelStartAt: number = 0
 	private _winSoundPlayed: boolean = false
+	/** 皮肤子部件在构造函数返回后才绑定，首次 popallitem 须在 childrenCreated 之后执行 */
+	private _gameMathSkinPopDone: boolean = false
 	private static readonly WIN_BGM_ID: string = "sound/snd_08.mp3"
 	public constructor(curlv) {
 		super("GameUISkin");
 		this.curLv = curlv//MainUIManager.getInstance().selectId - 1
 		this.bRetry = false
 		this.bClickTip = false
-		this.popallitem()
 	}
 
 	private popallitem() {
@@ -230,6 +232,10 @@ class GameMath extends mylib.UIBase {
 
 	protected childrenCreated() {
 		super.childrenCreated();
+		if (!this._gameMathSkinPopDone) {
+			this._gameMathSkinPopDone = true
+			this.popallitem()
+		}
 	}
 
 	public addEvts(): void {
@@ -253,6 +259,9 @@ class GameMath extends mylib.UIBase {
 				// 看视频
 		this.show_video_ok.addEventListener(egret.TouchEvent.TOUCH_END, this.OnShowVideoOk, this);
 		this.show_video_cancel.addEventListener(egret.TouchEvent.TOUCH_END, this.OnShowVideoCancel, this);
+		if (this.show_video_close) {
+			this.show_video_close.addEventListener(egret.TouchEvent.TOUCH_END, this.OnShowVideoClose, this);
+		}
 
 		//this.gameTitleEquation.addEventListener(egret.TouchEvent.TOUCH_END, this.onClickMenu, this);
 		mylib.EvtBus.addListener(EvtType.TouchStep, this.onSetpUpdate, this);
@@ -279,6 +288,9 @@ class GameMath extends mylib.UIBase {
 		// 看视频
 		this.show_video_ok.removeEventListener(egret.TouchEvent.TOUCH_END, this.OnShowVideoOk, this);
 		this.show_video_cancel.removeEventListener(egret.TouchEvent.TOUCH_END, this.OnShowVideoCancel, this);
+		if (this.show_video_close) {
+			this.show_video_close.removeEventListener(egret.TouchEvent.TOUCH_END, this.OnShowVideoClose, this);
+		}
 		//this.gameTitleEquation.removeEventListener(egret.TouchEvent.TOUCH_END, this.onClickMenu, this);
 		mylib.EvtBus.rmListener(EvtType.TouchStep, this.onSetpUpdate, this);
 		mylib.EvtBus.rmListener(EvtType.TouchCommplete, this.GameComplete, this);
@@ -298,6 +310,10 @@ class GameMath extends mylib.UIBase {
 		this.onShowVideo.visible = false
 		pfCommand("pfViewAd", null, this.OnShowResult, this);
 	}
+	/** 右上角关闭：仅关闭弹窗，不播视频 */
+	public OnShowVideoClose(): void {
+		this.onShowVideo.visible = false
+	}
 
 	private _openResultChoiceDialog(): void {
 		this.gp_GetRst.visible = false
@@ -305,11 +321,11 @@ class GameMath extends mylib.UIBase {
 		const canPay = MainUIManager.getInstance().score >= 200
 		if (this.video_tips) {
 			this.video_tips.text = canPay
-				? "选择获取答案方式：\n右侧消耗200星星 / 左侧看视频"
+				? "选择获取答案方式：\n左侧：看视频\n右侧：立即获取结果（消耗200星星）"
 				: "星星不足200，可看视频直接查看答案"
 		}
 		if (this.show_video_ok) {
-			this.show_video_ok.label = canPay ? "200星星" : "星星不足"
+			this.show_video_ok.label = canPay ? "立即获取结果" : "星星不足"
 			this.show_video_ok.$setTouchEnabled(canPay)
 		}
 		if (this.show_video_cancel) {
@@ -345,15 +361,16 @@ class GameMath extends mylib.UIBase {
 	}
 
 	private buildRuntimeStatsText(best: number, avg: number): string {
-		if (best > 0 && avg > 0) return "最高用时 " + best.toFixed(2) + "s    平均用时 " + avg.toFixed(2) + "s"
+		if (best > 0 && avg > 0) return "最高用时 " + best.toFixed(2) + "s"//平均用时 " + avg.toFixed(2) + "s"
 		if (best > 0) return "最高用时 " + best.toFixed(2) + "s"
 		return "暂无用时记录"
 	}
 
 	private syncRuntimeStats(text: string, visible: boolean): void {
 		if (!this.runtimeStats) return
-		this.runtimeStats.visible = visible
-		if (visible) this.runtimeStats.text = text
+		const show = visible && text !== "暂无用时记录"
+		this.runtimeStats.visible = show
+		if (show) this.runtimeStats.text = text
 	}
 	public showAt(p: egret.DisplayObjectContainer): void {
 		super.showAt(p);
@@ -436,8 +453,8 @@ class GameMath extends mylib.UIBase {
 	/** 与 GameView 一致的地图适配计算（数字玩法同样需要边距保护） */
 	private calcMapFit(): { scale: number, x: number, y: number } {
 		const stage = egret.MainContext.instance.stage
-		const stageW = (stage && stage.stageWidth)  ? stage.stageWidth  : 720
-		const stageH = (stage && stage.stageHeight) ? stage.stageHeight : 1280
+		const stageW = (stage && stage.stageWidth)  ? stage.stageWidth  : GameDesign.CONTENT_WIDTH
+		const stageH = (stage && stage.stageHeight) ? stage.stageHeight : GameDesign.CONTENT_HEIGHT
 		const DESIGN_W = stageW
 		const DESIGN_H = 800
 		const UI_TOP    = 177
@@ -459,9 +476,9 @@ class GameMath extends mylib.UIBase {
 	 */
 	private calcEquationMapFit(): { scale: number, x: number, y: number } {
 		const stage = egret.MainContext.instance.stage
-		const stageW = (stage && stage.stageWidth) ? stage.stageWidth : 720
-		const stageH = (stage && stage.stageHeight) ? stage.stageHeight : 1280
-		const DESIGN_W = 720
+		const stageW = (stage && stage.stageWidth) ? stage.stageWidth : GameDesign.CONTENT_WIDTH
+		const stageH = (stage && stage.stageHeight) ? stage.stageHeight : GameDesign.CONTENT_HEIGHT
+		const DESIGN_W = GameDesign.CONTENT_WIDTH
 		const DESIGN_H = 800
 		const UI_TOP = 177
 		const UI_BOTTOM = 150
@@ -658,16 +675,18 @@ class GameMath extends mylib.UIBase {
 		if (mapType != 999) {
 			strTitle = "求助...第 " + (this.curLv + 1).toString() + " 关" + this.txt_target_rule.text
 		}
+		const sc = GameDesign.shareCropParams();
 		mylib.GmGlobal.cutImg("imgShare", {
 			level: this.curLv,
 			type:1,
-			page: "help", title: strTitle, x: 0, y: 300, width: 720, height: 568.0, destWidth: 720, destHeight: 576
+			page: "help", title: strTitle, x: sc.x, y: sc.y, width: sc.width, height: sc.height, destWidth: sc.destWidth, destHeight: sc.destHeight
 		}, null, null);
 
 	}
 	private onClickShare() {
 		var title = "第" + (this.curLv + 1).toString() + "关答案"
-		mylib.GmGlobal.cutImg("imgShare", { page: "", title: title, x: 0, y: 300, width: 720, height: 568.0, destWidth: 720, destHeight: 576 }, null, null);
+		const sc2 = GameDesign.shareCropParams();
+		mylib.GmGlobal.cutImg("imgShare", { page: "", title: title, x: sc2.x, y: sc2.y, width: sc2.width, height: sc2.height, destWidth: sc2.destWidth, destHeight: sc2.destHeight }, null, null);
 	}
 
 	private onClickHelpOk() {

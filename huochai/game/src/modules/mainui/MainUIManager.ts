@@ -33,10 +33,7 @@ class MainUIManager {
 	public reverseChallengeLevelId: number = 0;
 	private static readonly REVERSE_CLEAR_KEY = "huochaiReverseClear";
 	private static readonly REVERSE_STREAK_KEY = "huochaiReverseStreak";
-	private static readonly REVERSE_POOL_EASY: number[] = [20, 30, 31, 33, 40, 42, 54, 36];
-	private static readonly REVERSE_POOL_MID: number[] = [60, 68, 69, 18, 29, 37, 46, 61];
-	private static readonly REVERSE_POOL_HARD: number[] = [73, 16, 25, 27, 35, 38, 44, 21];
-	private _reversePoolCache: number[] = null;
+	private _reversePoolCache: { mapJiyiIndex: number }[] = null;
 
 	// ===== 限时挑战 =====
 	public bTimedChallenge: boolean = false;
@@ -148,21 +145,11 @@ class MainUIManager {
 		return Math.round((row.total / row.count) * 100) / 100;
 	}
 
-	private buildReverseChallengePool(): number[] {
-		const fixed = ([] as number[]).concat(
-			MainUIManager.REVERSE_POOL_EASY,
-			MainUIManager.REVERSE_POOL_MID,
-			MainUIManager.REVERSE_POOL_HARD
-		)
-		if (!MyConst || !MyConst.MapData) return fixed.length > 0 ? fixed : [1]
-		const valid = fixed.filter((id: number) => {
-			const m = MyConst.MapData[id - 1]
-			return !!(m && m.mapType != 999 && m.bef && m.rst && m.rst[0] && m.bef.length == m.rst[0].length)
-		})
-		return valid.length > 0 ? valid : [1]
+	private buildReverseChallengePool(): { mapJiyiIndex: number }[] {
+		return ReverseChallengeConfig.buildValidatedPool()
 	}
 
-	public getReverseChallengePool(): number[] {
+	public getReverseChallengePool(): { mapJiyiIndex: number }[] {
 		if (!this._reversePoolCache) this._reversePoolCache = this.buildReverseChallengePool()
 		return this._reversePoolCache
 	}
@@ -176,10 +163,16 @@ class MainUIManager {
 		return Math.max(1, Math.min(this.guanqiaReverse || 1, total))
 	}
 
-	public getReverseActualSelectId(level?: number): number {
+	/** MapJiyiData 的 0-based 下标（与经典关卡 selectId 无关） */
+	public getReverseMemoryJiyiIndex(level?: number): number {
 		const pool = this.getReverseChallengePool()
 		const lv = Math.max(1, Math.min(level || this.getReverseCurrentLevel(), pool.length))
-		return pool[lv - 1]
+		return pool[lv - 1].mapJiyiIndex
+	}
+
+	/** 仅作与 GameView.curLv = selectId-1 的载体：selectId = jiyiIndex + 1 */
+	public getReverseActualSelectId(level?: number): number {
+		return this.getReverseMemoryJiyiIndex(level) + 1
 	}
 
 	private loadReverseClear(): { [k: string]: number } {
@@ -207,10 +200,10 @@ class MainUIManager {
 	}
 
 	public getReverseDifficultyValue(level?: number): number {
-		const lv = Math.max(1, Math.min(level || this.getReverseCurrentLevel(), this.getReverseTotalLevels()))
-		if (lv <= MainUIManager.REVERSE_POOL_EASY.length) return 1
-		if (lv <= MainUIManager.REVERSE_POOL_EASY.length + MainUIManager.REVERSE_POOL_MID.length) return 3
-		return 5
+		const pool = this.getReverseChallengePool()
+		const total = pool.length
+		const lv = Math.max(1, Math.min(level || this.getReverseCurrentLevel(), total))
+		return ReverseChallengeConfig.getDifficultyValue(lv, pool)
 	}
 
 	public getReverseDifficultyStars(level?: number): string {
@@ -233,8 +226,8 @@ class MainUIManager {
 	public getReverseRuleText(): string {
 		const lines: string[] = []
 		lines.push("【记忆挑战规则】")
-		lines.push("从完成态出发，在限定步数内还原到初始图形")
-		lines.push("关卡分层：非常简单 ★☆☆☆☆ / 中等 ★★★☆☆ / 偏难 ★★★★★")
+		lines.push("在限定步数内还原到初始图形")
+		lines.push("关卡难度：非常简单 ★☆☆☆☆ / 中等 ★★★☆☆ / 偏难 ★★★★★")
 		lines.push("首次通关：+5星")
 		lines.push("重复通关：+1星")
 		lines.push("连续成功3关：额外+3星")
@@ -491,7 +484,7 @@ class MainUIManager {
 		this.special = 0;
 	}
 
-	public onReverseChallengeWin(): { reward: number, firstPass: boolean, streak: number, comboBonus: number, nextLevel: number, finishedAll: boolean } {
+	public onReverseChallengeWin(): { reward: number, firstPass: boolean, streak: number, comboBonus: number, nextLevel: number, finishedAll: boolean, didAdvanceProgress: boolean } {
 		const cur = this.getReverseCurrentLevel()
 		const total = this.getReverseTotalLevels()
 		const clear = this.loadReverseClear()
@@ -508,10 +501,14 @@ class MainUIManager {
 		}
 		this.setReverseStreak(streak)
 		this.score += reward
+		let didAdvanceProgress = false
 		if (this.guanqiaReverse < total) {
 			this.guanqiaReverse++
+			didAdvanceProgress = true
 		}
 		this.reverseChallengeLevelId = this.getReverseCurrentLevel()
+		// 与 guanqiaReverse 对齐，否则通关后标题已是下一关而 selectId/地图仍停留在上一关
+		this.selectId = this.getReverseActualSelectId(this.getReverseCurrentLevel())
 		this.saveData()
 		return {
 			reward,
@@ -519,7 +516,8 @@ class MainUIManager {
 			streak,
 			comboBonus,
 			nextLevel: this.getReverseCurrentLevel(),
-			finishedAll: cur >= total
+			finishedAll: cur >= total,
+			didAdvanceProgress,
 		}
 	}
 

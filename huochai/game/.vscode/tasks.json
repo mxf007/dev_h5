@@ -1,11 +1,92 @@
 {
+    "version": "2.0.0",
     "tasks": [
         {
-            "type": "egret",
+            "label": "egret: build",
+            "type": "shell",
+            "command": "egret",
+            "args": ["build", "-sourcemap"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": "$tsc",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "egret: clean",
+            "type": "shell",
+            "command": "egret",
+            "args": ["build", "-e"],
+            "problemMatcher": "$tsc",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "egret: publish",
+            "type": "shell",
+            "command": "egret",
+            "args": ["publish"],
+            "problemMatcher": "$tsc",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "egret: run",
+            "type": "shell",
+            "command": "egret",
+            "args": ["run"],
             "isBackground": true,
-            "problemMatcher": "$egret",
-            "label": "egret: build"
+            "problemMatcher": {
+                "owner": "egret-webpack",
+                "pattern": { "regexp": "^$" },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".",
+                    "endsPattern": "(\\[webpack-dev-server\\]|Loopback:|localhost:7000|127\\.0\\.0\\.1:7000|Compiled successfully|compiled successfully)"
+                }
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "focus": true
+            }
+        },
+        {
+            "label": "serve: bin-debug",
+            "type": "shell",
+            "command": "npx",
+            "args": [
+                "--yes",
+                "http-server",
+                "bin-debug",
+                "-p",
+                "7000",
+                "-c-1",
+                "-a",
+                "127.0.0.1"
+            ],
+            "isBackground": true,
+            "problemMatcher": {
+                "owner": "http-server",
+                "pattern": { "regexp": "^$" },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".",
+                    "endsPattern": "(Available on:|http://127\\.0\\.0\\.1:7000)"
+                }
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            }
         }
-    ],
-    "version": "0.2.0"
+    ]
 }

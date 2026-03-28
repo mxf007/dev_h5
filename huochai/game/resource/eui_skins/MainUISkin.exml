@@ -5,13 +5,14 @@
 
 	<e:Image id="contentCardBg" top="248" bottom="140" width="690" horizontalCenter="0" source="huochai_json.bg2" scale9Grid="12,12,76,76" alpha="0.97"/>
 	<e:Group id="tabPageGroup" top="278" bottom="156" width="620" horizontalCenter="0" visible="false">
+		<e:Image id="reverseTabBg" left="0" right="0" top="0" bottom="0" source="huochai_json.bd_@2x" scale9Grid="12,12,76,76" visible="false"/>
 		<e:Label id="tabPageTitle" top="34" horizontalCenter="0" width="580" height="46" text="玩法介绍" size="34" bold="true" textColor="0x2E2C2D" textAlign="center" verticalAlign="middle"/>
 		<e:Label id="tabPageDesc" left="40" right="40" top="106" bottom="44" text="说明" size="26" lineSpacing="12" textColor="0x4A4038" textAlign="left" verticalAlign="top"/>
 	</e:Group>
-	<e:Scroller id="scoll" anchorOffsetY="0" bounces="false" top="274" bottom="150" width="650" horizontalCenter="0">
-		<e:List id="itemList" anchorOffsetY="0"  itemRendererSkinName="contentsItem">
+	<e:Scroller id="scoll" anchorOffsetY="0" bounces="false" top="274" bottom="150" width="620" horizontalCenter="0">
+		<e:List id="itemList" anchorOffsetY="0" width="620" itemRendererSkinName="contentsItem">
 			<e:layout>
-				<e:TileLayout orientation="rows" verticalGap="26" horizontalGap="16" paddingLeft="25" paddingRight="25" paddingTop="26"/>
+				<e:TileLayout orientation="rows" columnAlign="justifyUsingGap" verticalGap="22" horizontalGap="18" paddingLeft="20" paddingRight="20" paddingTop="22" paddingBottom="16"/>
 			</e:layout>
 		</e:List>
 	</e:Scroller>
@@ -59,13 +60,6 @@
 		</ns1:OneStateButton>
 		<e:Rect id="timedTabLine" x="22" y="46" width="120" height="5" fillColor="0xFFE082" ellipseWidth="5" ellipseHeight="5" alpha="0"/>
 		<e:Label id="reverseInfo" x="0" y="52" width="165" height="22" text="当前Lv1/24 非常简单" size="15" textColor="0xFFF4CF" stroke="1" strokeColor="0x5C3A12" textAlign="center" verticalAlign="middle"/>
-		<e:Group id="reverseStars" x="22" y="76" width="122" height="18" visible="false">
-			<e:Image id="reverseStar1" x="0" y="0" width="18" height="18" source="gold_star_png"/>
-			<e:Image id="reverseStar2" x="26" y="0" width="18" height="18" source="gold_star_png"/>
-			<e:Image id="reverseStar3" x="52" y="0" width="18" height="18" source="gold_star_png"/>
-			<e:Image id="reverseStar4" x="78" y="0" width="18" height="18" source="gold_star_png"/>
-			<e:Image id="reverseStar5" x="104" y="0" width="18" height="18" source="gold_star_png"/>
-		</e:Group>
 		<ns1:OneStateButton id="endlessBtn" x="172" y="0" width="165" height="48" label="经典玩法">
 			<ns1:skinName>
 				<e:Skin states="up,down,disabled">
@@ -113,10 +107,18 @@
 				</e:Skin>
 			</ns1:skinName>
 		</ns1:OneStateButton>
-		<ns1:OneStateButton id="show_video_cancel" label="" x="51.677" y="202.23" width="220" height="75">
+		<ns1:OneStateButton id="show_video_cancel" label="取消" y="204" width="220" height="68" horizontalCenter="-115">
 			<ns1:skinName>
 				<e:Skin states="up,down,disabled">
-				<e:Image width="100%" height="100%" source="huochai_json.cancel" source.down="huochai_json.cancel"/>
+				<e:Image width="100%" height="100%" source="btres_json.bg_orange" source.down="btres_json.bg_orange" source.disabled="btres_json.bg_orange"/>
+				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0.5" text="取消" textColor="0x2E2C2D" width="200" height="44" size="30" fontFamily="Microsoft YaHei" textAlign="center" verticalAlign="middle" bold="true"/>
+				</e:Skin>
+			</ns1:skinName>
+		</ns1:OneStateButton>
+		<ns1:OneStateButton id="show_video_close" label="" x="538" y="-28" width="68" height="68">
+			<ns1:skinName>
+				<e:Skin states="up,down,disabled">
+				<e:Image width="100%" height="100%" source="huochai_json.bt_no" source.down="huochai_json.bt_no"/>
 				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0"/>
 				</e:Skin>
 			</ns1:skinName>

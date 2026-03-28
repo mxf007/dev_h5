@@ -9,6 +9,7 @@ class MainUIView extends mylib.UIBase {
 	private _arrayCollection: eui.ArrayCollection;
 	private contentCardBg: eui.Image
 	private tabPageGroup: eui.Group
+	private reverseTabBg: eui.Image
 	private tabPageTitle: eui.Label
 	private tabPageDesc: eui.Label
 
@@ -36,6 +37,7 @@ class MainUIView extends mylib.UIBase {
 	private onShowVideo: eui.Group
 	private show_video_ok: OneStateButton
 	private show_video_cancel: OneStateButton
+	private show_video_close: OneStateButton
 
 	private newsignIn: eui.Group
 
@@ -59,12 +61,6 @@ class MainUIView extends mylib.UIBase {
 	private tabSelectedBg: eui.Image
 	private tabSelectedBridge: eui.Image
 	private reverseInfo: eui.Label
-	private reverseStars: eui.Group
-	private reverseStar1: eui.Image
-	private reverseStar2: eui.Image
-	private reverseStar3: eui.Image
-	private reverseStar4: eui.Image
-	private reverseStar5: eui.Image
 	private endlessBtn: OneStateButton
 	private endlessTabLine: eui.Rect
 	private endlessInfo: eui.Label
@@ -73,12 +69,6 @@ class MainUIView extends mylib.UIBase {
 	private modeTabLine: eui.Rect
 	private ruleDebugBtn: OneStateButton
 	private readonly _tabSelectedFilter: egret.GlowFilter = new egret.GlowFilter(0xFFF3A6, 0.9, 18, 18, 2, 1, false, false)
-	private readonly _inactiveStarFilter: egret.ColorMatrixFilter = new egret.ColorMatrixFilter([
-		0.30, 0.59, 0.11, 0.00, -12,
-		0.30, 0.59, 0.11, 0.00, -12,
-		0.30, 0.59, 0.11, 0.00, -12,
-		0.00, 0.00, 0.00, 1.00, 0
-	])
 
 	private _targetTotal: number = 0;
 	private _loadedCount: number = 0;
@@ -110,7 +100,7 @@ class MainUIView extends mylib.UIBase {
 			MainUIManager.getInstance().score = 10000   // 测试代码加财富
 			MainUIManager.getInstance().guanqia = MyConst.MapData.length - 1
 			MainUIManager.getInstance().guanqia1 = 25 // 数字玩法关卡
-			MainUIManager.getInstance().guanqiaReverse = 20 //反转玩法关卡
+			MainUIManager.getInstance().guanqiaReverse = 1 //反转玩法关卡
 			MainUIManager.getInstance().saveData()
 		}
 		this.loadData()
@@ -354,6 +344,9 @@ class MainUIView extends mylib.UIBase {
 		// 看视频
 		this.show_video_ok.addEventListener(egret.TouchEvent.TOUCH_END, this.OnShowVideoOk, this);
 		this.show_video_cancel.addEventListener(egret.TouchEvent.TOUCH_END, this.OnShowVideoCancel, this);
+		if (this.show_video_close) {
+			this.show_video_close.addEventListener(egret.TouchEvent.TOUCH_END, this.OnShowVideoClose, this);
+		}
 
 		// 菜单 
 		this.img_box.addEventListener(egret.TouchEvent.TOUCH_END, this.OnClickBox, this);
@@ -383,6 +376,9 @@ class MainUIView extends mylib.UIBase {
 		// 看视频
 		this.show_video_ok.removeEventListener(egret.TouchEvent.TOUCH_END, this.OnShowVideoOk, this);
 		this.show_video_cancel.removeEventListener(egret.TouchEvent.TOUCH_END, this.OnShowVideoCancel, this);
+		if (this.show_video_close) {
+			this.show_video_close.removeEventListener(egret.TouchEvent.TOUCH_END, this.OnShowVideoClose, this);
+		}
 
 		// 菜单 
 		this.img_box.removeEventListener(egret.TouchEvent.TOUCH_END, this.OnClickBox, this);
@@ -437,6 +433,9 @@ class MainUIView extends mylib.UIBase {
 		//this.OnShowResult(1)
 	}
 	public OnShowVideoCancel() {
+		this.onShowVideo.visible = false
+	}
+	public OnShowVideoClose() {
 		this.onShowVideo.visible = false
 	}
 	public onClickZsPanel() {
@@ -680,8 +679,8 @@ class MainUIView extends mylib.UIBase {
 		const isLevelList = tab == "endless" || tab == "mode"
 		if (this.scoll) this.scoll.visible = isLevelList
 		if (this.tabPageGroup) this.tabPageGroup.visible = !isLevelList
+		if (this.reverseTabBg) this.reverseTabBg.visible = tab == "reverse"
 		if (this.reverseInfo) this.reverseInfo.visible = tab == "reverse"
-		if (this.reverseStars) this.reverseStars.visible = tab == "reverse"
 		if (this.endlessInfo) this.endlessInfo.visible = tab == "endless"
 		if (this.other) {
 			this.other.visible = false
@@ -729,11 +728,10 @@ class MainUIView extends mylib.UIBase {
 		const mgr = MainUIManager.getInstance()
 		const lv = mgr.getReverseCurrentLevel()
 		return [
-			"从完成态出发，在限定步数内还原到初始图形。",
-			"",
+			"在限定步数内还原到初始图形。",
+			"关卡难度：非常简单 ★☆☆☆☆ / 中等 ★★★☆☆ / 偏难 ★★★★★",
 			"当前进度：" + lv + "/" + mgr.getReverseTotalLevels(),
 			"当前难度：" + mgr.getReverseDifficultyLabel(lv) + " " + mgr.getReverseDifficultyStars(lv),
-			"",
 			"奖励规则：",
 			"首次通关 +5星",
 			"重复通关 +1星",
@@ -800,19 +798,6 @@ class MainUIView extends mylib.UIBase {
 		if (!this.reverseInfo) return
 		const mgr = MainUIManager.getInstance()
 		this.reverseInfo.text = mgr.getReverseInfoText()
-		//this.syncReverseStars(mgr.getReverseDifficultyValue())
-	}
-
-	private syncReverseStars(active: number): void {
-		if (!this.reverseStars) return
-		this.reverseStars.visible = true
-		for (let i = 1; i <= 5; i++) {
-			const star = this["reverseStar" + i] as eui.Image
-			if (!star) continue
-			const lit = i <= active
-			star.alpha = lit ? 1 : 0.7
-			star.filters = lit ? null : [this._inactiveStarFilter]
-		}
 	}
 
 	private onToggleRuleDebug(): void {

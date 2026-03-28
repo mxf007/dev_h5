@@ -10,10 +10,20 @@ export function installDependencies(dependencies: string[]) {
 }
 
 export function installFromLauncher(packageNames: string[]) {
-    for (const packageName of packageNames) {
-        const launcherRoot = getEgretCompilerPath();
-        installFromCustomPath(launcherRoot, packageName)
+    let launcherRoot: string | null = null;
+    try {
+        launcherRoot = getEgretCompilerPath();
+    } catch (_e) {
+        launcherRoot = null;
     }
+    if (launcherRoot) {
+        for (const packageName of packageNames) {
+            installFromCustomPath(launcherRoot, packageName);
+        }
+        return;
+    }
+    // 未安装白鹭启动器下载的 EgretCompiler 时，从 npm 安装到 scripts/plugins/node_modules
+    installDependencies(packageNames);
 }
 
 export function installFromCustomPath(root: string, packageName: string) {
@@ -50,7 +60,7 @@ function install(cwd: string, dependencies: string[]) {
         'install',
     ].concat(dependencies).concat([
         '--registry',
-        'https://registry.npm.taobao.org'
+        'https://registry.npmmirror.com'
     ]);
     console.log(`正在安装依赖'${cwd}`)
     console.log(`您也可以在${cwd}目录下手动执行 npm ${args.join(" ")}`)
@@ -78,11 +88,20 @@ function getAppDataPath(platform) {
 }
 
 function getEgretCompilerPath() {
-    const compilerFolder = path.join(getAppDataPath(process.platform), "EgretLauncher/download/EgretCompiler");
-
-    if (!fs.existsSync(path.join(compilerFolder, "@egret"))) {
-        const docsUrl = `https://docs.egret.com/engine/docs/build/install-and-upgrade`;
-        throw new Error(`Egret Compiler 未安装,请访问 ${docsUrl} 了解更多`);
+    const candidates: string[] = [];
+    const roaming = path.join(getAppDataPath(process.platform), "EgretLauncher", "download", "EgretCompiler");
+    candidates.push(roaming);
+    if (process.env.LOCALAPPDATA) {
+        candidates.push(path.join(process.env.LOCALAPPDATA, "EgretLauncher", "download", "EgretCompiler"));
     }
-    return compilerFolder
+    if (process.env.EGRET_COMPILER_PATH) {
+        candidates.push(process.env.EGRET_COMPILER_PATH);
+    }
+    for (const compilerFolder of candidates) {
+        if (compilerFolder && fs.existsSync(path.join(compilerFolder, "@egret"))) {
+            return compilerFolder;
+        }
+    }
+    const docsUrl = `https://docs.egret.com/engine/docs/build/install-and-upgrade`;
+    throw new Error(`Egret Compiler 未安装,请访问 ${docsUrl} 了解更多`);
 }
