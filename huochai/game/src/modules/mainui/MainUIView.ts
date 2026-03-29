@@ -102,19 +102,7 @@ class MainUIView extends mylib.UIBase {
 		this.zsPanel.visible = true
 		this.signIn.visible = false
 
-		// 必须先读档，否则下面测试用加分会 saveData 把默认 guanqiaReverse=1 写回，覆盖记忆挑战进度
-		this.loadData()
-		this.loadSignDateFromStorage()
-		// if (MainUIManager.getInstance().score < 10000) {
-		// 	MainUIManager.getInstance().score = 10000   // 测试代码加财富
-		// 	MainUIManager.getInstance().guanqia = MyConst.MapData.length - 1
-		// 	MainUIManager.getInstance().guanqia1 = 25 // 数字玩法关卡
-		// 	MainUIManager.getInstance().guanqiaReverse = 7 // 数字玩法关卡
-		// 	// 记忆挑战进度单独记在 guanqiaReverse / huochaiReverseClear，勿在此处重置为 1
-		// 	MainUIManager.getInstance().saveData()
-		// }
-
-		this.score_num.text = MainUIManager.getInstance().score.toString()
+		// 读档在 childrenCreated 中执行（皮肤子节点就绪后），避免与其中重复
 		var bSign = false//  this.sign()
 		this.signOK.visible = bSign
 		this.newsignIn.visible = bSign
@@ -226,6 +214,7 @@ class MainUIView extends mylib.UIBase {
 
 		this.loadData();
 		this.loadSignDateFromStorage();
+		this.score_num.text = MainUIManager.getInstance().score.toString();
 		this.resetLevelList(true);
 		this.other.visible = false
 		this.pintu.visible = false
@@ -846,7 +835,9 @@ class MainUIView extends mylib.UIBase {
 		const lv = mgr.getReverseCurrentLevel()
 		return [
 			"在限定步数内还原到初始图形。",
-			"关卡难度：非常简单 ★☆☆☆☆ / 中等 ★★★☆☆ / 偏难 ★★★★★",
+			"关卡难度：简单 ★☆☆☆☆",
+			"                  中等 ★★★☆☆",
+			"                  偏难 ★★★★★",
 			"当前进度：" + lv + "/" + mgr.getReverseTotalLevels(),
 			"当前难度：" + mgr.getReverseDifficultyLabel(lv) + " " + mgr.getReverseDifficultyStars(lv),
 			"奖励规则：",

@@ -209,7 +209,7 @@ class MainUIManager {
 
 	public getReverseDifficultyLabel(level?: number): string {
 		const val = this.getReverseDifficultyValue(level)
-		if (val <= 1) return "非常简单"
+		if (val <= 1) return "简单"
 		if (val <= 3) return "中等"
 		return "偏难"
 	}
@@ -223,7 +223,7 @@ class MainUIManager {
 		const lines: string[] = []
 		lines.push("【记忆挑战规则】")
 		lines.push("在限定步数内还原到初始图形")
-		lines.push("关卡难度：非常简单 ★☆☆☆☆ / 中等 ★★★☆☆ / 偏难 ★★★★★")
+		lines.push("关卡难度：简单 ★☆☆☆☆ / 中等 ★★★☆☆ / 偏难 ★★★★★")
 		lines.push("首次通关：+5星")
 		lines.push("重复通关：+1星")
 		lines.push("连续成功3关：额外+3星")
