@@ -57,6 +57,8 @@ class MainUIView extends mylib.UIBase {
 	private rewardLabel: eui.Label
 	private dailyBtn: OneStateButton
 	private timedBtn: OneStateButton
+	/** 记忆挑战页签锁（未解锁时显示） */
+	private memoryChallengeTabLock: eui.Image
 	private timedTabLine: eui.Rect
 	private tabSelectedBg: eui.Image
 	private tabSelectedBridge: eui.Image
@@ -761,8 +763,21 @@ class MainUIView extends mylib.UIBase {
 		this.reverseBtn.label = "数字玩法"
 	}
 
+	/** 读档后 / 同步页签：满足条件则写入解锁；未解锁时不可停留在记忆页签 */
+	private refreshMemoryChallengeUnlockState(): void {
+		const mgr = MainUIManager.getInstance()
+		mgr.tryUnlockMemoryChallengeFromConditions()
+		if (!mgr.isMemoryChallengeUnlocked() && mgr.lastMainTab === "reverse") {
+			mgr.lastMainTab = "endless"
+		}
+		if (this.memoryChallengeTabLock) {
+			this.memoryChallengeTabLock.visible = !mgr.isMemoryChallengeUnlocked()
+		}
+	}
+
 	private syncMainTabs(): void {
 		const mgr = MainUIManager.getInstance()
+		this.refreshMemoryChallengeUnlockState()
 		this.applyTabState(this.timedBtn, mgr.lastMainTab == "reverse")
 		this.applyTabState(this.endlessBtn, mgr.lastMainTab == "endless")
 		this.applyTabState(this.dailyBtn, mgr.lastMainTab == "daily")
@@ -926,7 +941,7 @@ class MainUIView extends mylib.UIBase {
 			mgr.scrollVClassic = (typeof rawC === "number" && rawC >= 0) ? rawC : legacy
 			mgr.scrollVMath = (typeof rawM === "number" && rawM >= 0) ? rawM : -1
 		}
-
+		this.refreshMemoryChallengeUnlockState()
 	}
 
 	////////////////
@@ -942,6 +957,12 @@ class MainUIView extends mylib.UIBase {
 		MainUIManager.getInstance().saveData()
 		const tab = MainUIManager.getInstance().lastMainTab || "endless"
 		if (tab == "reverse") {
+			const mgrR = MainUIManager.getInstance()
+			mgrR.tryUnlockMemoryChallengeFromConditions()
+			if (!mgrR.isMemoryChallengeUnlocked()) {
+				AlertBox.alert("需要400星且达到20关", null, null, "知道了")
+				return
+			}
 			this.startReverseChallenge()
 			return
 		}
@@ -1147,6 +1168,11 @@ class MainUIView extends mylib.UIBase {
 
 	private onTimedChallenge(): void {
 		const mgr = MainUIManager.getInstance();
+		mgr.tryUnlockMemoryChallengeFromConditions()
+		if (!mgr.isMemoryChallengeUnlocked()) {
+			AlertBox.alert("需要400星且达到20关", null, null, "知道了")
+			return
+		}
 		this.persistLevelListScrollIfOnListTab()
 		mgr.saveData()
 		mgr.lastMainTab = "reverse"
@@ -1175,6 +1201,11 @@ class MainUIView extends mylib.UIBase {
 
 	private startReverseChallenge(): void {
 		const mgr = MainUIManager.getInstance()
+		mgr.tryUnlockMemoryChallengeFromConditions()
+		if (!mgr.isMemoryChallengeUnlocked()) {
+			AlertBox.alert("需要400星且达到20关", null, null, "知道了")
+			return
+		}
 		mgr.startReverseChallenge()
 		this.syncReverseInfo()
 		this.showUILeft(new ReversePreviewView())

@@ -77,6 +77,7 @@
 				</e:Skin>
 			</ns1:skinName>
 		</ns1:OneStateButton>
+		<e:Image id="memoryChallengeTabLock" x="468" y="2" width="36" height="44" source="huochai_json.lock1" touchEnabled="false"/>
 		<e:Rect id="timedTabLine" x="366" y="46" width="120" height="5" fillColor="0xFFE082" ellipseWidth="5" ellipseHeight="5" alpha="0"/>
 		<e:Label id="reverseInfo" x="344" y="52" width="165" height="22" text="当前Lv1/24 非常简单" size="15" textColor="0xFFF4CF" stroke="1" strokeColor="0x5C3A12" textAlign="center" verticalAlign="middle"/>
 		<ns1:OneStateButton id="dailyBtn" x="516" y="0" width="165" height="48" label="每日挑战">

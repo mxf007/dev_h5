@@ -43,6 +43,11 @@ class MainUIManager {
 	public static readonly REVERSE_FAIL_STAR_COST = 10;
 	private _reversePoolCache: { mapJiyiIndex: number }[] = null;
 
+	// ===== 主界面「记忆挑战」页签解锁 =====
+	private static readonly MEMORY_CHALLENGE_UNLOCK_KEY = "huochaiMemoryChallengeUnlocked";
+	public static readonly MEMORY_UNLOCK_MIN_STARS = 400;
+	public static readonly MEMORY_UNLOCK_MIN_GUANQIA = 20;
+
 	// ===== 限时挑战 =====
 	public bTimedChallenge: boolean = false;
 	public timedChallengeStartTime: number = 0;
@@ -474,6 +479,22 @@ class MainUIManager {
 		this.selectId = this.getReverseActualSelectId(this.reverseChallengeLevelId);
 		this.bHelp = false;
 		this.special = 0;
+	}
+
+	/** 是否已解锁记忆挑战页签（本地标记，满足条件时写入） */
+	public isMemoryChallengeUnlocked(): boolean {
+		return egret.localStorage.getItem(MainUIManager.MEMORY_CHALLENGE_UNLOCK_KEY) === "1";
+	}
+
+	/**
+	 * 若当前星星与经典进度满足条件则写入解锁标记（老存档进游戏即可自动解锁）
+	 */
+	public tryUnlockMemoryChallengeFromConditions(): void {
+		if (this.isMemoryChallengeUnlocked()) return;
+		const g = this.guanqia | 0;
+		if (this.score >= MainUIManager.MEMORY_UNLOCK_MIN_STARS && g >= MainUIManager.MEMORY_UNLOCK_MIN_GUANQIA) {
+			egret.localStorage.setItem(MainUIManager.MEMORY_CHALLENGE_UNLOCK_KEY, "1");
+		}
 	}
 
 	public onReverseChallengeWin(): { reward: number, firstPass: boolean, streak: number, comboBonus: number, nextLevel: number, finishedAll: boolean, didAdvanceProgress: boolean } {
