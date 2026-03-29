@@ -7,7 +7,6 @@
 		<e:Image fillMode="scale" width="720" horizontalCenter="0" top="0" bottom="-146" anchorOffsetY="0" source="scenebg_png"/>
 	</e:Group>
 	<e:Group width="720" horizontalCenter="0" top="177" bottom="150" touchEnabled="false" touchChildren="false">
-		<e:Label id="txt_memory_difficulty" text="" bottom="10" right="10" width="400" height="80" size="20" textAlign="right" verticalAlign="bottom" textColor="0x4A3F35" visible="false" lineSpacing="4" fontFamily="Microsoft YaHei" stroke="1" strokeColor="0xF5F0E8"/>
 		<e:Label id="runtimeStats" text="" bottom="10" right="10" width="440" height="72" size="20" textAlign="right" verticalAlign="bottom" visible="false" textColor="0xFFF4CF" stroke="1" strokeColor="0x5C3A12" lineSpacing="4" fontFamily="Microsoft YaHei"/>
 	</e:Group>
 	<e:Label id="completeTxt" text="完成挑战" y="196" size="48" visible="true" height="62" fontFamily="Microsoft YaHei" textAlign="center" verticalAlign="middle" horizontalCenter="0" textColor="0x0d0dc1"/>
@@ -98,6 +97,7 @@
 		</ns1:skinName>
 	</ns1:OneStateButton>
 	<e:Label id="guankaLv" text="关卡1" bottom="148" left="20" size="32" visible="true" height="40" fontFamily="Microsoft YaHei" textAlign="left" verticalAlign="middle" textColor="0x999999"/>
+	<e:Label id="txt_memory_difficulty" text="" bottom="148" right="20" left="20" size="32" visible="false" height="40" fontFamily="Microsoft YaHei" textAlign="right" verticalAlign="middle" textColor="0x999999"/>
 	<e:Label id="txt_timer" text="" bottom="148" right="20" size="36" visible="false" height="40" fontFamily="Microsoft YaHei" textAlign="right" verticalAlign="middle" textColor="0xff6600"/>
 	<e:Group id="gp_rule_debug" left="12" right="12" top="252" height="220" visible="false" touchEnabled="false" touchChildren="false">
 		<e:Rect left="0" right="0" top="0" bottom="0" fillColor="0x000000" alpha="0.58"/>

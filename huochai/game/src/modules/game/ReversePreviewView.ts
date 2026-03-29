@@ -44,7 +44,12 @@ class ReversePreviewView extends mylib.UIBase {
 		this.touchChildren = true
 		const previewLv = mgr.reverseChallengeLevelId > 0 ? mgr.reverseChallengeLevelId : mgr.getReverseCurrentLevel()
 		this.titleLabel.text = "记忆挑战 第" + previewLv + "关"
-		this.subTitleLabel.text = "请记住要还原的目标图形"
+		if (mgr.reversePreviewAfterWin) {
+			mgr.reversePreviewAfterWin = false
+			this.subTitleLabel.text = "下一关：请记忆要还原的目标图形"
+		} else {
+			this.subTitleLabel.text = "请记住要还原的目标图形"
+		}
 		this.tipsLabel.text = "倒计时结束会自动进入拼图页面。"
 		if (this.skipLabel) this.skipLabel.text = "点击下方按钮可跳过倒计时"
 		if (this.backLabel) this.backLabel.text = "返回主页"

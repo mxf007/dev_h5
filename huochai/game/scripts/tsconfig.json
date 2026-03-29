@@ -1,4 +1,7 @@
 {
+    "exclude": [
+        "**/*.mjs"
+    ],
     "compilerOptions": {
         /* Basic Options */
         "target": "es5", /* Specify ECMAScript target version: 'ES3' (default), 'ES5', 'ES2015', 'ES2016', 'ES2017', or 'ESNEXT'. */
@@ -22,7 +25,9 @@
         // "isolatedModules": true,               /* Transpile each file as a separate module (similar to 'ts.transpileModule'). */
         /* Strict Type-Checking Options */
         "strict": true, /* Enable all strict type-checking options. */
-        "noImplicitAny": false /* Raise error on expressions and declarations with an implied 'any' type. */
+        "noImplicitAny": false, /* Raise error on expressions and declarations with an implied 'any' type. */
+        /* With allowJs and no outDir, emitting would rewrite inputs like ttgame/game.js — scripts are bundled by Webpack, not tsc. */
+        "noEmit": true
         // "strictNullChecks": true,              /* Enable strict null checks. */
         // "noImplicitThis": true,                /* Raise error on 'this' expressions with an implied 'any' type. */
         // "alwaysStrict": true,                  /* Parse in strict mode and emit "use strict" for each source file. */

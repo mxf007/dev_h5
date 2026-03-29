@@ -55,7 +55,7 @@ class GameView extends mylib.UIBase {
 	// 结算相关
 	//private game_end :eui.Group
 	private btn_next: OneStateButton
-	private gameEnd: OneStateButton
+	private gameEnd: eui.Group
 	private btn_tip_close: OneStateButton
 	private img_win: eui.Image
 	private end_beautiful: eui.Image
@@ -104,8 +104,14 @@ class GameView extends mylib.UIBase {
 	private _winSoundPlayed: boolean = false
 	/** 记忆挑战：上一局通关是否推进了 guanqiaReverse（末关通关不推进，重试时不可再减进度） */
 	private _reverseLastWinAdvanced: boolean = false
+	/** 记忆挑战：gameEnd 光晕动画结束后再延迟打开下一关预览的定时器 */
+	private _reverseAfterGameEndTimer: number = 0
+	/** 记忆挑战：本关胜利后需在 gameEnd 动画结束 + 2s 后自动进下一关预览 */
+	private _reversePendingPreviewAfterGameEnd: boolean = false
 	private static readonly TIMED_RANK_KEY: string = "huochaiTimedRankV2"
 	private static readonly WIN_BGM_ID: string = "sound/snd_08.mp3"
+	/** 用于 score_num 数字滚动缓动（Tween 目标对象） */
+	private _scoreRollProxy: { v: number } = { v: 0 }
 	public constructor() {
 		super("GameUISkin");
 		this.curLv = MainUIManager.getInstance().selectId - 1
@@ -169,14 +175,14 @@ class GameView extends mylib.UIBase {
 		this.syncRuntimeStats("", false)
 		if (mainMgr.bEndlessMode) {
 			this.guankaLv.text = "连续闯关 第" + (this.curLv + 1) + "关"
-			this.syncRuntimeStats(this.buildRuntimeStatsText(mainMgr.getEndlessLevelBestTime(this.curLv + 1), mainMgr.getEndlessLevelAvgTime(this.curLv + 1)), true)
+			this.syncRuntimeStats(this.buildRuntimeStatsText(mainMgr.getEndlessLevelBestTime(this.curLv + 1)), true)
 		} else if (mainMgr.bReverseMode) {
 			const reverseId = mainMgr.reverseChallengeLevelId > 0 ? mainMgr.reverseChallengeLevelId : mainMgr.getReverseCurrentLevel()
 			this.guankaLv.text = "记忆挑战 第" + reverseId + "关"
 			const memStars = ReverseChallengeConfig.memoryDifficultyActiveFromRow(playRow)
 			this.syncReverseDifficultyStars(memStars, true)
 			if (this.txt_memory_difficulty) {
-				this.txt_memory_difficulty.text = ReverseChallengeConfig.memoryDifficultyStarsOnlyFromRow(playRow)
+				this.txt_memory_difficulty.text = "难度：" + ReverseChallengeConfig.memoryDifficultyStarsOnlyFromRow(playRow)
 				this.txt_memory_difficulty.visible = true
 			}
 		} else if (mainMgr.bTimedChallenge) {
@@ -374,6 +380,10 @@ class GameView extends mylib.UIBase {
 	}
 
 	public rmEvts(): void {
+		if (this._reverseAfterGameEndTimer) {
+			egret.clearTimeout(this._reverseAfterGameEndTimer)
+			this._reverseAfterGameEndTimer = 0
+		}
 		this.btn_retry.removeEventListener(egret.TouchEvent.TOUCH_END, this.onClickRetry, this);
 		this.btn_back_step.removeEventListener(egret.TouchEvent.TOUCH_END, this.onClickBack, this);
 		this.btn_remind.removeEventListener(egret.TouchEvent.TOUCH_END, this.onClickRemind, this);
@@ -464,8 +474,7 @@ class GameView extends mylib.UIBase {
 		this._winSoundPlayed = false
 	}
 
-	private buildRuntimeStatsText(best: number, avg: number): string {
-		if (best > 0 && avg > 0) return "最高用时 " + best.toFixed(2) + "s    平均用时 " + avg.toFixed(2) + "s"
+	private buildRuntimeStatsText(best: number): string {
 		if (best > 0) return "最高用时 " + best.toFixed(2) + "s"
 		return "暂无用时记录"
 	}
@@ -630,16 +639,39 @@ class GameView extends mylib.UIBase {
 		return { scale, x, y }
 	}
 
+	/** 记忆挑战：非末关通关后进入下一关目标预览（倒计时与首次进入相同，见 ReversePreviewView） */
+	private _openReversePreviewAfterWin(): void {
+		const mgr = MainUIManager.getInstance()
+		if (!mgr.bReverseMode) return
+		mgr.reversePreviewAfterWin = true
+		this._stopWinBgm()
+		this._stopTimer()
+		this._stopRuleDebugTicker()
+		egret.Tween.removeAllTweens()
+		if (this._map) {
+			try {
+				this._map.removeAllImgEvent()
+			} catch (e) { }
+			this._map = null
+		}
+		this.showUILeft(new ReversePreviewView())
+	}
+
 	private onClickNext(e) {
 		this._stopWinBgm()
 		const mgr = MainUIManager.getInstance();
 		if (mgr.bReverseMode) {
+			if (this._reverseAfterGameEndTimer) {
+				egret.clearTimeout(this._reverseAfterGameEndTimer)
+				this._reverseAfterGameEndTimer = 0
+			}
+			this._reversePendingPreviewAfterGameEnd = false
 			const nextSelectId = mgr.getReverseActualSelectId(mgr.getReverseCurrentLevel())
 			mgr.reverseChallengeLevelId = mgr.getReverseCurrentLevel()
 			mgr.selectId = nextSelectId
 			this.curLv = nextSelectId - 1
-			egret.Tween.removeAllTweens()
-			this.popallitem()
+			// 与自动跳转一致：先进入 10s 倒计时预览，再进拼图（ReversePreviewView.enterGame → GameView）
+			this._openReversePreviewAfterWin()
 			return
 		}
 		if (mgr.bEndlessMode) {
@@ -664,22 +696,24 @@ class GameView extends mylib.UIBase {
 		const completedLevel = this.curLv + 1
 		if (bWin) {
 				const mgrRef = MainUIManager.getInstance();
+				const scoreBeforeWin = mgrRef.score
+				let bGetAward = false
 				if (mgrRef.bReverseMode) {
 					const ret = mgrRef.onReverseChallengeWin()
 					this._reverseLastWinAdvanced = !!ret.didAdvanceProgress
 					this.curLv = mgrRef.selectId - 1
-					this.score_num.text = mgrRef.score.toString()
 					this.completeTxt.text = "还原成功"
-					this.OnGameEnd(false)
-					let msg = ret.firstPass ? "首次通关 +5星" : "重复通关 +1星"
+					let msg = ret.firstPass ? "首次通关 +5星" : "重复通关（不加星）"
 					if (ret.comboBonus > 0) msg += "，3连胜额外 +" + ret.comboBonus + "星"
 					if (ret.finishedAll) msg += "，已通关全部记忆关卡"
 					this.ShowTips(msg)
+					this._reversePendingPreviewAfterGameEnd = !ret.finishedAll && ret.didAdvanceProgress
+					const starsEarnedRev = Math.max(0, mgrRef.score - scoreBeforeWin)
+					this.OnGameEnd(false, starsEarnedRev, scoreBeforeWin)
 					return
 				}
 				if (MainUIManager.getInstance().bHelp == false) {
 					this.curLv++
-					var bGetAward = false
 
 					if (MainUIManager.getInstance().guanqia < this.curLv + 1) {
 						MainUIManager.getInstance().guanqia = this.curLv + 1
@@ -715,7 +749,8 @@ class GameView extends mylib.UIBase {
 					if (mgrRef.endlessLevel - 1 > high) mgrRef.setEndlessHighScore(mgrRef.endlessLevel - 1);
 				}
 
-				this.OnGameEnd(bGetAward)
+				const starsEarned = Math.max(0, mgrRef.score - scoreBeforeWin)
+				this.OnGameEnd(bGetAward, starsEarned, scoreBeforeWin)
 				// 每日挑战：通关后推进 + 引导进入下一关/领奖
 				const mgr: any = MainUIManager.getInstance() as any;
 				if (MainUIManager.getInstance().bHelp == false && mgr.isDailyActive && mgr.isDailyActive()) {
@@ -837,6 +872,11 @@ class GameView extends mylib.UIBase {
 	private onClickRetry() { // 重试
 		this._stopWinBgm()
 		this.gp_tip.visible = false
+		if (this._reverseAfterGameEndTimer) {
+			egret.clearTimeout(this._reverseAfterGameEndTimer)
+			this._reverseAfterGameEndTimer = 0
+		}
+		this._reversePendingPreviewAfterGameEnd = false
 		if (this.btn_next.visible == true) {
 			const mgr = MainUIManager.getInstance()
 			if (!mgr.bReverseMode) {
@@ -902,13 +942,21 @@ class GameView extends mylib.UIBase {
 		}
 		this.refreshRuleDebugPanel()
 	}
-	private OnGameEnd(bGetAward: boolean) {
+	private OnGameEnd(bGetAward: boolean, starsEarned: number, scoreBeforeWin: number) {
+		const mgrEnd = MainUIManager.getInstance()
+		const flyN = starsEarned > 0 ? Math.min(starsEarned, 15) : 0
+		if (flyN > 0) {
+			this.score_num.text = String(scoreBeforeWin)
+		}
 		this.btn_back_step.$setTexture(RES.getRes("huochai_json.ingame_bt_back1"))
 		this.btn_remind.visible = false
 		this.completeTxt.visible = true
 		this.btn_help.visible = false
+		// 与经典玩法结算一致：底部栏显示重试 / 分享 / 下一关（代玩关隐藏下一关）
+		this.gameMenue.visible = true
+		this.btn_retry.visible = true
 		this.btn_share.visible = true
-		this.btn_next.visible = !MainUIManager.getInstance().bHelp
+		this.btn_next.visible = !mgrEnd.bHelp
 		this.gameEnd.visible = true
 		this.first_tongguan.visible = false
 
@@ -925,22 +973,77 @@ class GameView extends mylib.UIBase {
 		egret.Tween.get(this.end_beautiful, { loop: false })
 			.wait(400).to({ alpha: 1 }, 400)
 			.wait(1200).to({ alpha: 0 }, 500)
+			.call(this._onReverseGameEndBeautifulDone, this)
 
 		// 粒子爆发特效（延迟 200ms，让奖章先出来）
 		egret.Tween.get(this, { loop: false }).wait(200).call(this._playWinParticles, this)
 
+		if (flyN > 0) {
+			egret.Tween.get(this, { loop: false }).wait(780).call(() => this._playVictoryStarFly(flyN), this)
+		}
+		const flyDoneMs = flyN > 0 ? 780 + (flyN - 1) * 95 + 540 : 0
 		if (bGetAward && !MainUIManager.getInstance().bHelp) {
 			this.first_tongguan.visible = true
-			egret.Tween.get(this, { loop: false }).wait(2100).call(this.GameUpdateStates)
+			const waitScoreMs = Math.max(2100, flyDoneMs + 120)
+			egret.Tween.get(this, { loop: false }).wait(waitScoreMs).call(this.GameUpdateStates, this)
+		} else if (flyN > 0 && !mgrEnd.bHelp) {
+			egret.Tween.get(this, { loop: false }).wait(flyDoneMs + 80).call(() => {
+				this._rollScoreNumFromTo(scoreBeforeWin, MainUIManager.getInstance().score)
+			}, this)
 		}
 		this._playWinBgm()
 	}
 
+	private _onScoreRollChange(): void {
+		this.score_num.text = String(Math.round(this._scoreRollProxy.v))
+	}
+
+	/** 星星飞入后：从旧分滚动到新分（时长随差值略增） */
+	private _rollScoreNumFromTo(fromVal: number, toVal: number): void {
+		const from = Math.floor(fromVal)
+		const to = Math.floor(toVal)
+		const durationMs = Math.min(900, 420 + Math.abs(to - from) * 36)
+		if (from === to || durationMs <= 0) {
+			this.score_num.text = String(to)
+			return
+		}
+		egret.Tween.removeTweens(this._scoreRollProxy as any)
+		this._scoreRollProxy.v = from
+		this.score_num.text = String(from)
+		egret.Tween.get(this._scoreRollProxy, { loop: false, onChange: this._onScoreRollChange, onChangeObj: this })
+			.to({ v: to }, durationMs, egret.Ease.quadOut)
+			.call(() => {
+				this.score_num.text = String(to)
+				this._scoreRollProxy.v = to
+			}, this)
+	}
+
+	/** 记忆挑战：光晕淡出结束后若需要自动进下一关，再等 2s 打开预览 */
+	private _onReverseGameEndBeautifulDone(): void {
+		if (!this._reversePendingPreviewAfterGameEnd) return
+		const mgr = MainUIManager.getInstance()
+		if (!mgr.bReverseMode || mgr.bHelp) {
+			this._reversePendingPreviewAfterGameEnd = false
+			return
+		}
+		this._reversePendingPreviewAfterGameEnd = false
+		if (this._reverseAfterGameEndTimer) {
+			egret.clearTimeout(this._reverseAfterGameEndTimer)
+			this._reverseAfterGameEndTimer = 0
+		}
+		this._reverseAfterGameEndTimer = egret.setTimeout(() => {
+			this._reverseAfterGameEndTimer = 0
+			if (!MainUIManager.getInstance().bReverseMode) return
+			this._openReversePreviewAfterWin()
+		}, this, 2000)
+	}
+
 	public GameUpdateStates() {
 		this.first_tongguan.visible = false
-		//this.tongguanZs.visible = false
-		// 刷新钻石
-		this.score_num.text = MainUIManager.getInstance().score.toString()
+		const target = MainUIManager.getInstance().score
+		const parsed = parseInt(this.score_num.text, 10)
+		const fromVal = isNaN(parsed) ? target : parsed
+		this._rollScoreNumFromTo(fromVal, target)
 	}
 	public ShowTips(str: string) { // 提示文本
 		egret.Tween.removeTweens(this.gp_tip)
@@ -953,6 +1056,11 @@ class GameView extends mylib.UIBase {
 	}
 
 	public onClickGoHome() {
+		if (this._reverseAfterGameEndTimer) {
+			egret.clearTimeout(this._reverseAfterGameEndTimer)
+			this._reverseAfterGameEndTimer = 0
+		}
+		this._reversePendingPreviewAfterGameEnd = false
 		this._stopWinBgm()
 		this._stopTimer();
 		this._stopRuleDebugTicker();
@@ -961,6 +1069,7 @@ class GameView extends mylib.UIBase {
 		mgr.timedChallengeLevelId = 0;
 		mgr.bReverseMode = false;
 		mgr.reverseChallengeLevelId = 0;
+		mgr.reversePreviewAfterWin = false;
 		this._map.removeAllImgEvent()
 		this.gameGroup.removeChild(this._map)
 		egret.Tween.removeAllTweens();
@@ -1031,6 +1140,46 @@ class GameView extends mylib.UIBase {
 			.wait(200)
 			.to({ rotation: 1080 }, 900)    // 第三圈：快速
 			.wait(600)
+	}
+
+	/**
+	 * 胜利界面：星星从面板内固定点飞向顶部栏 img_star（坐标相对 gameEnd 720×600，轮询取点）。
+	 */
+	private static readonly _VICTORY_STAR_FLY_POINTS: [number, number][] = [
+		[360, 95],
+		[130, 230],
+		[590, 230],
+		[240, 400],
+		[480, 400],
+		[360, 300],
+	]
+
+	private _playVictoryStarFly(flyCount: number): void {
+		if (!this.gameEnd || !this.img_star || flyCount <= 0) return
+		const tex = this.img_star.source as egret.Texture
+		if (!tex) return
+		this.validateNow()
+		const dest = this.img_star.localToGlobal(0, 0)
+		const anchors = GameView._VICTORY_STAR_FLY_POINTS
+		const duration = 520
+		const stagger = 95
+		for (let i = 0; i < flyCount; i++) {
+			const [lx, ly] = anchors[i % anchors.length]
+			const src = this.gameEnd.localToGlobal(lx, ly)
+			const fly = new eui.Image(tex)
+			fly.width = this.img_star.width
+			fly.height = this.img_star.height
+			fly.anchorOffsetX = this.img_star.anchorOffsetX
+			fly.anchorOffsetY = this.img_star.anchorOffsetY
+			fly.x = src.x
+			fly.y = src.y
+			fly.scaleX = fly.scaleY = 1.2
+			this.addChild(fly)
+			egret.Tween.removeTweens(fly)
+			egret.Tween.get(fly).wait(i * stagger)
+				.to({ x: dest.x, y: dest.y, scaleX: 0.9, scaleY: 0.9 }, duration, egret.Ease.cubicInOut)
+				.call(() => { if (fly.parent) fly.parent.removeChild(fly) }, this)
+		}
 	}
 
 	/**

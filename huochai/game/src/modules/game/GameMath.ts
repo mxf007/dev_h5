@@ -47,7 +47,7 @@ class GameMath extends mylib.UIBase {
 	// 结算相关
 	//private game_end :eui.Group
 	private btn_next: OneStateButton
-	private gameEnd: OneStateButton
+	private gameEnd: eui.Group
 	private btn_tip_close: OneStateButton
 	private img_win: eui.Image
 	private end_beautiful: eui.Image
@@ -94,6 +94,7 @@ class GameMath extends mylib.UIBase {
 	/** 皮肤子部件在构造函数返回后才绑定，首次 popallitem 须在 childrenCreated 之后执行 */
 	private _gameMathSkinPopDone: boolean = false
 	private static readonly WIN_BGM_ID: string = "sound/snd_08.mp3"
+	private _scoreRollProxy: { v: number } = { v: 0 }
 	public constructor(curlv) {
 		super("GameUISkin");
 		this.curLv = curlv//MainUIManager.getInstance().selectId - 1
@@ -126,7 +127,7 @@ class GameMath extends mylib.UIBase {
 		this.btn_tip_close.visible = false
 		this.score_num.text = MainUIManager.getInstance().score.toString()
 		this.guankaLv.text = "关卡:" + (this.curLv + 1).toString()//MainUIManager.getInstance().guanqia.toString()
-		this.syncRuntimeStats(this.buildRuntimeStatsText(MainUIManager.getInstance().getMathLevelBestTime(this.curLv + 1), MainUIManager.getInstance().getMathLevelAvgTime(this.curLv + 1)), true)
+		this.syncRuntimeStats(this.buildRuntimeStatsText(MainUIManager.getInstance().getMathLevelBestTime(this.curLv + 1)), true)
 		this.onhelp.visible = false
 		this.onShowVideo.visible = false
 
@@ -360,8 +361,7 @@ class GameMath extends mylib.UIBase {
 		this._winSoundPlayed = false
 	}
 
-	private buildRuntimeStatsText(best: number, avg: number): string {
-		if (best > 0 && avg > 0) return "最高用时 " + best.toFixed(2) + "s"//平均用时 " + avg.toFixed(2) + "s"
+	private buildRuntimeStatsText(best: number): string {
 		if (best > 0) return "最高用时 " + best.toFixed(2) + "s"
 		return "暂无用时记录"
 	}
@@ -396,15 +396,17 @@ class GameMath extends mylib.UIBase {
 		var bWin = e.data.bWin
 		if (bWin) {
 				const elapsed = Math.max(0.01, (Date.now() - this._levelStartAt) / 1000)
-				MainUIManager.getInstance().recordMathLevelTime(this.curLv + 1, elapsed)
-				if (MainUIManager.getInstance().bHelp == false) {
+				const mgrWin = MainUIManager.getInstance()
+				const scoreBeforeWin = mgrWin.score
+				let bGetAward = false
+				mgrWin.recordMathLevelTime(this.curLv + 1, elapsed)
+				if (mgrWin.bHelp == false) {
 					this.curLv++
-					var bGetAward = false
 
-					if (MainUIManager.getInstance().guanqia1 < this.curLv + 1) {
-						MainUIManager.getInstance().guanqia1 = this.curLv + 1
-						MainUIManager.getInstance().score += 1
-						MainUIManager.getInstance().saveData()
+					if (mgrWin.guanqia1 < this.curLv + 1) {
+						mgrWin.guanqia1 = this.curLv + 1
+						mgrWin.score += 1
+						mgrWin.saveData()
 						bGetAward = true
 					}
 
@@ -416,7 +418,8 @@ class GameMath extends mylib.UIBase {
 			
 				}
 
-				this.OnGameEnd(bGetAward)
+				const starsEarned = Math.max(0, mgrWin.score - scoreBeforeWin)
+				this.OnGameEnd(bGetAward, starsEarned, scoreBeforeWin)
 				// 每日挑战：通关后推进 + 引导进入下一关/领奖
 				const mgr: any = MainUIManager.getInstance() as any;
 				if (MainUIManager.getInstance().bHelp == false && mgr.isDailyActive && mgr.isDailyActive()) {
@@ -580,7 +583,11 @@ class GameMath extends mylib.UIBase {
 		}
 		this.refreshRuleDebugPanel()
 	}
-	private OnGameEnd(bGetAward: boolean) {
+	private OnGameEnd(bGetAward: boolean, starsEarned: number, scoreBeforeWin: number) {
+		const flyN = starsEarned > 0 ? Math.min(starsEarned, 15) : 0
+		if (flyN > 0) {
+			this.score_num.text = String(scoreBeforeWin)
+		}
 		var img_path = RES.getRes(("huochai_json.ingame_bt_back1"))
 		this.btn_back_step.$setTexture(img_path)
 		this.btn_remind.visible = false
@@ -603,20 +610,91 @@ class GameMath extends mylib.UIBase {
 		this.end_beautiful.alpha = 0
 
 		egret.Tween.get(this.end_beautiful, { loop: false }).wait(600).to({ alpha: 1 }, 500).wait(1000).to({ alpha: 0 })
+		const mgrEnd = MainUIManager.getInstance()
+		if (flyN > 0) {
+			egret.Tween.get(this, { loop: false }).wait(780).call(() => this._playVictoryStarFly(flyN), this)
+		}
+		const flyDoneMs = flyN > 0 ? 780 + (flyN - 1) * 95 + 540 : 0
 		// 通关获得 10钻石
-		if (bGetAward && MainUIManager.getInstance().bHelp == false) {
+		if (bGetAward && mgrEnd.bHelp == false) {
 			console.log("首次通关获得1钻石!")
 			this.first_tongguan.visible = true
-			egret.Tween.get(this, { loop: false }).wait(2100).call(this.GameUpdateStates)
+			const waitScoreMs = Math.max(2100, flyDoneMs + 120)
+			egret.Tween.get(this, { loop: false }).wait(waitScoreMs).call(this.GameUpdateStates, this)
+		} else if (flyN > 0 && !mgrEnd.bHelp) {
+			egret.Tween.get(this, { loop: false }).wait(flyDoneMs + 80).call(() => {
+				this._rollScoreNumFromTo(scoreBeforeWin, MainUIManager.getInstance().score)
+			}, this)
 		}
 		this._playWinBgm()
 	}
 
+	private _onScoreRollChange(): void {
+		this.score_num.text = String(Math.round(this._scoreRollProxy.v))
+	}
+
+	private _rollScoreNumFromTo(fromVal: number, toVal: number): void {
+		const from = Math.floor(fromVal)
+		const to = Math.floor(toVal)
+		const durationMs = Math.min(900, 420 + Math.abs(to - from) * 36)
+		if (from === to || durationMs <= 0) {
+			this.score_num.text = String(to)
+			return
+		}
+		egret.Tween.removeTweens(this._scoreRollProxy as any)
+		this._scoreRollProxy.v = from
+		this.score_num.text = String(from)
+		egret.Tween.get(this._scoreRollProxy, { loop: false, onChange: this._onScoreRollChange, onChangeObj: this })
+			.to({ v: to }, durationMs, egret.Ease.quadOut)
+			.call(() => {
+				this.score_num.text = String(to)
+				this._scoreRollProxy.v = to
+			}, this)
+	}
+
+	private static readonly _VICTORY_STAR_FLY_POINTS: [number, number][] = [
+		[360, 95],
+		[130, 230],
+		[590, 230],
+		[240, 400],
+		[480, 400],
+		[360, 300],
+	]
+
+	private _playVictoryStarFly(flyCount: number): void {
+		if (!this.gameEnd || !this.img_star || flyCount <= 0) return
+		const tex = this.img_star.source as egret.Texture
+		if (!tex) return
+		this.validateNow()
+		const dest = this.img_star.localToGlobal(0, 0)
+		const anchors = GameMath._VICTORY_STAR_FLY_POINTS
+		const duration = 520
+		const stagger = 95
+		for (let i = 0; i < flyCount; i++) {
+			const [lx, ly] = anchors[i % anchors.length]
+			const src = this.gameEnd.localToGlobal(lx, ly)
+			const fly = new eui.Image(tex)
+			fly.width = this.img_star.width
+			fly.height = this.img_star.height
+			fly.anchorOffsetX = this.img_star.anchorOffsetX
+			fly.anchorOffsetY = this.img_star.anchorOffsetY
+			fly.x = src.x
+			fly.y = src.y
+			fly.scaleX = fly.scaleY = 1.2
+			this.addChild(fly)
+			egret.Tween.removeTweens(fly)
+			egret.Tween.get(fly).wait(i * stagger)
+				.to({ x: dest.x, y: dest.y, scaleX: 0.9, scaleY: 0.9 }, duration, egret.Ease.cubicInOut)
+				.call(() => { if (fly.parent) fly.parent.removeChild(fly) }, this)
+		}
+	}
+
 	public GameUpdateStates() {
 		this.first_tongguan.visible = false
-		//this.tongguanZs.visible = false
-		// 刷新钻石
-		this.score_num.text = MainUIManager.getInstance().score.toString()
+		const target = MainUIManager.getInstance().score
+		const parsed = parseInt(this.score_num.text, 10)
+		const fromVal = isNaN(parsed) ? target : parsed
+		this._rollScoreNumFromTo(fromVal, target)
 	}
 	public ShowTips(str: string) { // 提示文本
 		egret.Tween.removeTweens(this.gp_tip)

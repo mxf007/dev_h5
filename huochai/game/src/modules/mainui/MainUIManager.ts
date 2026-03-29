@@ -31,6 +31,8 @@ class MainUIManager {
 	// ===== 反转模式 =====
 	public bReverseMode: boolean = false;
 	public reverseChallengeLevelId: number = 0;
+	/** 记忆挑战：本次预览是否来自「中途通关后」的下一关（用于文案） */
+	public reversePreviewAfterWin: boolean = false;
 	private static readonly REVERSE_CLEAR_KEY = "huochaiReverseClear";
 	private static readonly REVERSE_STREAK_KEY = "huochaiReverseStreak";
 	private _reversePoolCache: { mapJiyiIndex: number }[] = null;
@@ -59,7 +61,7 @@ class MainUIManager {
 		egret.localStorage.setItem(MainUIManager.ENDLESS_HIGH_KEY, "" + v);
 	}
 
-	private loadEndlessTimeStats(): { [level: string]: { best: number, total: number, count: number } } {
+	private loadEndlessTimeStats(): { [level: string]: { best: number } } {
 		const raw = egret.localStorage.getItem(MainUIManager.ENDLESS_TIME_KEY);
 		if (!raw) return {};
 		try {
@@ -70,7 +72,7 @@ class MainUIManager {
 		}
 	}
 
-	private saveEndlessTimeStats(data: { [level: string]: { best: number, total: number, count: number } }): void {
+	private saveEndlessTimeStats(data: { [level: string]: { best: number } }): void {
 		egret.localStorage.setItem(MainUIManager.ENDLESS_TIME_KEY, JSON.stringify(data || {}));
 	}
 
@@ -78,13 +80,10 @@ class MainUIManager {
 		if (level <= 0 || sec <= 0) return;
 		const stats = this.loadEndlessTimeStats();
 		const key = "" + level;
-		const prev = stats[key] || { best: 0, total: 0, count: 0 };
-		const best = prev.best > 0 ? Math.min(prev.best, sec) : sec;
-		stats[key] = {
-			best: Math.round(best * 100) / 100,
-			total: Math.round((prev.total + sec) * 100) / 100,
-			count: (prev.count || 0) + 1,
-		};
+		const prev = stats[key];
+		const prevBest = prev && prev.best > 0 ? prev.best : 0;
+		const best = prevBest > 0 ? Math.min(prevBest, sec) : sec;
+		stats[key] = { best: Math.round(best * 100) / 100 };
 		this.saveEndlessTimeStats(stats);
 	}
 
@@ -93,19 +92,13 @@ class MainUIManager {
 		return row && row.best > 0 ? row.best : 0;
 	}
 
-	public getEndlessLevelAvgTime(level: number): number {
-		const row = this.loadEndlessTimeStats()["" + level];
-		if (!row || !row.count) return 0;
-		return Math.round((row.total / row.count) * 100) / 100;
-	}
-
 	public getEndlessDisplayLevel(): number {
 		const max = Math.max(1, (MyConst && MyConst.MapData) ? MyConst.MapData.length : 1);
 		const next = this.getEndlessHighScore() + 1;
 		return Math.max(1, Math.min(next, max));
 	}
 
-	private loadMathTimeStats(): { [level: string]: { best: number, total: number, count: number } } {
+	private loadMathTimeStats(): { [level: string]: { best: number } } {
 		const raw = egret.localStorage.getItem(MainUIManager.MATH_TIME_KEY);
 		if (!raw) return {};
 		try {
@@ -116,7 +109,7 @@ class MainUIManager {
 		}
 	}
 
-	private saveMathTimeStats(data: { [level: string]: { best: number, total: number, count: number } }): void {
+	private saveMathTimeStats(data: { [level: string]: { best: number } }): void {
 		egret.localStorage.setItem(MainUIManager.MATH_TIME_KEY, JSON.stringify(data || {}));
 	}
 
@@ -124,25 +117,16 @@ class MainUIManager {
 		if (level <= 0 || sec <= 0) return;
 		const stats = this.loadMathTimeStats();
 		const key = "" + level;
-		const prev = stats[key] || { best: 0, total: 0, count: 0 };
-		const best = prev.best > 0 ? Math.min(prev.best, sec) : sec;
-		stats[key] = {
-			best: Math.round(best * 100) / 100,
-			total: Math.round((prev.total + sec) * 100) / 100,
-			count: (prev.count || 0) + 1,
-		};
+		const prev = stats[key];
+		const prevBest = prev && prev.best > 0 ? prev.best : 0;
+		const best = prevBest > 0 ? Math.min(prevBest, sec) : sec;
+		stats[key] = { best: Math.round(best * 100) / 100 };
 		this.saveMathTimeStats(stats);
 	}
 
 	public getMathLevelBestTime(level: number): number {
 		const row = this.loadMathTimeStats()["" + level];
 		return row && row.best > 0 ? row.best : 0;
-	}
-
-	public getMathLevelAvgTime(level: number): number {
-		const row = this.loadMathTimeStats()["" + level];
-		if (!row || !row.count) return 0;
-		return Math.round((row.total / row.count) * 100) / 100;
 	}
 
 	private buildReverseChallengePool(): { mapJiyiIndex: number }[] {
@@ -476,6 +460,7 @@ class MainUIManager {
 
 	public startReverseChallenge(): void {
 		this.bReverseMode = true;
+		this.reversePreviewAfterWin = false;
 		this.bEndlessMode = false;
 		this.bTimedChallenge = false;
 		this.reverseChallengeLevelId = this.getReverseCurrentLevel();
@@ -493,7 +478,7 @@ class MainUIManager {
 		clear[key] = 1
 		this.saveReverseClear(clear)
 		let streak = this.getReverseStreak() + 1
-		let reward = firstPass ? 5 : 1
+		let reward = firstPass ? 5 : 0
 		let comboBonus = 0
 		if (streak > 0 && streak % 3 == 0) {
 			comboBonus = 3

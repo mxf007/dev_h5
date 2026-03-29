@@ -96,14 +96,16 @@ class MainUIView extends mylib.UIBase {
 		this.zsPanel.visible = true
 		this.signIn.visible = false
 
-		if (MainUIManager.getInstance().score < 10000) {
-			MainUIManager.getInstance().score = 10000   // 测试代码加财富
-			MainUIManager.getInstance().guanqia = MyConst.MapData.length - 1
-			MainUIManager.getInstance().guanqia1 = 25 // 数字玩法关卡
-			MainUIManager.getInstance().guanqiaReverse = 1 //反转玩法关卡
-			MainUIManager.getInstance().saveData()
-		}
+		// 必须先读档，否则下面测试用加分会 saveData 把默认 guanqiaReverse=1 写回，覆盖记忆挑战进度
 		this.loadData()
+		// if (MainUIManager.getInstance().score < 10000) {
+		// 	MainUIManager.getInstance().score = 10000   // 测试代码加财富
+		// 	MainUIManager.getInstance().guanqia = MyConst.MapData.length - 1
+		// 	MainUIManager.getInstance().guanqia1 = 25 // 数字玩法关卡
+		// 	MainUIManager.getInstance().guanqiaReverse = 7 // 数字玩法关卡
+		// 	// 记忆挑战进度单独记在 guanqiaReverse / huochaiReverseClear，勿在此处重置为 1
+		// 	MainUIManager.getInstance().saveData()
+		// }
 
 		this.score_num.text = MainUIManager.getInstance().score.toString()
 		var bSign = false//  this.sign()
