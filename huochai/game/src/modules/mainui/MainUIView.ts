@@ -47,7 +47,6 @@ class MainUIView extends mylib.UIBase {
 
 	private sign_day: eui.Label
 	private quickStart: OneStateButton
-	private op: number
 
 
 	//////
@@ -106,7 +105,6 @@ class MainUIView extends mylib.UIBase {
 		var bSign = false//  this.sign()
 		this.signOK.visible = bSign
 		this.newsignIn.visible = bSign
-		this.op = 0
 	}
 	private getCalendarDayKey(): string {
 		const d = new Date()
@@ -214,6 +212,14 @@ class MainUIView extends mylib.UIBase {
 
 		this.loadData();
 		this.loadSignDateFromStorage();
+		// if (true) {
+		// 	const mgrT = MainUIManager.getInstance()
+		// 	mgrT.score = 200
+		// 	mgrT.guanqia = MyConst.MapData.length - 1
+		// 	mgrT.guanqia1 = 1
+		// 	mgrT.guanqiaReverse = 7
+		// 	mgrT.saveData()
+		// }
 		this.score_num.text = MainUIManager.getInstance().score.toString();
 		this.resetLevelList(true);
 		this.other.visible = false
@@ -585,23 +591,6 @@ class MainUIView extends mylib.UIBase {
 				if (MainUIManager.getInstance().special == 0) {
 					const rowData: any = item.data;
 					const actualIdx = rowData && rowData.actualMapIndex != null ? rowData.actualMapIndex : (item.index - 1);
-					if (item.index == 888) {
-						this.op += 1
-						if (this.op == 8) {
-							var data1 = {
-								score: 0,
-								guanqia: 0,
-								selectId: 0,
-								scrollV: 0,
-							}
-							data1.score = 8880
-							data1.guanqia = MyConst.MapData.length - 1
-							data1.selectId = MainUIManager.getInstance().guanqia - 1
-							data1.scrollV = MainUIManager.getInstance().scrollV
-							egret.localStorage.setItem("huochaiData", JSON.stringify(data1));
-							AlertBox.alert("修改成功!")
-						}
-					}
 					const cur = MainUIManager.getInstance().guanqia || 0;
 					const isFirstWhenZero = (cur == 0 && item.index == 1);
 					const isUnlocked = isFirstWhenZero || (actualIdx + 1 <= cur);
@@ -752,13 +741,10 @@ class MainUIView extends mylib.UIBase {
 		this.reverseBtn.label = "数字玩法"
 	}
 
-	/** 读档后 / 同步页签：满足条件则写入解锁；未解锁时不可停留在记忆页签 */
+	/** 读档后 / 同步页签：满足条件则写入解锁；未解锁仍可停留在记忆页签查看说明 */
 	private refreshMemoryChallengeUnlockState(): void {
 		const mgr = MainUIManager.getInstance()
 		mgr.tryUnlockMemoryChallengeFromConditions()
-		if (!mgr.isMemoryChallengeUnlocked() && mgr.lastMainTab === "reverse") {
-			mgr.lastMainTab = "endless"
-		}
 		if (this.memoryChallengeTabLock) {
 			this.memoryChallengeTabLock.visible = !mgr.isMemoryChallengeUnlocked()
 		}
@@ -797,6 +783,7 @@ class MainUIView extends mylib.UIBase {
 		if (this.rewardLabel) this.rewardLabel.visible = true
 		if (this.quickStart) {
 			this.quickStart.enabled = true
+			this.quickStart.alpha = 1
 			this.quickStart.label = this.getQuickStartLabel(tab)
 		}
 		this.syncReverseInfo()
@@ -809,6 +796,7 @@ class MainUIView extends mylib.UIBase {
 		if (tab == "reverse") {
 			this.tabPageTitle.text = "记忆挑战"
 			this.tabPageDesc.text = this.buildReverseTabDesc()
+			this.refreshMemoryChallengeQuickStartState()
 			return
 		}
 		if (tab == "endless") {
@@ -821,6 +809,20 @@ class MainUIView extends mylib.UIBase {
 		const action = mgr.getDailyActionLabel()
 		this.quickStart.label = action
 		this.quickStart.enabled = action != "已完成"
+		this.quickStart.alpha = 1
+	}
+
+	/** 未解锁记忆挑战时「开始记忆挑战」不可点并置灰（皮肤 disabled 与 up 同图，需 alpha 区分） */
+	private refreshMemoryChallengeQuickStartState(): void {
+		const mgr = MainUIManager.getInstance()
+		if (!this.quickStart || mgr.lastMainTab !== "reverse") return
+		if (mgr.isMemoryChallengeUnlocked()) {
+			this.quickStart.enabled = true
+			this.quickStart.alpha = 1
+			return
+		}
+		this.quickStart.enabled = false
+		this.quickStart.alpha = 0.45
 	}
 
 	private getQuickStartLabel(tab: string): string {
@@ -912,7 +914,7 @@ class MainUIView extends mylib.UIBase {
 	private onToggleRuleDebug(): void {
 		const on = MainUIManager.getInstance().toggleRuleDebug()
 		this.syncRuleDebugBtn()
-		AlertBox.alert(on ? "规则调试已开启\n进入关卡可看到规则层判定信息" : "规则调试已关闭", null, null, "知道了")
+		AlertBox.alert(on ? "规则调试已开启\n进入关卡可看到规则层判定信息" : "规则调试已关闭", null, null, "")
 	}
 
 	public loadData() {
@@ -951,7 +953,7 @@ class MainUIView extends mylib.UIBase {
 			const mgrR = MainUIManager.getInstance()
 			mgrR.tryUnlockMemoryChallengeFromConditions()
 			if (!mgrR.isMemoryChallengeUnlocked()) {
-				AlertBox.alert("需要400星且达到20关", null, null, "知道了")
+				AlertBox.alert("需要400星且达到20关", null, null, "")
 				return
 			}
 			this.startReverseChallenge()
@@ -1083,7 +1085,7 @@ class MainUIView extends mylib.UIBase {
 		if (!tex || !this.img_star) {
 			this.score_num.text = String(scoreAfter)
 			this.syncTabPage()
-			AlertBox.alert(`领取成功！获得${reward}星星`, null, null, "知道了")
+			AlertBox.alert(`领取成功！获得${reward}星星`, null, null, "")
 			return
 		}
 		this.validateNow()
@@ -1117,7 +1119,7 @@ class MainUIView extends mylib.UIBase {
 		egret.setTimeout(() => {
 			this._rollMainScoreNumFromTo(scoreBefore, scoreAfter, () => {
 				this.syncTabPage()
-				AlertBox.alert(`领取成功！获得${reward}星星`, null, null, "知道了")
+				AlertBox.alert(`领取成功！获得${reward}星星`, null, null, "")
 			})
 		}, this, flyDoneMs)
 	}
@@ -1127,7 +1129,7 @@ class MainUIView extends mylib.UIBase {
 		mgr.startDailyChallenge();
 		const task = mgr.getDailyCurrentTask();
 		if (!task) {
-			AlertBox.alert("今日挑战已完成，记得领取奖励！", null, null, "知道了");
+			AlertBox.alert("今日挑战已完成，记得领取奖励！", null, null, "");
 			return;
 		}
 		// 进入挑战关卡
@@ -1160,15 +1162,16 @@ class MainUIView extends mylib.UIBase {
 	private onTimedChallenge(): void {
 		const mgr = MainUIManager.getInstance();
 		mgr.tryUnlockMemoryChallengeFromConditions()
-		if (!mgr.isMemoryChallengeUnlocked()) {
-			AlertBox.alert("需要400星且达到20关", null, null, "知道了")
-			return
-		}
 		this.persistLevelListScrollIfOnListTab()
 		mgr.saveData()
 		mgr.lastMainTab = "reverse"
 		this.syncMainTabs()
 		this.syncTabPage()
+		if (!mgr.isMemoryChallengeUnlocked()) {
+			AlertBox.alert("需要400星且达到20关", () => {
+				this.refreshMemoryChallengeQuickStartState()
+			}, this, "")
+		}
 	}
 
 	private onEndlessChallenge(): void {
@@ -1194,7 +1197,7 @@ class MainUIView extends mylib.UIBase {
 		const mgr = MainUIManager.getInstance()
 		mgr.tryUnlockMemoryChallengeFromConditions()
 		if (!mgr.isMemoryChallengeUnlocked()) {
-			AlertBox.alert("需要400星且达到20关", null, null, "知道了")
+			AlertBox.alert("需要400星且达到20关", null, null, "")
 			return
 		}
 		mgr.startReverseChallenge()

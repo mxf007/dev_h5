@@ -109,6 +109,7 @@ class Com {
 		}
 		
 		var lable = new eui.Label(text);
+		lable.touchEnabled = false;
 		lable.x = fromx;
 		lable.y = fromy;
 		lable.size = 24; // 设置字体大小，避免宽度/高度未定义
@@ -136,6 +137,7 @@ class Com {
 		}
 		
 		var lable = new eui.Label(text);
+		lable.touchEnabled = false;
 		lable.x = fromx;
 		lable.y = fromy;
 		lable.size = 24; // 设置字体大小
@@ -150,6 +152,7 @@ class Com {
 			
 			// 创建矩形背景
 			var rect = new eui.Rect(lable.width + 40, lable.height + 20, 0x000000);
+			rect.touchEnabled = false;
 			rect.alpha = 0.6;
 			rect.x = fromx - 20;
 			rect.y = fromy - 10;

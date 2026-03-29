@@ -729,7 +729,7 @@ class GameView extends mylib.UIBase {
 
 					if (MainUIManager.getInstance().guanqia < this.curLv + 1) {
 						MainUIManager.getInstance().guanqia = this.curLv + 1
-						MainUIManager.getInstance().score += 10
+						MainUIManager.getInstance().score += 5
 						MainUIManager.getInstance().saveData()
 						bGetAward = true
 					}
@@ -784,11 +784,11 @@ class GameView extends mylib.UIBase {
 							} else {
 								this.showUILeft(new Mission(idx));
 							}
-						}, this, "继续");
+						}, this, "");
 					} else {
 						AlertBox.alert("今日挑战已完成，回主界面领取奖励！", () => {
 							this.showUIRight(new MainUIView());
-						}, this, "回主界面");
+						}, this, "");
 					}
 				}
 		} else {

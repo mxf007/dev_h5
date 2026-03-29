@@ -405,7 +405,7 @@ class GameMath extends mylib.UIBase {
 
 					if (mgrWin.guanqia1 < this.curLv + 1) {
 						mgrWin.guanqia1 = this.curLv + 1
-						mgrWin.score += 1
+						mgrWin.score += 5
 						mgrWin.saveData()
 						bGetAward = true
 					}
@@ -440,11 +440,11 @@ class GameMath extends mylib.UIBase {
 							} else {
 								this.showUILeft(new Mission(idx));
 							}
-						}, this, "继续");
+						}, this, "");
 					} else {
 						AlertBox.alert("今日挑战已完成，回主界面领取奖励！", () => {
 							this.showUIRight(new MainUIView());
-						}, this, "回主界面");
+						}, this, "");
 					}
 				}
 		} else {
@@ -615,9 +615,7 @@ class GameMath extends mylib.UIBase {
 			egret.Tween.get(this, { loop: false }).wait(780).call(() => this._playVictoryStarFly(flyN), this)
 		}
 		const flyDoneMs = flyN > 0 ? 780 + (flyN - 1) * 95 + 540 : 0
-		// 通关获得 10钻石
 		if (bGetAward && mgrEnd.bHelp == false) {
-			console.log("首次通关获得1钻石!")
 			this.first_tongguan.visible = true
 			const waitScoreMs = Math.max(2100, flyDoneMs + 120)
 			egret.Tween.get(this, { loop: false }).wait(waitScoreMs).call(this.GameUpdateStates, this)

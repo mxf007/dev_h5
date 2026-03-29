@@ -79,7 +79,7 @@ class AlertBox extends mylib.UIBase {
 
     public update(): void {
         this.txt.text =this._txt || "";
-        this.okBtn.label = this._btnTxt || "确认";
+        this.okBtn.label = this._btnTxt;//|| "确认"
     }
 
 

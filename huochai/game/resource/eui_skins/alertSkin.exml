@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <e:Skin class="alertSkin" width="1280" height="720" xmlns:e="http://ns.egret.com/eui" xmlns:w="http://ns.egret.com/wing" xmlns:ns1="*" >
-	<e:Rect left="0" right="0" top="0" bottom="0" alpha="0.5" width="720" height="1280"/>
-	<e:Image verticalCenter="0" width="576" horizontalCenter="0" height="292" alpha="0.8" source="popup_json.popup_exit" fillMode="scale"/>
-	<ns1:OneStateButton id="okBtn" width="240" height="100" verticalCenter="74.5" horizontalCenter="0">
+	<e:Rect left="0" right="0" top="0" bottom="0" alpha="0.55" fillColor="0x000000" width="720" height="1280"/>
+	<e:Group width="560" height="288" horizontalCenter="0" verticalCenter="0" touchEnabled="false">
+		<e:Image left="0" right="0" top="0" bottom="0" source="huochai_json.bg2" scale9Grid="12,12,76,76" fillMode="scale" alpha="0.98" touchEnabled="false"/>
+		<e:Image left="-8" right="-8" top="-8" bottom="-8" source="huochai_json.bd_@2x" scale9Grid="12,12,76,76" fillMode="scale" touchEnabled="false"/>
+	</e:Group>
+	<e:Label id="txt" text="确认吗" width="500" height="120" verticalCenter="-36" textAlign="center" verticalAlign="middle" horizontalCenter="0" fontFamily="Microsoft YaHei" size="28" textColor="0x2E2C2D" lineSpacing="8" stroke="1" strokeColor="0xFFF8E1"/>
+	<ns1:OneStateButton id="okBtn" width="240" height="100" verticalCenter="88" horizontalCenter="0">
 		<ns1:skinName>
 			<e:Skin states="up,down,disabled">
 			<e:Image width="100%" height="100%" source="huochai_json.bt_yes"/>
@@ -10,10 +14,4 @@
 			</e:Skin>
 		</ns1:skinName>
 	</ns1:OneStateButton>
-	<e:Label id="txt" text="确认吗" anchorOffsetX="0" width="570" anchorOffsetY="0" height="60" verticalCenter="-70" textAlign="center" verticalAlign="middle" horizontalCenter="0" fontFamily="Microsoft YaHei" stroke="1" strokeColor="0x333231"/>
-
-	
-	
-	
-	
 </e:Skin>
