@@ -106,7 +106,7 @@ class GameView extends mylib.UIBase {
 	private _reverseLastWinAdvanced: boolean = false
 	/** 记忆挑战：gameEnd 光晕动画结束后再延迟打开下一关预览的定时器 */
 	private _reverseAfterGameEndTimer: number = 0
-	/** 记忆挑战：本关胜利后需在 gameEnd 动画结束 + 2s 后自动进下一关预览 */
+	/** 记忆挑战：本关胜利后需在 gameEnd 动画结束 + 1s 后自动进下一关预览 */
 	private _reversePendingPreviewAfterGameEnd: boolean = false
 	private static readonly TIMED_RANK_KEY: string = "huochaiTimedRankV2"
 	private static readonly WIN_BGM_ID: string = "sound/snd_08.mp3"
@@ -789,7 +789,8 @@ class GameView extends mylib.UIBase {
 		const mgr = MainUIManager.getInstance();
 		if (mgr.bReverseMode) {
 			mgr.onReverseChallengeFail()
-			this.ShowTips("记忆挑战失败，未扣星")
+			//const cost = MainUIManager.REVERSE_FAIL_STAR_COST
+			this.ShowTips("记忆挑战失败,请重新挑战")
 			return
 		}
 		if (mgr.bEndlessMode) {
@@ -1018,7 +1019,7 @@ class GameView extends mylib.UIBase {
 			}, this)
 	}
 
-	/** 记忆挑战：光晕淡出结束后若需要自动进下一关，再等 2s 打开预览 */
+	/** 记忆挑战：光晕淡出结束后若需要自动进下一关，再等 1s 打开预览 */
 	private _onReverseGameEndBeautifulDone(): void {
 		if (!this._reversePendingPreviewAfterGameEnd) return
 		const mgr = MainUIManager.getInstance()
@@ -1035,7 +1036,7 @@ class GameView extends mylib.UIBase {
 			this._reverseAfterGameEndTimer = 0
 			if (!MainUIManager.getInstance().bReverseMode) return
 			this._openReversePreviewAfterWin()
-		}, this, 2000)
+		}, this, 1000)
 	}
 
 	public GameUpdateStates() {

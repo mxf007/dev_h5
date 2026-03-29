@@ -838,7 +838,7 @@ class MainUIView extends mylib.UIBase {
 			"首次通关 +5星",
 			"重复通关 +1星",
 			"连续成功3关额外 +3星",
-			"失败不扣星"
+			"判定失败 -" + MainUIManager.REVERSE_FAIL_STAR_COST + "星（不低于0）"
 		].join("\n")
 	}
 

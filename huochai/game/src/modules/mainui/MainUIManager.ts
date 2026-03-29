@@ -39,6 +39,8 @@ class MainUIManager {
 	public reversePreviewAfterWin: boolean = false;
 	private static readonly REVERSE_CLEAR_KEY = "huochaiReverseClear";
 	private static readonly REVERSE_STREAK_KEY = "huochaiReverseStreak";
+	/** 记忆挑战：步数用尽且未达成目标时扣除星星（不低于 0） */
+	public static readonly REVERSE_FAIL_STAR_COST = 10;
 	private _reversePoolCache: { mapJiyiIndex: number }[] = null;
 
 	// ===== 限时挑战 =====
@@ -220,7 +222,7 @@ class MainUIManager {
 		lines.push("首次通关：+5星")
 		lines.push("重复通关：+1星")
 		lines.push("连续成功3关：额外+3星")
-		lines.push("失败不扣星")
+		lines.push("判定失败：-" + MainUIManager.REVERSE_FAIL_STAR_COST + "星（星星不低于0）")
 		lines.push("")
 		const lv = this.getReverseCurrentLevel()
 		lines.push("当前进度：" + lv + "/" + this.getReverseTotalLevels() + " " + this.getReverseDifficultyLabel(lv) + " " + this.getReverseDifficultyStars(lv))
@@ -513,6 +515,10 @@ class MainUIManager {
 
 	public onReverseChallengeFail(): void {
 		this.setReverseStreak(0)
+		if (this.bHelp) return
+		const c = MainUIManager.REVERSE_FAIL_STAR_COST
+		this.score = Math.max(0, this.score - c)
+		this.saveData()
 	}
 
 	private findNextDailyTaskIndex(): number {
