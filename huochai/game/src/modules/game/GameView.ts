@@ -729,9 +729,12 @@ class GameView extends mylib.UIBase {
 
 					if (MainUIManager.getInstance().guanqia < this.curLv + 1) {
 						MainUIManager.getInstance().guanqia = this.curLv + 1
-						MainUIManager.getInstance().score += 5
+						// 连续闯关下面另有每关 +5，避免与经典首通 +5 叠成 +10
+						if (!mgrRef.bEndlessMode) {
+							MainUIManager.getInstance().score += 5
+							bGetAward = true
+						}
 						MainUIManager.getInstance().saveData()
-						bGetAward = true
 					}
 
 					// 挑战成功 弹出 插屏广告

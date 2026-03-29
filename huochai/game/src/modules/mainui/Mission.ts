@@ -37,6 +37,9 @@ class Mission extends mylib.UIBase {
 	public onOk() {
 		egret.Tween.removeAllTweens();
 		this.rmEvts()
+		const mgr = MainUIManager.getInstance()
+		mgr.bEndlessMode = false
+		mgr.bTimedChallenge = false
 		this.showUILeft(new GameView());
 	}
 
