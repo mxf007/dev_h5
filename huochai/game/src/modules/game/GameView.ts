@@ -129,6 +129,12 @@ class GameView extends mylib.UIBase {
 		return MyConst.MapData[this.curLv]
 	}
 
+	/** 记忆挑战且本关为 MapJiyiData（与顶部「目标」区定制文案一致） */
+	private _isMemoryJiyiGameplay(): boolean {
+		const mgr = MainUIManager.getInstance()
+		return !!(mgr.bReverseMode && MyConst.MapJiyiData && this.curLv >= 0 && this.curLv < MyConst.MapJiyiData.length && MyConst.MapJiyiData[this.curLv])
+	}
+
 	private popallitem() {
 		this._stopWinBgm()
 		this._winSoundPlayed = false
@@ -322,7 +328,13 @@ class GameView extends mylib.UIBase {
 			}
 		}
 		this.gameRule.text = strRule
-		this.txt_target.text = "0 / " + num.toString()
+		if (this._isMemoryJiyiGameplay()) {
+			this.txt_target.text = "目标结果"
+			this.target_rect.visible = false
+		} else {
+			this.txt_target.text = "0 / " + num.toString()
+			if (this.target_rect) this.target_rect.visible = true
+		}
 		this.gameTitleRule.visible = false
 		this.txt_target_rule.text = strRule
 		this.txt_target_rule.lineSpacing = 10
@@ -788,9 +800,17 @@ class GameView extends mylib.UIBase {
 	private _onFail(msg: string): void {
 		const mgr = MainUIManager.getInstance();
 		if (mgr.bReverseMode) {
+			const scoreBefore = mgr.score
 			mgr.onReverseChallengeFail()
-			//const cost = MainUIManager.REVERSE_FAIL_STAR_COST
-			this.ShowTips("记忆挑战失败,请重新挑战")
+			const lost = scoreBefore - mgr.score
+			if (mgr.bHelp) {
+				this.ShowTips("记忆挑战失败，请重新挑战")
+			} else if (lost > 0) {
+				this.ShowTips("记忆挑战失败，-" + lost + "星")
+				this._rollScoreNumFromTo(scoreBefore, mgr.score)
+			} else {
+				this.ShowTips("记忆挑战失败（星星已为0）")
+			}
 			return
 		}
 		if (mgr.bEndlessMode) {
@@ -924,7 +944,7 @@ class GameView extends mylib.UIBase {
 	}
 	private onSetpUpdate(e) { // 更新步数
 		var tagNum = e.data.tagNum
-		if (tagNum != -1) { // 更新tagNum			
+		if (tagNum != -1 && !this._isMemoryJiyiGameplay()) { // 更新tagNum
 			this.txt_target.text = tagNum.toString() + " / " + this._playLevelRow().rule[3].toString()
 		}
 
