@@ -75,6 +75,7 @@ class MainUIView extends mylib.UIBase {
 	private _batchSize: number = 60;
 	private _loadMoreThresholdPx: number = 600;
 	private _highlightTimer: number = 0;
+	private _scrollSaveTimer: number = 0;
 	public constructor() {
 		super("MainUISkin");
 		this._data = {
@@ -183,7 +184,7 @@ class MainUIView extends mylib.UIBase {
 		this.itemList.itemRenderer = ContentItem;
 
 		this.loadData();
-		this.resetLevelList(false);
+		this.resetLevelList(true);
 		this.other.visible = false
 		this.pintu.visible = false
 	}
@@ -201,12 +202,58 @@ class MainUIView extends mylib.UIBase {
 		this._arrayCollection.removeAll();
 		this.loadNextBatch();
 
-		if (restoreScroll && MainUIManager.getInstance().scrollV != -1) {
-			this.scoll.viewport.validateNow();
-			this.scoll.viewport.scrollV = MainUIManager.getInstance().scrollV;
-		} else {
-			MainUIManager.getInstance().scrollV = -1;
+		const mgr = MainUIManager.getInstance();
+		const saved = mgr.special === 0 ? mgr.scrollVClassic : mgr.scrollVMath;
+		if (restoreScroll && saved >= 0 && this.scoll && this.scoll.viewport) {
+			egret.callLater(() => this._applyPersistedListScroll(saved), this);
 		}
+	}
+
+	/** 将当前列表滚动写入对应玩法（经典 / 数字） */
+	private persistLevelListScroll(): void {
+		if (!this.scoll || !this.scoll.viewport) return;
+		const mgr = MainUIManager.getInstance();
+		const v = Math.max(0, this.scoll.viewport.scrollV || 0);
+		if (mgr.special === 0) mgr.scrollVClassic = v;
+		else mgr.scrollVMath = v;
+	}
+
+	/** 离开关卡列表页签前调用，避免切换记忆/每日时丢滚动 */
+	private persistLevelListScrollIfOnListTab(): void {
+		const mgr = MainUIManager.getInstance();
+		if (mgr.lastMainTab !== "endless" && mgr.lastMainTab !== "mode") return;
+		if (!this.scoll || !this.scoll.visible) return;
+		this.persistLevelListScroll();
+	}
+
+	private _applyPersistedListScroll(saved: number): void {
+		if (!this.scoll || !this.scoll.viewport) return;
+		const vp: any = this.scoll.viewport;
+		vp.validateNow();
+		let guard = 0;
+		const maxGuard = 300;
+		while (guard++ < maxGuard && this._loadedCount < this._targetTotal) {
+			const ch = (vp as any).contentHeight || 0;
+			const vh = vp.height || this.scoll.height || 0;
+			if (saved + vh <= ch + 24) break;
+			this.loadNextBatch();
+			vp.validateNow();
+		}
+		const ch2 = (vp as any).contentHeight || 0;
+		const vh2 = vp.height || this.scoll.height || 0;
+		const maxScroll = Math.max(0, ch2 - vh2);
+		vp.scrollV = Math.max(0, Math.min(saved, maxScroll));
+	}
+
+	private scheduleSaveScrollPosition(): void {
+		const mgr = MainUIManager.getInstance();
+		if (mgr.lastMainTab !== "endless" && mgr.lastMainTab !== "mode") return;
+		this.persistLevelListScroll();
+		if (this._scrollSaveTimer) egret.clearTimeout(this._scrollSaveTimer);
+		this._scrollSaveTimer = egret.setTimeout(() => {
+			this._scrollSaveTimer = 0;
+			MainUIManager.getInstance().saveData();
+		}, this, 450);
 	}
 
 	private loadNextBatch(): void {
@@ -244,6 +291,7 @@ class MainUIView extends mylib.UIBase {
 		if (scrollV + viewHeight + this._loadMoreThresholdPx >= contentHeight) {
 			this.loadNextBatch();
 		}
+		this.scheduleSaveScrollPosition();
 	}
 
 	private ensureLoadedTo(levelIndex: number): void {
@@ -370,6 +418,10 @@ class MainUIView extends mylib.UIBase {
 		if (this._highlightTimer) {
 			egret.clearTimeout(this._highlightTimer);
 			this._highlightTimer = 0;
+		}
+		if (this._scrollSaveTimer) {
+			egret.clearTimeout(this._scrollSaveTimer);
+			this._scrollSaveTimer = 0;
 		}
 		this.signOK.removeEventListener(egret.TouchEvent.TOUCH_TAP, this.onClickSignOk, this);
 		this.signClose.removeEventListener(egret.TouchEvent.TOUCH_TAP, this.onClickSignClose, this);
@@ -527,7 +579,9 @@ class MainUIView extends mylib.UIBase {
 					}
 
 					MainUIManager.getInstance().selectId = actualIdx + 1;
-					MainUIManager.getInstance().scrollV = this.scoll.viewport.scrollV;
+					const sv = this.scoll.viewport.scrollV;
+					MainUIManager.getInstance().scrollV = sv;
+					MainUIManager.getInstance().scrollVClassic = sv;
 					MainUIManager.getInstance().saveData()
 					var maxLen = MainUIManager.getClassicLevelMapIndices().length
 					if (item.index > maxLen) {
@@ -552,6 +606,10 @@ class MainUIView extends mylib.UIBase {
 						return
 					}
 					MainUIManager.getInstance().selectId = MainUIManager.getInstance().guanqia1
+					if (this.scoll && this.scoll.viewport) {
+						MainUIManager.getInstance().scrollVMath = this.scoll.viewport.scrollV;
+					}
+					MainUIManager.getInstance().saveData()
 					//this.showUILeft(new Mission(itemIndex - 1));
 					this.showUILeft(new GameMath(itemIndex - 1));
 					MainUIManager.getInstance().special = 1
@@ -604,7 +662,6 @@ class MainUIView extends mylib.UIBase {
 		if (this.timedBtn) this.timedBtn.label = "记忆挑战"
 		this.syncReverseInfo()
 		this.syncEndlessInfo()
-		this.resetLevelList(false);
 
 		mgr.lastMainTab = keepTab
 		this.syncMainTabs()
@@ -672,12 +729,12 @@ class MainUIView extends mylib.UIBase {
 		this.applyTabLine(this.endlessTabLine, mgr.lastMainTab == "endless")
 		this.applyTabLine(this.dailyTabLine, mgr.lastMainTab == "daily")
 		this.applyTabLine(this.modeTabLine, mgr.lastMainTab == "mode")
-		this.syncSelectedTabCard(mgr.lastMainTab || "mode")
+		this.syncSelectedTabCard(mgr.lastMainTab || "endless")
 	}
 
 	private syncTabPage(): void {
 		const mgr = MainUIManager.getInstance()
-		const tab = mgr.lastMainTab || "mode"
+		const tab = mgr.lastMainTab || "endless"
 		const isLevelList = tab == "endless" || tab == "mode"
 		if (this.scoll) this.scoll.visible = isLevelList
 		if (this.tabPageGroup) this.tabPageGroup.visible = !isLevelList
@@ -698,7 +755,7 @@ class MainUIView extends mylib.UIBase {
 		this.syncReverseInfo()
 		this.syncEndlessInfo()
 		if (isLevelList) {
-			this.resetLevelList(false)
+			this.resetLevelList(true)
 			return
 		}
 		if (!this.tabPageTitle || !this.tabPageDesc) return
@@ -780,13 +837,14 @@ class MainUIView extends mylib.UIBase {
 
 	private syncSelectedTabCard(tab: string): void {
 		if (!this.tabSelectedBg || !this.tabSelectedBridge) return
+		// 与 MainUISkin modeBtns 从左到右一致：经典(0) → 数字(172) → 记忆(344) → 每日(516)
 		const map: any = {
-			reverse: 0,
-			endless: 172,
-			daily: 344,
-			mode: 516
+			endless: 0,
+			mode: 172,
+			reverse: 344,
+			daily: 516
 		}
-		const x = map[tab] != null ? map[tab] : 516
+		const x = map[tab] != null ? map[tab] : 0
 		this.tabSelectedBg.x = x - 2
 		this.tabSelectedBridge.x = x + 8
 		this.tabSelectedBg.visible = true
@@ -812,12 +870,18 @@ class MainUIView extends mylib.UIBase {
 		let data = egret.localStorage.getItem("huochaiData");
 		if (data != null && data != "") {
 			this._data = JSON.parse(data);
-			MainUIManager.getInstance().score = this._data.score
-			MainUIManager.getInstance().guanqia = this._data.guanqia
-			MainUIManager.getInstance().selectId = this._data.selectId
-			MainUIManager.getInstance().scrollV = this._data.scrollV
-			MainUIManager.getInstance().guanqia1 = this._data.guanqia1
-			MainUIManager.getInstance().guanqiaReverse = this._data.guanqiaReverse || 1
+			const mgr = MainUIManager.getInstance()
+			mgr.score = this._data.score
+			mgr.guanqia = this._data.guanqia
+			mgr.selectId = this._data.selectId
+			mgr.scrollV = this._data.scrollV
+			mgr.guanqia1 = this._data.guanqia1
+			mgr.guanqiaReverse = this._data.guanqiaReverse || 1
+			const rawC = this._data.scrollVClassic
+			const rawM = this._data.scrollVMath
+			const legacy = typeof this._data.scrollV === "number" && this._data.scrollV >= 0 ? this._data.scrollV : -1
+			mgr.scrollVClassic = (typeof rawC === "number" && rawC >= 0) ? rawC : legacy
+			mgr.scrollVMath = (typeof rawM === "number" && rawM >= 0) ? rawM : -1
 		}
 
 	}
@@ -831,7 +895,9 @@ class MainUIView extends mylib.UIBase {
 	}
 
 	private OnClickQuickStart() {
-		const tab = MainUIManager.getInstance().lastMainTab || "mode"
+		this.persistLevelListScrollIfOnListTab()
+		MainUIManager.getInstance().saveData()
+		const tab = MainUIManager.getInstance().lastMainTab || "endless"
 		if (tab == "reverse") {
 			this.startReverseChallenge()
 			return
@@ -862,7 +928,14 @@ class MainUIView extends mylib.UIBase {
 				AlertBox.alert("暂无可用关卡！");
 				return;
 			}
-			MainUIManager.getInstance().selectId = actualIdx + 1;
+			const mgrQ = MainUIManager.getInstance()
+			mgrQ.selectId = actualIdx + 1;
+			if (this.scoll && this.scoll.viewport) {
+				const sv = this.scoll.viewport.scrollV;
+				mgrQ.scrollV = sv;
+				mgrQ.scrollVClassic = sv;
+			}
+			mgrQ.saveData();
 			this.showUILeft(new Mission(actualIdx));
 		} else if (MainUIManager.getInstance().special == 1) {
 			var itemIndex = MainUIManager.getInstance().guanqia1
@@ -871,7 +944,12 @@ class MainUIView extends mylib.UIBase {
 				AlertBox.alert("达到最大配置关卡，等待更新吧!")
 				return
 			}
-			MainUIManager.getInstance().selectId = MainUIManager.getInstance().guanqia1
+			const mgrM = MainUIManager.getInstance()
+			mgrM.selectId = mgrM.guanqia1
+			if (this.scoll && this.scoll.viewport) {
+				mgrM.scrollVMath = this.scoll.viewport.scrollV;
+			}
+			mgrM.saveData();
 			//this.showUILeft(new Mission(itemIndex - 1));
 			this.showUILeft(new GameMath(itemIndex - 1));
 		}
@@ -888,6 +966,8 @@ class MainUIView extends mylib.UIBase {
 
 	private onDailyChallenge(): void {
 		const mgr = MainUIManager.getInstance();
+		this.persistLevelListScrollIfOnListTab()
+		mgr.saveData()
 		mgr.lastMainTab = "daily"
 		this.syncMainTabs()
 		this.syncTabPage()
@@ -918,12 +998,18 @@ class MainUIView extends mylib.UIBase {
 		MainUIManager.getInstance().special = task.mode;
 
 		if (task.mode == 1) {
+			if (this.scoll && this.scoll.viewport) {
+				mgr.scrollVMath = this.scoll.viewport.scrollV;
+			}
+			mgr.saveData();
 			this.showUILeft(new GameMath(task.level - 1));
 			return;
 		}
 
 		MainUIManager.getInstance().selectId = task.level;
-		MainUIManager.getInstance().scrollV = this.scoll && this.scoll.viewport ? this.scoll.viewport.scrollV : -1;
+		const sv0 = this.scoll && this.scoll.viewport ? this.scoll.viewport.scrollV : -1;
+		MainUIManager.getInstance().scrollV = sv0;
+		if (sv0 >= 0) MainUIManager.getInstance().scrollVClassic = sv0;
 		MainUIManager.getInstance().saveData();
 		const idx = task.level - 1;
 		const mapType = MyConst.MapData[idx].mapType;
@@ -936,6 +1022,8 @@ class MainUIView extends mylib.UIBase {
 
 	private onTimedChallenge(): void {
 		const mgr = MainUIManager.getInstance();
+		this.persistLevelListScrollIfOnListTab()
+		mgr.saveData()
 		mgr.lastMainTab = "reverse"
 		this.syncMainTabs()
 		this.syncTabPage()
@@ -943,6 +1031,7 @@ class MainUIView extends mylib.UIBase {
 
 	private onEndlessChallenge(): void {
 		const mgr = MainUIManager.getInstance();
+		this.persistLevelListScrollIfOnListTab()
 		mgr.special = 0
 		mgr.lastMainTab = "endless"
 		this.syncMainTabs()
@@ -951,6 +1040,7 @@ class MainUIView extends mylib.UIBase {
 
 	private onReverseChallenge(): void {
 		const mgr = MainUIManager.getInstance();
+		this.persistLevelListScrollIfOnListTab()
 		mgr.special = 1
 		mgr.lastMainTab = "mode"
 		this.syncModeToggleBtn()
@@ -987,6 +1077,8 @@ class MainUIView extends mylib.UIBase {
 		mgr.selectId = actualIdx + 1;
 		mgr.bHelp = false;
 		mgr.special = 0;
+		this.persistLevelListScroll();
+		mgr.saveData();
 		this.showUILeft(new Mission(actualIdx));
 	}
 }

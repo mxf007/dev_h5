@@ -13,6 +13,10 @@ class MainUIManager {
 
 	public selectId = 1;
 	public scrollV = -1;
+	/** 经典玩法关卡列表纵向滚动（与 special==0 对应） */
+	public scrollVClassic: number = -1;
+	/** 数字玩法关卡列表纵向滚动（与 special==1 对应） */
+	public scrollVMath: number = -1;
 	public selectTag = -1;
 	public maxLevel = 1000; // 最大关卡
 	private _init = true;
@@ -52,7 +56,8 @@ class MainUIManager {
 	private static readonly RULE_DEBUG_KEY = "huochaiRuleDebug";
 	private _ruleDebugLoaded: boolean = false;
 	private _ruleDebug: boolean = false;
-	public lastMainTab: string = "mode";
+	/** 与主界面 Tab 顺序一致时默认落在首位「经典玩法」 */
+	public lastMainTab: string = "endless";
 	public getEndlessHighScore(): number {
 		const raw = egret.localStorage.getItem(MainUIManager.ENDLESS_HIGH_KEY);
 		return raw ? parseInt(raw, 10) || 0 : 0;
@@ -575,15 +580,21 @@ class MainUIManager {
 			guanqia: 0,
 			selectId:0,
 			scrollV:0,
+			scrollVClassic: -1,
+			scrollVMath: -1,
 			guanqia1: 0,
 			guanqiaReverse: 0,
 		}
-		data.score = MainUIManager.getInstance().score
-		data.guanqia = MainUIManager.getInstance().guanqia
-		data.selectId = MainUIManager.getInstance().selectId
-		data.scrollV = MainUIManager.getInstance().scrollV
-		data.guanqia1 = MainUIManager.getInstance().guanqia1
-		data.guanqiaReverse = MainUIManager.getInstance().guanqiaReverse
+		const inst = MainUIManager.getInstance()
+		data.score = inst.score
+		data.guanqia = inst.guanqia
+		data.selectId = inst.selectId
+		data.scrollVClassic = inst.scrollVClassic
+		data.scrollVMath = inst.scrollVMath
+		// 旧字段：与经典列表一致，兼容只读 scrollV 的逻辑
+		data.scrollV = inst.scrollVClassic >= 0 ? inst.scrollVClassic : inst.scrollV
+		data.guanqia1 = inst.guanqia1
+		data.guanqiaReverse = inst.guanqiaReverse
 		egret.localStorage.setItem("huochaiData", JSON.stringify(data));
 	}
 
