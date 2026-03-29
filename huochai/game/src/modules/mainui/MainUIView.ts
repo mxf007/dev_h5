@@ -76,6 +76,7 @@ class MainUIView extends mylib.UIBase {
 	private _loadMoreThresholdPx: number = 600;
 	private _highlightTimer: number = 0;
 	private _scrollSaveTimer: number = 0;
+	private _scoreRollProxy: { v: number } = { v: 0 }
 	public constructor() {
 		super("MainUISkin");
 		this._data = {
@@ -91,6 +92,8 @@ class MainUIView extends mylib.UIBase {
 			day: 0,
 			lianxu: 0,
 			show_vedio: 0,
+			/** 本地日历日 YYYY-MM-DD，与看广告 200 星领奖挂钩，跨天可再领 */
+			lastAdRewardDate: "",
 		}
 
 		this.popallitem()
@@ -99,6 +102,7 @@ class MainUIView extends mylib.UIBase {
 
 		// 必须先读档，否则下面测试用加分会 saveData 把默认 guanqiaReverse=1 写回，覆盖记忆挑战进度
 		this.loadData()
+		this.loadSignDateFromStorage()
 		// if (MainUIManager.getInstance().score < 10000) {
 		// 	MainUIManager.getInstance().score = 10000   // 测试代码加财富
 		// 	MainUIManager.getInstance().guanqia = MyConst.MapData.length - 1
@@ -114,6 +118,41 @@ class MainUIView extends mylib.UIBase {
 		this.newsignIn.visible = bSign
 		this.op = 0
 	}
+	private getCalendarDayKey(): string {
+		const d = new Date()
+		const pad2 = (n: number) => (n < 10 ? "0" + n : "" + n)
+		return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+	}
+
+	/** 从 localStorage 恢复 signDate，并写入 lastAdRewardDate（兼容旧档仅有 show_vedio） */
+	private loadSignDateFromStorage(): void {
+		const raw = egret.localStorage.getItem("signDate")
+		if (!raw || raw === "") return
+		try {
+			const sd = JSON.parse(raw)
+			if (typeof sd.year === "number") this.signDate.year = sd.year
+			if (typeof sd.month === "number") this.signDate.month = sd.month
+			if (typeof sd.day === "number") this.signDate.day = sd.day
+			if (sd.lianxu != null) this.signDate.lianxu = sd.lianxu
+			if (sd.show_vedio != null && sd.show_vedio !== "") this.signDate.show_vedio = sd.show_vedio | 0
+			else this.signDate.show_vedio = 0
+			if (sd.lastAdRewardDate) {
+				this.signDate.lastAdRewardDate = String(sd.lastAdRewardDate)
+				return
+			}
+			const pad2 = (n: number) => (n < 10 ? "0" + n : "" + n)
+			const y = this.signDate.year | 0
+			const m = this.signDate.month | 0
+			const day = this.signDate.day | 0
+			if (y > 0 && (this.signDate.show_vedio | 0) > 0) {
+				this.signDate.lastAdRewardDate = `${y}-${pad2(m)}-${pad2(day)}`
+			} else {
+				this.signDate.lastAdRewardDate = ""
+			}
+		} catch (e) {
+		}
+	}
+
 	public sign(): boolean {
 		var bSign = true
 		let now = new Date();
@@ -184,6 +223,7 @@ class MainUIView extends mylib.UIBase {
 		this.itemList.itemRenderer = ContentItem;
 
 		this.loadData();
+		this.loadSignDateFromStorage();
 		this.resetLevelList(true);
 		this.other.visible = false
 		this.pintu.visible = false
@@ -464,19 +504,20 @@ class MainUIView extends mylib.UIBase {
 	}
 
 	public OnShowResult(ok): void {
-		// 视频看完 继续游戏
+		const todayKey = this.getCalendarDayKey()
+		// 视频看完：按自然日一天最多领一次 200 星（lastAdRewardDate；原 show_vedio 未随读档/签到刷新，不可靠）
 		if (ok == 1) {
-			// 刷新显示的金币
-			if (this.signDate.show_vedio == 0) {
+			const last = (this.signDate.lastAdRewardDate != null && this.signDate.lastAdRewardDate !== "")
+				? String(this.signDate.lastAdRewardDate)
+				: ""
+			if (last !== todayKey) {
 				MainUIManager.getInstance().score += 200
 				MainUIManager.getInstance().saveData()
 				this.score_num.text = MainUIManager.getInstance().score.toString()
-				// 显示动画
-				// var tw = egret.Tween.get(this.score_num, { loop: false })
-				// tw.wait(1).to({ height: -this.score_num.height }, 1000).to({ height: this.score_num.height }, 1000)
+				this.signDate.lastAdRewardDate = todayKey
 			}
 		}
-		this.signDate.show_vedio += 1
+		this.signDate.show_vedio = (this.signDate.show_vedio | 0) + 1
 		egret.localStorage.setItem("signDate", JSON.stringify(this.signDate));
 	}
 
@@ -651,6 +692,7 @@ class MainUIView extends mylib.UIBase {
 
 	public showAt(p: egret.DisplayObjectContainer): void {
 		super.showAt(p);
+		this.loadSignDateFromStorage()
 		const mgr = MainUIManager.getInstance()
 		const keepTab = mgr.lastMainTab
 		this.other.visible = false
@@ -746,8 +788,9 @@ class MainUIView extends mylib.UIBase {
 			this.other.label = mgr.special == 1 ? "切换经典玩法" : "切换数字玩法"
 		}
 		if (this.pintu) this.pintu.visible = false
-		if (this.img_box) this.img_box.visible = !isLevelList
-		if (this.rewardLabel) this.rewardLabel.visible = !isLevelList
+		// 经典 / 数字页签为关卡列表时也要显示签到盒与奖励文案（原逻辑仅非列表页显示）
+		if (this.img_box) this.img_box.visible = true
+		if (this.rewardLabel) this.rewardLabel.visible = true
 		if (this.quickStart) {
 			this.quickStart.enabled = true
 			this.quickStart.label = this.getQuickStartLabel(tab)
@@ -976,13 +1019,95 @@ class MainUIView extends mylib.UIBase {
 	private onDailyAction(): void {
 		const mgr = MainUIManager.getInstance();
 		const label = mgr.getDailyActionLabel();
-		mgr.dailyAction();
 		if (label === "领取奖励") {
-			this.score_num.text = mgr.score.toString();
-			AlertBox.alert(`领取成功！获得${mgr.getDailyReward()}星星`, null, null, "知道了");
+			const scoreBefore = mgr.score;
+			const reward = mgr.getDailyReward();
+			mgr.dailyAction();
+			const scoreAfter = mgr.score;
+			this.score_num.text = String(scoreBefore);
+			if (this.quickStart) this.quickStart.enabled = false;
+			this._playDailyRewardClaimSequence(scoreBefore, scoreAfter, reward);
 			return;
 		}
+		mgr.dailyAction();
 		this.startOrContinueDaily();
+	}
+
+	/** 相对 tabPageGroup 的比例点，用于每日领取飞星起点 */
+	private static readonly _DAILY_REWARD_FLY_FRAC: [number, number][] = [
+		[0.1, 0.42], [0.28, 0.34], [0.46, 0.28], [0.54, 0.28], [0.72, 0.34], [0.9, 0.42],
+		[0.18, 0.58], [0.38, 0.5], [0.62, 0.5], [0.82, 0.58],
+		[0.12, 0.74], [0.35, 0.68], [0.65, 0.68], [0.88, 0.74],
+		[0.5, 0.62],
+	]
+
+	private _onMainScoreRollChange(): void {
+		this.score_num.text = String(Math.round(this._scoreRollProxy.v))
+	}
+
+	private _rollMainScoreNumFromTo(fromVal: number, toVal: number, onDone?: () => void): void {
+		const from = Math.floor(fromVal)
+		const to = Math.floor(toVal)
+		const durationMs = Math.min(950, 440 + Math.abs(to - from) * 32)
+		if (from === to || durationMs <= 0) {
+			this.score_num.text = String(to)
+			if (onDone) onDone()
+			return
+		}
+		egret.Tween.removeTweens(this._scoreRollProxy as any)
+		this._scoreRollProxy.v = from
+		this.score_num.text = String(from)
+		egret.Tween.get(this._scoreRollProxy, { loop: false, onChange: this._onMainScoreRollChange, onChangeObj: this })
+			.to({ v: to }, durationMs, egret.Ease.quadOut)
+			.call(() => {
+				this.score_num.text = String(to)
+				this._scoreRollProxy.v = to
+				if (onDone) onDone()
+			}, this)
+	}
+
+	private _playDailyRewardClaimSequence(scoreBefore: number, scoreAfter: number, reward: number): void {
+		const tex = this.img_star ? (this.img_star.source as egret.Texture) : null
+		if (!tex || !this.img_star) {
+			this.score_num.text = String(scoreAfter)
+			this.syncTabPage()
+			AlertBox.alert(`领取成功！获得${reward}星星`, null, null, "知道了")
+			return
+		}
+		this.validateNow()
+		const dest = this.img_star.localToGlobal(0, 0)
+		const g = this.tabPageGroup
+		if (g) g.validateNow()
+		const w = g && g.width > 10 ? g.width : 620
+		const h = g && g.height > 10 ? g.height : 520
+		const anchors = MainUIView._DAILY_REWARD_FLY_FRAC
+		const flyN = 14
+		const duration = 420
+		const stagger = 70
+		for (let i = 0; i < flyN; i++) {
+			const [fx, fy] = anchors[i % anchors.length]
+			const src = g ? g.localToGlobal(fx * w, fy * h) : this.localToGlobal(fx * 720, 380 + fy * 360)
+			const fly = new eui.Image(tex)
+			fly.width = this.img_star.width
+			fly.height = this.img_star.height
+			fly.anchorOffsetX = this.img_star.anchorOffsetX
+			fly.anchorOffsetY = this.img_star.anchorOffsetY
+			fly.x = src.x
+			fly.y = src.y
+			fly.scaleX = fly.scaleY = 1.15
+			this.addChild(fly)
+			egret.Tween.removeTweens(fly)
+			egret.Tween.get(fly).wait(i * stagger)
+				.to({ x: dest.x, y: dest.y, scaleX: 0.88, scaleY: 0.88 }, duration, egret.Ease.cubicInOut)
+				.call(() => { if (fly.parent) fly.parent.removeChild(fly) }, this)
+		}
+		const flyDoneMs = (flyN - 1) * stagger + duration + 90
+		egret.setTimeout(() => {
+			this._rollMainScoreNumFromTo(scoreBefore, scoreAfter, () => {
+				this.syncTabPage()
+				AlertBox.alert(`领取成功！获得${reward}星星`, null, null, "知道了")
+			})
+		}, this, flyDoneMs)
 	}
 
 	private startOrContinueDaily(): void {

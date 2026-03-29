@@ -2,10 +2,10 @@
 <e:Skin class="alertSkin" width="1280" height="720" xmlns:e="http://ns.egret.com/eui" xmlns:w="http://ns.egret.com/wing" xmlns:ns1="*" >
 	<e:Rect left="0" right="0" top="0" bottom="0" alpha="0.5" width="720" height="1280"/>
 	<e:Image verticalCenter="0" width="576" horizontalCenter="0" height="292" alpha="0.8" source="popup_json.popup_exit" fillMode="scale"/>
-	<ns1:OneStateButton id="okBtn" label="确定" width="240" height="100" verticalCenter="74.5" horizontalCenter="0">
+	<ns1:OneStateButton id="okBtn" width="240" height="100" verticalCenter="74.5" horizontalCenter="0">
 		<ns1:skinName>
 			<e:Skin states="up,down,disabled">
-			<e:Image width="100%" height="100%" source="scale9_json.btn_style_1" scale9Grid="25,15,73,17"/>
+			<e:Image width="100%" height="100%" source="huochai_json.bt_yes"/>
 			<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0" fontFamily="Microsoft YaHei" textColor="0x0bb20c"/>
 			</e:Skin>
 		</ns1:skinName>

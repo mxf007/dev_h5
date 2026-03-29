@@ -37,7 +37,7 @@
 		</ns1:OneStateButton>
 	</e:Group>
 	<e:Image width="412" height="95" y="111.901" source="huochai_json.title" scaleX="0.7" scaleY="0.7" horizontalCenter="0"/>
-	<ns1:OneStateButton id="ruleDebugBtn" x="540" y="122" width="165" height="42" label="规则调试:关">
+	<ns1:OneStateButton id="ruleDebugBtn" x="540" y="122" width="165" height="42" label="规则调试:关" visible="false">
 		<ns1:skinName>
 			<e:Skin states="up,down,disabled">
 				<e:Image width="100%" height="100%" source="btres_json.bg_orange" source.down="btres_json.bg_orange" source.disabled="btres_json.bg_orange"/>
