@@ -75,7 +75,6 @@ class MainUIView extends mylib.UIBase {
 	private _loadedCount: number = 0;
 	private _batchSize: number = 60;
 	private _loadMoreThresholdPx: number = 600;
-	private _highlightTimer: number = 0;
 	private _scrollSaveTimer: number = 0;
 	private _scoreRollProxy: { v: number } = { v: 0 }
 	public constructor() {
@@ -224,6 +223,7 @@ class MainUIView extends mylib.UIBase {
 		this.resetLevelList(true);
 		this.other.visible = false
 		this.pintu.visible = false
+		this.syncRuleDebugBtn()
 	}
 
 	private getTotalLevelCount(): number {
@@ -331,91 +331,6 @@ class MainUIView extends mylib.UIBase {
 		this.scheduleSaveScrollPosition();
 	}
 
-	private ensureLoadedTo(levelIndex: number): void {
-		if (levelIndex <= 0) return;
-		while (this._loadedCount < levelIndex && this._loadedCount < this._targetTotal) {
-			this.loadNextBatch();
-		}
-	}
-
-	private scrollToPlayableLevel(): void {
-		if (!this.scoll || !this.scoll.viewport || !this.itemList) {
-			return;
-		}
-
-		const mgr = MainUIManager.getInstance();
-		const playable = (mgr.special == 1)
-			? (mgr.guanqia1 || 1)
-			: (mgr.guanqia || 1);
-		const lv = Math.max(1, playable);
-		// 经典玩法：guanqia 是 MapData 的 selectId（下标+1），列表格子序号需按 actualMapIndex 换算
-		const listPos = mgr.special == 1 ? lv : MainUIManager.getClassicListIndexForSelectId(lv);
-
-		this.ensureLoadedTo(listPos);
-		this.scoll.viewport.validateNow();
-
-		const layout: any = this.itemList.layout as any;
-		const paddingTop = (layout && typeof layout.paddingTop === "number") ? layout.paddingTop : 0;
-		const paddingLeft = (layout && typeof layout.paddingLeft === "number") ? layout.paddingLeft : 0;
-		const paddingRight = (layout && typeof layout.paddingRight === "number") ? layout.paddingRight : 0;
-		const hGap = (layout && typeof layout.horizontalGap === "number") ? layout.horizontalGap : 0;
-		const vGap = (layout && typeof layout.verticalGap === "number") ? layout.verticalGap : 0;
-
-		// 对齐 ContentsItem.exml 的尺寸（120x125）+ TileLayout 间距。
-		const itemW = 120;
-		const itemH = 125;
-		const listW = this.itemList.width || 0;
-		const availableW = Math.max(0, listW - paddingLeft - paddingRight);
-		const cols = Math.max(1, Math.floor((availableW + hGap) / (itemW + hGap)));
-		const row = Math.floor((listPos - 1) / cols);
-
-		const targetScrollV = Math.max(0, paddingTop + row * (itemH + vGap) - (itemH + vGap));
-		this.scoll.viewport.scrollV = targetScrollV;
-		this.highlightLevelCell(listPos);
-	}
-
-	private highlightLevelCell(levelIndex: number): void {
-		if (!this.itemList) return;
-		const idx = levelIndex - 1;
-		if (idx < 0) return;
-
-		if (this._highlightTimer) {
-			egret.clearTimeout(this._highlightTimer);
-			this._highlightTimer = 0;
-		}
-
-		// 等待布局/渲染器创建完成后再取元素
-		this._highlightTimer = egret.setTimeout(() => {
-			this._highlightTimer = 0;
-			let renderer: any = null;
-			try {
-				// List 继承 DataGroup，通常可用 getElementAt
-				const anyList: any = this.itemList as any;
-				if (anyList.getElementAt) {
-					renderer = anyList.getElementAt(idx);
-				} else if (anyList.getChildAt) {
-					renderer = anyList.getChildAt(idx);
-				}
-			} catch (e) {
-				renderer = null;
-			}
-			if (!renderer) return;
-
-			egret.Tween.removeTweens(renderer);
-			const sx = renderer.scaleX || 1;
-			const sy = renderer.scaleY || 1;
-			renderer.scaleX = sx;
-			renderer.scaleY = sy;
-
-			egret.Tween.get(renderer, { loop: false })
-				.to({ scaleX: sx * 1.08, scaleY: sy * 1.08 }, 120, egret.Ease.quadOut)
-				.to({ scaleX: sx, scaleY: sy }, 180, egret.Ease.backOut)
-				.wait(60)
-				.to({ alpha: 0.75 }, 80)
-				.to({ alpha: 1 }, 80);
-		}, this, 50);
-	}
-
 	public addEvts(): void {
 		this.itemList.addEventListener(egret.TouchEvent.TOUCH_TAP, this.onTouchList, this);
 		this.scoll.addEventListener(eui.UIEvent.CHANGE, this.onScrollChange, this);
@@ -452,10 +367,6 @@ class MainUIView extends mylib.UIBase {
 		this.endlessBtn.removeEventListener(egret.TouchEvent.TOUCH_END, this.onEndlessChallenge, this);
 		if (this.reverseBtn) this.reverseBtn.removeEventListener(egret.TouchEvent.TOUCH_END, this.onReverseChallenge, this);
 		if (this.ruleDebugBtn) this.ruleDebugBtn.removeEventListener(egret.TouchEvent.TOUCH_END, this.onToggleRuleDebug, this);
-		if (this._highlightTimer) {
-			egret.clearTimeout(this._highlightTimer);
-			this._highlightTimer = 0;
-		}
 		if (this._scrollSaveTimer) {
 			egret.clearTimeout(this._scrollSaveTimer);
 			this._scrollSaveTimer = 0;
@@ -583,10 +494,17 @@ class MainUIView extends mylib.UIBase {
 	}
 
 	private onTouchList(e: egret.TouchEvent): void {
-		let targ = e.target;
-		if (targ.parent == this.itemList) {
-			let item: ContentItem = targ;
-			if (item.index >= 0) {
+		let targ: any = e.target;
+		let item: ContentItem = null;
+		while (targ) {
+			if (targ instanceof ContentItem) {
+				item = targ;
+				break;
+			}
+			if (targ === this.itemList) break;
+			targ = targ.parent;
+		}
+		if (item && item.index >= 0) {
 				MainUIManager.getInstance().bHelp = false // 不是求助而来的一律设置false
 				if (MainUIManager.getInstance().special == 0) {
 					const rowData: any = item.data;
@@ -595,7 +513,7 @@ class MainUIView extends mylib.UIBase {
 					const isFirstWhenZero = (cur == 0 && item.index == 1);
 					const isUnlocked = isFirstWhenZero || (actualIdx + 1 <= cur);
 					if (!isUnlocked) {
-						AlertBox.alert("该关卡未解锁，先通关前面的关卡吧！", this.scrollToPlayableLevel, this, "去可玩关");
+						AlertBox.alert("该关卡未解锁，先通关前面的关卡吧！", null, null, "");
 						return;
 					}
 
@@ -617,7 +535,7 @@ class MainUIView extends mylib.UIBase {
 					const isFirstWhenZero1 = (cur1 == 0 && item.index == 1);
 					const isUnlocked1 = isFirstWhenZero1 || (item.index <= cur1);
 					if (!isUnlocked1) {
-						AlertBox.alert("该关卡未解锁，先通关前面的关卡吧！", this.scrollToPlayableLevel, this, "去可玩关");
+						AlertBox.alert("该关卡未解锁，先通关前面的关卡吧！", null, null, "");
 						return;
 					}
 					var itemIndex = item.index
@@ -635,7 +553,6 @@ class MainUIView extends mylib.UIBase {
 					this.showUILeft(new GameMath(itemIndex - 1));
 					MainUIManager.getInstance().special = 1
 				}
-			}
 		}
 	}
 	public onMusic(): void {
@@ -733,7 +650,10 @@ class MainUIView extends mylib.UIBase {
 
 	private syncRuleDebugBtn(): void {
 		if (!this.ruleDebugBtn) return
-		this.ruleDebugBtn.label = MainUIManager.getInstance().isRuleDebugEnabled() ? "规则调试:开" : "规则调试:关"
+		const on = MainUIManager.getInstance().isRuleDebugEnabled()
+		this.ruleDebugBtn.visible = on
+		;(this.ruleDebugBtn as eui.UIComponent).includeInLayout = on
+		this.ruleDebugBtn.label = on ? "规则调试:开" : "规则调试:关"
 	}
 
 	private syncModeToggleBtn(): void {

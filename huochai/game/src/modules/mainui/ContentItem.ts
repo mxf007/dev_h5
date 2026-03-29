@@ -20,6 +20,12 @@ class ContentItem extends eui.ItemRenderer {
 	}
 
 	protected dataChanged(): void {
+		// 列表虚拟化复用 Item 时，清掉高亮缓动遗留的缩放/透明度，避免格子显示与数据错位
+		egret.Tween.removeTweens(this);
+		this.scaleX = 1;
+		this.scaleY = 1;
+		this.alpha = 1;
+
 		this.index = this.data.index;
 		this.content_Id.text = this.data.index
 		if (this.data && this.data.actualMapIndex != null) {

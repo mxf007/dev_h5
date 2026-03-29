@@ -400,7 +400,8 @@ class GameMath extends mylib.UIBase {
 				const scoreBeforeWin = mgrWin.score
 				let bGetAward = false
 				mgrWin.recordMathLevelTime(this.curLv + 1, elapsed)
-				if (mgrWin.bHelp == false) {
+				// 每日挑战数字关：单关胜利不推进 guanqia1、不加星（含 +5 首通）
+				if (mgrWin.bHelp == false && !(mgrWin.isDailyActive && mgrWin.isDailyActive())) {
 					this.curLv++
 
 					if (mgrWin.guanqia1 < this.curLv + 1) {
@@ -531,7 +532,10 @@ class GameMath extends mylib.UIBase {
 		this._stopWinBgm()
 		this.gp_tip.visible = false
 		if (this.btn_next.visible == true) {
-			this.curLv--
+			const mgrR = MainUIManager.getInstance()
+			if (!(mgrR.isDailyActive && mgrR.isDailyActive())) {
+				this.curLv--
+			}
 		}
 		this.bRetry = true
 		egret.Tween.removeAllTweens();		// 清除缓动画
@@ -611,16 +615,27 @@ class GameMath extends mylib.UIBase {
 
 		egret.Tween.get(this.end_beautiful, { loop: false }).wait(600).to({ alpha: 1 }, 500).wait(1000).to({ alpha: 0 })
 		const mgrEnd = MainUIManager.getInstance()
+		const flyStartDelayMs = 780
+		const scoreRollAfterFlyStartMs = flyStartDelayMs + 100
 		if (flyN > 0) {
-			egret.Tween.get(this, { loop: false }).wait(780).call(() => this._playVictoryStarFly(flyN), this)
+			egret.Tween.get(this, { loop: false }).wait(flyStartDelayMs).call(() => this._playVictoryStarFly(flyN), this)
 		}
-		const flyDoneMs = flyN > 0 ? 780 + (flyN - 1) * 95 + 540 : 0
+		const flyDoneMs = flyN > 0 ? flyStartDelayMs + (flyN - 1) * 95 + 540 : 0
 		if (bGetAward && mgrEnd.bHelp == false) {
 			this.first_tongguan.visible = true
 			const waitScoreMs = Math.max(2100, flyDoneMs + 120)
-			egret.Tween.get(this, { loop: false }).wait(waitScoreMs).call(this.GameUpdateStates, this)
+			if (flyN > 0) {
+				egret.Tween.get(this, { loop: false }).wait(scoreRollAfterFlyStartMs).call(() => {
+					this._rollScoreNumFromTo(scoreBeforeWin, MainUIManager.getInstance().score)
+				}, this)
+				egret.Tween.get(this, { loop: false }).wait(waitScoreMs).call(() => {
+					this.first_tongguan.visible = false
+				}, this)
+			} else {
+				egret.Tween.get(this, { loop: false }).wait(waitScoreMs).call(this.GameUpdateStates, this)
+			}
 		} else if (flyN > 0 && !mgrEnd.bHelp) {
-			egret.Tween.get(this, { loop: false }).wait(flyDoneMs + 80).call(() => {
+			egret.Tween.get(this, { loop: false }).wait(scoreRollAfterFlyStartMs).call(() => {
 				this._rollScoreNumFromTo(scoreBeforeWin, MainUIManager.getInstance().score)
 			}, this)
 		}

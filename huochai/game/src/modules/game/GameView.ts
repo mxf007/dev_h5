@@ -692,11 +692,8 @@ class GameView extends mylib.UIBase {
 				const passed = mgr.endlessLevel - 1;
 				const oldHigh = mgr.getEndlessHighScore();
 				if (passed > oldHigh) mgr.setEndlessHighScore(passed);
-				const stars = passed * 5;
-				mgr.score += stars;
-				mgr.saveData();
 				mgr.bEndlessMode = false;
-				AlertBox.alert("闯了" + passed + "关！获得" + stars + "星星\n最高记录：" + mgr.getEndlessHighScore() + "关", () => this.onClickGoHome(), this, "回主界面");
+				AlertBox.alert("闯了" + passed + "关！\n最高记录：" + mgr.getEndlessHighScore() + "关\n", () => this.onClickGoHome(), this, "回主界面");
 				return;
 			}
 		}
@@ -724,17 +721,15 @@ class GameView extends mylib.UIBase {
 					this.OnGameEnd(false, starsEarnedRev, scoreBeforeWin)
 					return
 				}
-				if (MainUIManager.getInstance().bHelp == false) {
+				// 每日挑战：可玩未解锁经典关；单关胜利不推进 guanqia、不加星（含 +5 首通）
+				if (MainUIManager.getInstance().bHelp == false && !(mgrRef.isDailyActive && mgrRef.isDailyActive())) {
 					this.curLv++
 
 					if (MainUIManager.getInstance().guanqia < this.curLv + 1) {
 						MainUIManager.getInstance().guanqia = this.curLv + 1
-						// 连续闯关下面另有每关 +5，避免与经典首通 +5 叠成 +10
-						if (!mgrRef.bEndlessMode) {
-							MainUIManager.getInstance().score += 5
-							bGetAward = true
-						}
+						MainUIManager.getInstance().score += 5
 						MainUIManager.getInstance().saveData()
+						bGetAward = true
 					}
 
 					// 挑战成功 弹出 插屏广告
@@ -745,21 +740,24 @@ class GameView extends mylib.UIBase {
 			
 				}
 
-				// 限时挑战：停止计时，按时间发奖励
+				// 限时挑战：停止计时，按时间发奖励（每日挑战中不占排行榜、不加星）
 				if (mgrRef.bTimedChallenge) {
 					this._stopTimer();
-					const elapsed = Math.max(1, Math.ceil((Date.now() - mgrRef.timedChallengeStartTime) / 1000));
-					this._showTimedChallengeResult(elapsed);
-					return;
+					if (mgrRef.isDailyActive && mgrRef.isDailyActive()) {
+						mgrRef.bTimedChallenge = false;
+						mgrRef.timedChallengeLevelId = 0;
+					} else {
+						const elapsed = Math.max(1, Math.ceil((Date.now() - mgrRef.timedChallengeStartTime) / 1000));
+						this._showTimedChallengeResult(elapsed);
+						return;
+					}
 				}
 
-				// 连续闯关：推进关卡，每关+5星星
-				if (mgrRef.bEndlessMode) {
+				// 连续闯关：仅推进进度/计时，不加星（每日挑战不与连续闯关进度混用）
+				if (mgrRef.bEndlessMode && !(mgrRef.isDailyActive && mgrRef.isDailyActive())) {
 					const elapsed = Math.max(0.01, (Date.now() - this._levelStartAt) / 1000)
 					mgrRef.recordEndlessLevelTime(completedLevel, elapsed)
 					mgrRef.endlessLevel = this.curLv + 1;
-					mgrRef.score += 5;
-					mgrRef.saveData();
 					const high = mgrRef.getEndlessHighScore();
 					if (mgrRef.endlessLevel - 1 > high) mgrRef.setEndlessHighScore(mgrRef.endlessLevel - 1);
 				}
@@ -820,9 +818,8 @@ class GameView extends mylib.UIBase {
 			const passed = mgr.endlessLevel - 1;
 			const oldHigh = mgr.getEndlessHighScore();
 			if (passed > oldHigh) mgr.setEndlessHighScore(passed);
-			const stars = Math.max(0, passed) * 5;
 			mgr.bEndlessMode = false;
-			AlertBox.alert("闯了" + passed + "关！获得" + stars + "星星\n最高记录：" + mgr.getEndlessHighScore() + "关", () => this.onClickGoHome(), this, "回主界面");
+			AlertBox.alert("闯了" + passed + "关！\n最高记录：" + mgr.getEndlessHighScore() + "关\n（星星仅在各关首次通关时获得）", () => this.onClickGoHome(), this, "回主界面");
 			return;
 		}
 		this.ShowTips(msg);
@@ -904,7 +901,10 @@ class GameView extends mylib.UIBase {
 		if (this.btn_next.visible == true) {
 			const mgr = MainUIManager.getInstance()
 			if (!mgr.bReverseMode) {
-				this.curLv--
+				// 每日通关未做 curLv++，重试时不可再减，否则会错到上一关
+				if (!(mgr.isDailyActive && mgr.isDailyActive())) {
+					this.curLv--
+				}
 			} else {
 				// 通关后若已推进 guanqiaReverse，重试需回退并与 selectId 对齐；末关通关未推进则只同步地图
 				if (this._reverseLastWinAdvanced) {
@@ -1002,16 +1002,27 @@ class GameView extends mylib.UIBase {
 		// 粒子爆发特效（延迟 200ms，让奖章先出来）
 		egret.Tween.get(this, { loop: false }).wait(200).call(this._playWinParticles, this)
 
+		const flyStartDelayMs = 780
+		const scoreRollAfterFlyStartMs = flyStartDelayMs + 100
 		if (flyN > 0) {
-			egret.Tween.get(this, { loop: false }).wait(780).call(() => this._playVictoryStarFly(flyN), this)
+			egret.Tween.get(this, { loop: false }).wait(flyStartDelayMs).call(() => this._playVictoryStarFly(flyN), this)
 		}
-		const flyDoneMs = flyN > 0 ? 780 + (flyN - 1) * 95 + 540 : 0
+		const flyDoneMs = flyN > 0 ? flyStartDelayMs + (flyN - 1) * 95 + 540 : 0
 		if (bGetAward && !MainUIManager.getInstance().bHelp) {
 			this.first_tongguan.visible = true
 			const waitScoreMs = Math.max(2100, flyDoneMs + 120)
-			egret.Tween.get(this, { loop: false }).wait(waitScoreMs).call(this.GameUpdateStates, this)
+			if (flyN > 0) {
+				egret.Tween.get(this, { loop: false }).wait(scoreRollAfterFlyStartMs).call(() => {
+					this._rollScoreNumFromTo(scoreBeforeWin, MainUIManager.getInstance().score)
+				}, this)
+				egret.Tween.get(this, { loop: false }).wait(waitScoreMs).call(() => {
+					this.first_tongguan.visible = false
+				}, this)
+			} else {
+				egret.Tween.get(this, { loop: false }).wait(waitScoreMs).call(this.GameUpdateStates, this)
+			}
 		} else if (flyN > 0 && !mgrEnd.bHelp) {
-			egret.Tween.get(this, { loop: false }).wait(flyDoneMs + 80).call(() => {
+			egret.Tween.get(this, { loop: false }).wait(scoreRollAfterFlyStartMs).call(() => {
 				this._rollScoreNumFromTo(scoreBeforeWin, MainUIManager.getInstance().score)
 			}, this)
 		}

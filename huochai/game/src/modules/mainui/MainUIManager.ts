@@ -293,40 +293,94 @@ class MainUIManager {
 	}
 
 	private createDailyTasks(): any {
-		// 策略：从对应玩法 10 关以上的关卡中随机选择
-		const maxClassic = Math.max(1, Math.min(this.guanqia || 1, (MyConst.MapData ? MyConst.MapData.length : 1)));
+		// 策略：经典两关按 guanqia 分段在关卡号区间内随机；候选池按整张 MapData 该区间建（可未解锁），最后才用已解锁池兜底
+		const mapLen = MyConst.MapData ? MyConst.MapData.length : 1;
+		const maxClassic = Math.max(1, Math.min(this.guanqia || 1, mapLen));
 		const maxMath = Math.max(1, Math.min(this.guanqia1 || 1, (MyConst.MathMapData ? MyConst.MathMapData.length : 1)));
+
+		const gq = Math.max(1, this.guanqia | 0);
+		let bandMin: number;
+		let bandMax: number;
+		if (gq <= 15) {
+			bandMin = 15;
+			bandMax = Math.min(30, mapLen);
+		} else if (gq <= 30) {
+			bandMin = 25;
+			bandMax = Math.min(40, mapLen);
+		} else {
+			bandMin = 20;
+			bandMax = mapLen;
+		}
+		const inDailyBand = (lv: number) => lv >= bandMin && lv <= bandMax;
 
 		let seed = Date.now() + (this.getTodayStr().charCodeAt(0) || 0) * 13;
 		const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
 
-		// 按玩法类型分组：1 添加 2 移动 3 删除，排除 mapType==999（等式关），步数至少 2
-		const pools: { [k: number]: number[] } = { 1: [], 2: [], 3: [] };
-		for (let i = 0; i < maxClassic && i < (MyConst.MapData ? MyConst.MapData.length : 0); i++) {
-			const m = MyConst.MapData[i];
-			if (m.mapType == 999) continue;
-			const gt = m.rule && m.rule[0] ? m.rule[0] : 1;
-			if (gt >= 1 && gt <= 3 && m.rule[1] >= 2) {
-				if (!pools[gt]) pools[gt] = [];
-				pools[gt].push(i + 1);
+		const poolHasAny = (p: { [k: number]: number[] }): boolean => {
+			for (let k = 1; k <= 3; k++) {
+				if (p[k] && p[k].length > 0) return true;
 			}
+			return false;
+		};
+
+		/** 在关卡号闭区间 [lvFrom, lvTo] 内扫 MapData（不限解锁），1/2/3 类玩法池 */
+		const fillClassicPoolLevelRange = (lvFrom: number, lvTo: number, minRuleCost: number): { [k: number]: number[] } => {
+			const p: { [k: number]: number[] } = { 1: [], 2: [], 3: [] };
+			if (!MyConst.MapData || mapLen <= 0) return p;
+			const lo = Math.max(1, lvFrom);
+			const hi = Math.min(mapLen, lvTo);
+			if (lo > hi) return p;
+			for (let i = lo - 1; i <= hi - 1; i++) {
+				const m = MyConst.MapData[i];
+				if (m.mapType == 999) continue;
+				const gt = m.rule && m.rule[0] ? m.rule[0] : 1;
+				const cost = m.rule && m.rule[1] != null ? m.rule[1] : 0;
+				if (gt >= 1 && gt <= 3 && cost >= minRuleCost) {
+					if (!p[gt]) p[gt] = [];
+					p[gt].push(i + 1);
+				}
+			}
+			return p;
+		};
+
+		// 已解锁池：仅作最后兜底
+		const fillClassicPoolsUnlocked = (minRuleCost: number): { [k: number]: number[] } => {
+			return fillClassicPoolLevelRange(1, maxClassic, minRuleCost);
+		};
+		let pools = fillClassicPoolsUnlocked(2);
+		if (!poolHasAny(pools)) {
+			pools = fillClassicPoolsUnlocked(1);
 		}
 
-		// 筛选 10 关以上的关卡池
-		const poolsAbove10: { [k: number]: number[] } = { 1: [], 2: [], 3: [] };
-		for (let k = 1; k <= 3; k++) {
-			if (pools[k]) {
-				poolsAbove10[k] = pools[k].filter(lv => lv > 10);
+		// 当日区间：整张图内建池（低进度也可抽到 15～30 等未解锁关）
+		let rangePools = fillClassicPoolLevelRange(bandMin, bandMax, 2);
+		if (!poolHasAny(rangePools)) {
+			rangePools = fillClassicPoolLevelRange(bandMin, bandMax, 1);
+		}
+		let inPickRange: (lv: number) => boolean = inDailyBand;
+		if (!poolHasAny(rangePools)) {
+			const fbMin = 20;
+			const fbMax = mapLen;
+			rangePools = fillClassicPoolLevelRange(fbMin, fbMax, 2);
+			if (!poolHasAny(rangePools)) {
+				rangePools = fillClassicPoolLevelRange(fbMin, fbMax, 1);
 			}
+			inPickRange = (lv: number) => lv >= fbMin && lv <= fbMax;
+		}
+
+		const poolsInActive: { [k: number]: number[] } = { 1: [], 2: [], 3: [] };
+		for (let k = 1; k <= 3; k++) {
+			poolsInActive[k] = (rangePools[k] || []).slice();
 		}
 
 		// 优先：添加 1 个 + 移动/删除 1 个；若某类不足则从其他类补
 		const allClassic: number[] = [];
 		for (let k = 1; k <= 3; k++) allClassic.push.apply(allClassic, pools[k] || []);
 		
-		// 10 关以上的全部关卡
-		const allAbove10: number[] = [];
-		for (let k = 1; k <= 3; k++) allAbove10.push.apply(allAbove10, poolsAbove10[k] || []);
+		const allInActive: number[] = [];
+		for (let k = 1; k <= 3; k++) allInActive.push.apply(allInActive, poolsInActive[k] || []);
+		const allInRangeFlat: number[] = [];
+		for (let k = 1; k <= 3; k++) allInRangeFlat.push.apply(allInRangeFlat, poolsInActive[k] || []);
 		
 		const pickFrom = (arr: number[], exclude: number[]): number => {
 			const ok = arr.filter(x => exclude.indexOf(x) < 0);
@@ -335,29 +389,31 @@ class MainUIManager {
 		};
 
 		const classic: number[] = [];
-		// 第一关：优先从 10 关以上的添加类型中选择
-		if (poolsAbove10[1] && poolsAbove10[1].length > 0) {
-			classic.push(pickFrom(poolsAbove10[1], []));
+		// 第一关：优先从当前选取范围（分段区间或 20～最大关）内添加类型中选择
+		if (poolsInActive[1] && poolsInActive[1].length > 0) {
+			classic.push(pickFrom(poolsInActive[1], []));
+		} else if (allInRangeFlat.length > 0) {
+			classic.push(pickFrom(allInRangeFlat, []));
 		} else if (pools[1] && pools[1].length > 0) {
-			// 如果 10 关以上没有添加类型，从所有添加类型中选择
 			classic.push(pickFrom(pools[1], []));
 		}
 		
-		// 第二关：优先从 10 关以上的移动或删除类型中选择
-		const moveOrDelAbove10 = (poolsAbove10[2] || []).concat(poolsAbove10[3] || []);
-		if (moveOrDelAbove10.length > 0) {
-			classic.push(pickFrom(moveOrDelAbove10, classic));
+		// 第二关：优先从当前选取范围内移动或删除类型中选择
+		const moveOrDelActive = (poolsInActive[2] || []).concat(poolsInActive[3] || []);
+		if (moveOrDelActive.length > 0) {
+			classic.push(pickFrom(moveOrDelActive, classic));
+		} else if (allInRangeFlat.length > 0) {
+			classic.push(pickFrom(allInRangeFlat, classic));
 		} else {
-			// 如果 10 关以上没有移动/删除类型，从所有移动/删除类型中选择
 			const moveOrDel = (pools[2] || []).concat(pools[3] || []);
 			if (moveOrDel.length > 0) {
 				classic.push(pickFrom(moveOrDel, classic));
 			}
 		}
 		
-		// 不足 2 个时从全部 10 关以上已解锁补
-		while (classic.length < 2 && allAbove10.length > 0) {
-			const n = pickFrom(allAbove10, classic);
+		// 不足 2 个时从当前选取范围内已解锁补
+		while (classic.length < 2 && allInActive.length > 0) {
+			const n = pickFrom(allInActive, classic);
 			if (classic.indexOf(n) < 0) classic.push(n);
 			else break;
 		}
@@ -379,11 +435,15 @@ class MainUIManager {
 		// 限制条件：0 无 1 仅删除 2 仅移动 3 禁用提示
 		const constraint = Math.floor(rnd() * 4);
 		let finalClassic = classic;
-		if (constraint == 1 && pools[3] && pools[3].length >= 2) {
-			finalClassic = [pickFrom(pools[3], []), pickFrom(pools[3], [pools[3][0]])];
+		const pools3Band = (rangePools[3] || []).filter(inPickRange);
+		const pools2Band = (rangePools[2] || []).filter(inPickRange);
+		if (constraint == 1 && pools3Band.length >= 2) {
+			const a = pickFrom(pools3Band, []);
+			finalClassic = [a, pickFrom(pools3Band, [a])];
 			if (finalClassic.length < 2) finalClassic = classic;
-		} else if (constraint == 2 && pools[2] && pools[2].length >= 2) {
-			finalClassic = [pickFrom(pools[2], []), pickFrom(pools[2], [pools[2][0]])];
+		} else if (constraint == 2 && pools2Band.length >= 2) {
+			const a = pickFrom(pools2Band, []);
+			finalClassic = [a, pickFrom(pools2Band, [a])];
 			if (finalClassic.length < 2) finalClassic = classic;
 		}
 
@@ -550,6 +610,11 @@ class MainUIManager {
 		return -1;
 	}
 
+	/**
+	 * 今日挑战进行中：任务关可直接进入，不要求列表已解锁。
+	 * 单关结算：不推进 guanqia/guanqia1、不增加星星（+5 首通等，见 GameView、GameMath）。
+	 * 三关全通后点击领取的每日奖励星星仍由 dailyAction 发放（与单关无关）。
+	 */
 	public isDailyActive(): boolean {
 		return this._dailyActive && this._dailyTaskIndex >= 0;
 	}
