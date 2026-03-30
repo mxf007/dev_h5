@@ -95,6 +95,7 @@ class GameMath extends mylib.UIBase {
 	private _gameMathSkinPopDone: boolean = false
 	private static readonly WIN_BGM_ID: string = "sound/snd_08.mp3"
 	private _scoreRollProxy: { v: number } = { v: 0 }
+	private _victoryFlyImages: eui.Image[] = []
 	public constructor(curlv) {
 		super("GameUISkin");
 		this.curLv = curlv//MainUIManager.getInstance().selectId - 1
@@ -104,6 +105,7 @@ class GameMath extends mylib.UIBase {
 
 	private popallitem() {
 		this._stopWinBgm()
+		this._cleanupVictoryStarFly()
 		this._winSoundPlayed = false
 		this._levelStartAt = Date.now()
 		this.step = 0 // 初始化 步数
@@ -144,7 +146,7 @@ class GameMath extends mylib.UIBase {
 		var mapType = MyConst.MathMapData[this.curLv].mapType
 		const fit = mapType == 999 ? this.calcEquationMapFit() : this.calcMapFit()
 		if (mapType != 999) {
-			this._map = new MapGroup(this.curLv, mapType)
+			this._map = new MapGroup(this.curLv, mapType, false, false)
 			this._map.x = fit.x
 			this._map.y = fit.y
 			this._map.alpha = 0
@@ -674,6 +676,17 @@ class GameMath extends mylib.UIBase {
 		[360, 300],
 	]
 
+	private _cleanupVictoryStarFly(): void {
+		const flies = this._victoryFlyImages
+		this._victoryFlyImages = []
+		for (let i = 0; i < flies.length; i++) {
+			const fly = flies[i]
+			if (!fly) continue
+			egret.Tween.removeTweens(fly)
+			if (fly.parent) fly.parent.removeChild(fly)
+		}
+	}
+
 	private _playVictoryStarFly(flyCount: number): void {
 		if (!this.gameEnd || !this.img_star || flyCount <= 0) return
 		const tex = this.img_star.source as egret.Texture
@@ -695,10 +708,16 @@ class GameMath extends mylib.UIBase {
 			fly.y = src.y
 			fly.scaleX = fly.scaleY = 1.2
 			this.addChild(fly)
+			this._victoryFlyImages.push(fly)
 			egret.Tween.removeTweens(fly)
 			egret.Tween.get(fly).wait(i * stagger)
 				.to({ x: dest.x, y: dest.y, scaleX: 0.9, scaleY: 0.9 }, duration, egret.Ease.cubicInOut)
-				.call(() => { if (fly.parent) fly.parent.removeChild(fly) }, this)
+				.call(() => {
+					const arr = this._victoryFlyImages
+					const ix = arr.indexOf(fly)
+					if (ix >= 0) arr.splice(ix, 1)
+					if (fly.parent) fly.parent.removeChild(fly)
+				}, this)
 		}
 	}
 
@@ -722,6 +741,7 @@ class GameMath extends mylib.UIBase {
 	public onClickGoHome() {
 		this._stopWinBgm()
 		this._stopRuleDebugTicker()
+		this._cleanupVictoryStarFly()
 		this._map.removeAllImgEvent()
 		this.gameGroup.removeChild(this._map)
 		egret.Tween.removeAllTweens();

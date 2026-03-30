@@ -429,8 +429,20 @@ class MainUIManager {
 		if (classic.length < 2) classic.push(classic[0]);
 
 		// 数字玩法：从 10 关以上已解锁范围随机 1 个，如果不足 10 关则从已解锁范围随机
+		const mathTotalLv = MyConst.MathMapData ? MyConst.MathMapData.length : 1;
 		const mathPool = maxMath > 10 ? Array.from({length: maxMath - 10}, (_, i) => i + 11) : Array.from({length: maxMath}, (_, i) => i + 1);
-		const mathLv = mathPool.length > 0 ? mathPool[Math.floor(rnd() * mathPool.length)] : 1;
+		let mathLv: number;
+		if (mathPool.length > 0) {
+			mathLv = mathPool[Math.floor(rnd() * mathPool.length)];
+		} else {
+			// 兜底：在 10～配置最大关卡号之间随机；总关数不足 10 则在 1～总关数间随机
+			const hi = Math.max(1, mathTotalLv);
+			if (hi >= 10) {
+				mathLv = 10 + Math.floor(rnd() * (hi - 10 + 1));
+			} else {
+				mathLv = 1 + Math.floor(rnd() * hi);
+			}
+		}
 
 		// 限制条件：0 无 1 仅删除 2 仅移动 3 禁用提示
 		const constraint = Math.floor(rnd() * 4);

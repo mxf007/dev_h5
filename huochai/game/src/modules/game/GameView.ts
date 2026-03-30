@@ -112,6 +112,9 @@ class GameView extends mylib.UIBase {
 	private static readonly WIN_BGM_ID: string = "sound/snd_08.mp3"
 	/** 用于 score_num 数字滚动缓动（Tween 目标对象） */
 	private _scoreRollProxy: { v: number } = { v: 0 }
+	/** 胜利飞星 / 粒子：提前点「下一关」时 removeAllTweens 会取消回调，需主动从显示列表移除 */
+	private _victoryFlyImages: eui.Image[] = []
+	private _winParticleShapes: egret.Shape[] = []
 	public constructor() {
 		super("GameUISkin");
 		this.curLv = MainUIManager.getInstance().selectId - 1
@@ -137,6 +140,7 @@ class GameView extends mylib.UIBase {
 
 	private popallitem() {
 		this._stopWinBgm()
+		this._cleanupVictoryFx()
 		this._winSoundPlayed = false
 		this._levelStartAt = Date.now()
 		this.step = 0 // 初始化 步数
@@ -659,6 +663,7 @@ class GameView extends mylib.UIBase {
 		this._stopWinBgm()
 		this._stopTimer()
 		this._stopRuleDebugTicker()
+		this._cleanupVictoryFx()
 		egret.Tween.removeAllTweens()
 		if (this._map) {
 			try {
@@ -1105,6 +1110,7 @@ class GameView extends mylib.UIBase {
 		mgr.bReverseMode = false;
 		mgr.reverseChallengeLevelId = 0;
 		mgr.reversePreviewAfterWin = false;
+		this._cleanupVictoryFx()
 		this._map.removeAllImgEvent()
 		this.gameGroup.removeChild(this._map)
 		egret.Tween.removeAllTweens();
@@ -1189,6 +1195,26 @@ class GameView extends mylib.UIBase {
 		[360, 300],
 	]
 
+	/** 清掉胜利飞星与通关粒子（避免提前切关后残留显示对象） */
+	private _cleanupVictoryFx(): void {
+		const flies = this._victoryFlyImages
+		this._victoryFlyImages = []
+		for (let i = 0; i < flies.length; i++) {
+			const fly = flies[i]
+			if (!fly) continue
+			egret.Tween.removeTweens(fly)
+			if (fly.parent) fly.parent.removeChild(fly)
+		}
+		const parts = this._winParticleShapes
+		this._winParticleShapes = []
+		for (let i = 0; i < parts.length; i++) {
+			const sh = parts[i]
+			if (!sh) continue
+			egret.Tween.removeTweens(sh)
+			if (sh.parent) sh.parent.removeChild(sh)
+		}
+	}
+
 	private _playVictoryStarFly(flyCount: number): void {
 		if (!this.gameEnd || !this.img_star || flyCount <= 0) return
 		const tex = this.img_star.source as egret.Texture
@@ -1210,10 +1236,16 @@ class GameView extends mylib.UIBase {
 			fly.y = src.y
 			fly.scaleX = fly.scaleY = 1.2
 			this.addChild(fly)
+			this._victoryFlyImages.push(fly)
 			egret.Tween.removeTweens(fly)
 			egret.Tween.get(fly).wait(i * stagger)
 				.to({ x: dest.x, y: dest.y, scaleX: 0.9, scaleY: 0.9 }, duration, egret.Ease.cubicInOut)
-				.call(() => { if (fly.parent) fly.parent.removeChild(fly) }, this)
+				.call(() => {
+					const arr = this._victoryFlyImages
+					const ix = arr.indexOf(fly)
+					if (ix >= 0) arr.splice(ix, 1)
+					if (fly.parent) fly.parent.removeChild(fly)
+				}, this)
 		}
 	}
 
@@ -1240,6 +1272,7 @@ class GameView extends mylib.UIBase {
 			shape.y = cy
 			shape.alpha = 1
 			stage.addChild(shape)
+			this._winParticleShapes.push(shape)
 
 			const angle  = (k / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.4
 			const dist   = 120 + Math.random() * 220
@@ -1249,7 +1282,12 @@ class GameView extends mylib.UIBase {
 
 			egret.Tween.get(shape, { loop: false })
 				.to({ x: tx, y: ty, alpha: 0, scaleX: 0.3, scaleY: 0.3 }, dur, egret.Ease.quadOut)
-				.call(() => { if (shape.parent) stage.removeChild(shape) }, this)
+				.call(() => {
+					const arr = this._winParticleShapes
+					const ix = arr.indexOf(shape)
+					if (ix >= 0) arr.splice(ix, 1)
+					if (shape.parent) shape.parent.removeChild(shape)
+				}, this)
 		}
 	}
 }
