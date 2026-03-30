@@ -60,11 +60,8 @@ class Mission extends mylib.UIBase {
 		this.img_target_bg.addEventListener
 		const rule = MyConst.MapData[this.curLv].rule
 		var costNum = rule[1]
-		var targetType = rule[2]	// 主目标类型
-		var targetnum = rule[3]	// 主目标数量
-		const hasDual = rule.length >= 6 && rule[4] > 0 && rule[5] > 0
-		const targetType2 = hasDual ? rule[4] : 0
-		const targetnum2 = hasDual ? rule[5] : 0
+		var targetType = rule[2]	// 目标类型
+		var targetnum = rule[3]	// 目标数量
 		this.gameType = rule[0]	// 类型： 1 add 2 remove  3 delete 4 chellenge	
 
 		const shapeName = (shapeType: number): string => {
@@ -98,12 +95,9 @@ class Mission extends mylib.UIBase {
 			this.guize.text = "删除"
 		}
 		this.txt_tool.text = costNum.toString()
-		this.txt_target.text = hasDual ? (targetnum.toString() + "+" + targetnum2.toString()) : targetnum.toString()
+		this.txt_target.text = targetnum.toString()
 		strRule += costNum.toString() + "根火柴\n变成"
 		strRule += targetnum.toString() + "个" + shapeName(targetType)
-		if (hasDual) {
-			strRule += " + " + targetnum2.toString() + "个" + shapeName(targetType2)
-		}
 		if (targetType == 2)
 		{
 			img_path_tag = RES.getRes("huochai_json.ingame_mission_triangle")

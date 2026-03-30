@@ -13,9 +13,6 @@
  *   rule[1] : 步数限制
  *   rule[2] : 目标形状  1=正方形 2=三角形
  *   rule[3] : 目标数量
- *   rule[4] : (可选) 第二目标形状
- *   rule[5] : (可选) 第二目标数量
- *            混合规则示例：[2,2,1,2,2,3] => 2步内达成 2个正方形 + 3个三角形
  *            注意：目标形状是否可识别由 MyConst.getShapeTemplateMapType(mapType, shapeType) 决定
  *   bef     : 初始火柴状态（0=空 1=有火柴），长度需与皮肤 img 数量一致
  *   rst     : 答案状态数组（可多解），用于提示和反转模式
@@ -45,7 +42,6 @@ enum LevelError {
 	EMPTY_BEF             = 6,
 	EMPTY_RST             = 7,
 	BEF_RST_LENGTH_MISMATCH = 8,
-	DUAL_TARGET_INCOMPLETE  = 9,
 }
 
 interface ICustomLevel {
@@ -85,8 +81,6 @@ class LevelBuilder {
 	private _steps:   number = 1
 	private _shape1:  number = LevelShape.SQUARE
 	private _count1:  number = 1
-	private _shape2:  number = 0
-	private _count2:  number = 0
 	private _bef:     number[] = []
 	private _rst:     number[][] = []
 
@@ -107,13 +101,6 @@ class LevelBuilder {
 	target(shape: number, count: number): this {
 		this._shape1 = shape
 		this._count1 = count
-		return this
-	}
-
-	/** 双目标（第二目标形状与数量，可选） */
-	target2(shape: number, count: number): this {
-		this._shape2 = shape
-		this._count2 = count
 		return this
 	}
 
@@ -150,23 +137,9 @@ class LevelBuilder {
 				return { ok: false, error: LevelError.INVALID_COUNT,
 					message: `count1 应 >= 1，当前: ${this._count1}` }
 			}
-			if ((this._shape2 > 0) !== (this._count2 > 0)) {
-				return { ok: false, error: LevelError.DUAL_TARGET_INCOMPLETE,
-					message: 'shape2 和 count2 必须同时设置或同时不设置' }
-			}
 			if (MyConst.canUseShapeTarget && !MyConst.canUseShapeTarget(this._mapType, this._shape1)) {
 				return { ok: false, error: LevelError.INVALID_SHAPE,
 					message: `mapType=${this._mapType} 不支持主目标形状 ${this._shape1}，请先配置 MyConst.SHAPE_TEMPLATE_MAP` }
-			}
-			if (this._shape2 > 0) {
-				if (this._shape2 !== LevelShape.SQUARE && this._shape2 !== LevelShape.TRIANGLE) {
-					return { ok: false, error: LevelError.INVALID_SHAPE,
-						message: `shape2 应为 1(正方形) 或 2(三角形)，当前: ${this._shape2}` }
-				}
-				if (MyConst.canUseShapeTarget && !MyConst.canUseShapeTarget(this._mapType, this._shape2)) {
-					return { ok: false, error: LevelError.INVALID_SHAPE,
-						message: `mapType=${this._mapType} 不支持次目标形状 ${this._shape2}，请先配置 MyConst.SHAPE_TEMPLATE_MAP` }
-				}
 			}
 		}
 		if (this._bef.length === 0) {
@@ -197,9 +170,6 @@ class LevelBuilder {
 		if (!v.ok) throw new Error(`[LevelBuilder] 关卡配置无效: ${v.message}`)
 
 		const rule: number[] = [this._opType, this._steps, this._shape1, this._count1]
-		if (this._shape2 > 0 && this._count2 > 0) {
-			rule.push(this._shape2, this._count2)
-		}
 		return {
 			mapType: this._mapType,
 			rule,
@@ -253,9 +223,6 @@ class LevelBuilder {
 				.steps((item.rule && item.rule[1] !== undefined) ? item.rule[1] : 1)
 				.target((item.rule && item.rule[2] !== undefined) ? item.rule[2] : 1, (item.rule && item.rule[3] !== undefined) ? item.rule[3] : 1)
 				.initial(item.bef !== undefined ? item.bef : [])
-			if (item.rule && item.rule.length >= 6) {
-				builder.target2(item.rule[4], item.rule[5])
-			}
 			;(item.rst || []).forEach((r: number[]) => builder.addSolution(r))
 
 			const v = builder.validate()

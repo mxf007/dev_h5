@@ -317,18 +317,13 @@ class GameView extends mylib.UIBase {
 			}
 		} else {
 			strRule += this.constStep.toString() + "根火柴\n变成"
-			if (r.length >= 6 && r[4] > 0 && r[5] > 0) {
-				strRule += num.toString() + "个" + (xz == 1 ? "正方形" : "正三角形") + " + " + r[5].toString() + "个" + (r[4] == 1 ? "正方形" : "正三角形")
+			strRule += num.toString() + "个"
+			if (xz == 1) {
+				strRule += "正方形"
 				this.target_rect.$setTexture(img_path_square)
-			} else {
-				strRule += num.toString() + "个"
-				if (xz == 1) {
-					strRule += "正方形"
-					this.target_rect.$setTexture(img_path_square)
-				} else if (xz == 2) {
-					strRule += "正三角形"
-					this.target_rect.$setTexture(img_path_triangle)
-				}
+			} else if (xz == 2) {
+				strRule += "正三角形"
+				this.target_rect.$setTexture(img_path_triangle)
 			}
 		}
 		this.gameRule.text = strRule
@@ -798,7 +793,11 @@ class GameView extends mylib.UIBase {
 					}
 				}
 		} else {
-			this._onFail("挑战失败！有尚未形成的图形。");
+			const fr = this._playLevelRow()
+			const failMsg = fr.mapType == 999
+				? "挑战失败！等式未成立或无法识别数字。"
+				: "挑战失败！有尚未形成的图形。"
+			this._onFail(failMsg);
 			mylib.GmGlobal.sound.playSoundEffect("sound/snd_07.mp3");
 		}
 	}

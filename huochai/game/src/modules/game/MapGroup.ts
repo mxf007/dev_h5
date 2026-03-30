@@ -14,8 +14,6 @@ class MapGroup extends eui.Component {
 	private mapId: number
 	private stepData: any
 	private bReverse: boolean = false
-	/** 为 false 时（如数字玩法里嵌套的火柴图）沿用旧判定：只数完整图形个数，不要求无散边/精确划分 */
-	private _strictExactShapeCover: boolean = true
 	/** 记忆玩法：使用 MapJiyiData；表内「新增/删除」与实际操作对调（1↔3） */
 	private _useJiyiMemory(): boolean {
 		return !!(this.bReverse && MyConst.MapJiyiData && this.curLv >= 0
@@ -72,11 +70,10 @@ class MapGroup extends eui.Component {
 		return info
 	}
 
-	public constructor(lv: number, mapType: number, reverseMode?: boolean, strictExactShapeCover?: boolean) {
+	public constructor(lv: number, mapType: number, reverseMode?: boolean) {
 		super();
 		this.step = 0
 		this.bReverse = !!(reverseMode || (MainUIManager.getInstance() && MainUIManager.getInstance().bReverseMode))
-		this._strictExactShapeCover = strictExactShapeCover !== false
 
 		this.mapId = mapType
 		var mapSkin = "MapSkin" + mapType.toString()
@@ -284,18 +281,6 @@ class MapGroup extends eui.Component {
 		if (this.bReverse) {
 			return this.CheckReverseComplete()
 		}
-		if (!this._strictExactShapeCover) {
-			if (this.isDualTarget()) {
-				var dr = this.GetDualTargetNum()
-				return dr && dr[0] && dr[1]
-			}
-			const target = this._levelRow().rule[3]
-			const ret = this.GetTriangleNum()
-			return !!(ret && ret[0] == target)
-		}
-		if (this.isDualTarget()) {
-			return this.checkDualStrictCover()
-		}
 		const r = this._levelRow().rule
 		const shapeType = (r[2] == 1 || r[2] == 2) ? r[2] : this.getPrimaryShapeType()
 		return this.checkSingleStrictCover(shapeType, r[3])
@@ -309,71 +294,6 @@ class MapGroup extends eui.Component {
 		return this._canExactCoverWithCount(ctx.mapData.length, ctx.activeCells, ctx.candidates, ctx.cellToShapes, target)
 	}
 
-	private _filterCandidatesWhollyInside(candidates: number[][], allowedCells: number[]): number[][] {
-		const allow: { [k: number]: boolean } = {}
-		for (let i = 0; i < allowedCells.length; i++) allow[allowedCells[i]] = true
-		const out: number[][] = []
-		for (let i = 0; i < candidates.length; i++) {
-			const sh = candidates[i]
-			let ok = true
-			for (let j = 0; j < sh.length; j++) {
-				if (!allow[sh[j]]) { ok = false; break }
-			}
-			if (ok) out.push(sh)
-		}
-		return out
-	}
-
-	private checkExactCoverOnCells(mapLen: number, cellsToCover: number[], allCandidates: number[][], targetCount: number): boolean {
-		if (targetCount < 0) return false
-		if (cellsToCover.length === 0) return targetCount === 0
-		const filtered = this._filterCandidatesWhollyInside(allCandidates, cellsToCover)
-		const cellToShapes = this._buildCellToShapes(filtered)
-		return this._canExactCoverWithCount(mapLen, cellsToCover, filtered, cellToShapes, targetCount)
-	}
-
-	/** 双目标：先放满 target1 个 shape1，再对剩余格用 shape2 恰好 target2 个铺满 */
-	private checkDualStrictCover(): boolean {
-		const r = this._levelRow().rule
-		if (!r || r.length < 6) return false
-		const target1 = r[3], target2 = r[5]
-		const shape1 = (r[2] == 1 || r[2] == 2) ? r[2] : this.getPrimaryShapeType()
-		const shape2 = r[4]
-		if (shape2 != 1 && shape2 != 2) return false
-		const ctx1 = this._buildCurrentCoverContext(shape1)
-		const ctx2 = this._buildCurrentCoverContext(shape2)
-		if (!ctx1 || !ctx2) return false
-		const activeCells = ctx1.activeCells.slice().sort((a, b) => a - b)
-		const active2 = ctx2.activeCells.slice().sort((a, b) => a - b)
-		if (activeCells.length !== active2.length) return false
-		for (let i = 0; i < activeCells.length; i++) {
-			if (activeCells[i] !== active2[i]) return false
-		}
-		const mapLen = ctx1.mapData.length
-		const used: boolean[] = []
-		for (let i = 0; i < mapLen; i++) used[i] = false
-		const cands1 = ctx1.candidates
-		const dfs1 = (startIdx: number, picked: number): boolean => {
-			if (picked === target1) {
-				const remaining: number[] = []
-				for (let k = 0; k < activeCells.length; k++) {
-					const c = activeCells[k]
-					if (!used[c]) remaining.push(c)
-				}
-				return this.checkExactCoverOnCells(mapLen, remaining, ctx2.candidates, target2)
-			}
-			for (let i = startIdx; i < cands1.length; i++) {
-				const sh = cands1[i]
-				if (!this._isShapeDisjoint(sh, used)) continue
-				this._toggleShape(sh, used, true)
-				if (dfs1(i + 1, picked + 1)) return true
-				this._toggleShape(sh, used, false)
-			}
-			return false
-		}
-		return dfs1(0, 0)
-	}
-
 	private CheckReverseComplete(): boolean {
 		if (this.stepData.length < 1) return false
 		const cur = this.stepData[this.stepData.length - 1]
@@ -384,11 +304,6 @@ class MapGroup extends eui.Component {
 			if (cur[i] !== target[i]) return false
 		}
 		return true
-	}
-
-	private isDualTarget(): boolean {
-		const r = this._levelRow().rule
-		return r && r.length >= 6 && r[4] > 0 && r[5] > 0
 	}
 
 	private getShapeName(shapeType: number): string {
@@ -404,23 +319,6 @@ class MapGroup extends eui.Component {
 		return (byMap == 1 || byMap == 2) ? byMap : 1
 	}
 
-	private canExactCoverAtLeastCount(ctx: { mapData: number[], activeCells: number[], candidates: number[][], cellToShapes: { [idx: number]: number[] } }, targetCount: number): boolean {
-		if (!ctx || targetCount < 0) return false
-		const maxCount = this._getMaxNonOverlapCount(ctx.candidates)
-		for (let c = targetCount; c <= maxCount; c++) {
-			if (this._canExactCoverWithCount(ctx.mapData.length, ctx.activeCells, ctx.candidates, ctx.cellToShapes, c)) {
-				return true
-			}
-		}
-		return false
-	}
-
-	private getShapeCount(shapeType: number): number {
-		const ctx = this._buildCurrentCoverContext(shapeType)
-		if (!ctx) return 0
-		return ctx.candidates.length
-	}
-
 	private getTemplateMapTypeByShape(shapeType: number): number {
 		if (shapeType != 1 && shapeType != 2) return -1
 		let templateMapType = -1
@@ -432,17 +330,6 @@ class MapGroup extends eui.Component {
 			if (byMap == shapeType) templateMapType = this.mapId
 		}
 		return templateMapType > 0 ? templateMapType : -1
-	}
-
-	private GetDualTargetNum(): [boolean, boolean] | null {
-		const r = this._levelRow().rule
-		if (!r || r.length < 6) return null
-		const target1 = r[3], target2 = r[5]
-		const shape1 = (r[2] == 1 || r[2] == 2) ? r[2] : this.getPrimaryShapeType()
-		const shape2 = r[4]
-		const ok1 = this.getShapeCount(shape1) >= target1
-		const ok2 = this.getShapeCount(shape2) >= target2
-		return [ok1, ok2]
 	}
 
 	public BackStep() {
@@ -524,24 +411,6 @@ class MapGroup extends eui.Component {
 		}
 	}
 
-	private _getMaxNonOverlapCount(candidates: number[][]): number {
-		if (candidates.length == 0) return 0
-		const used: boolean[] = []
-		let best = 0
-		const dfs = (start: number, count: number) => {
-			if (count > best) best = count
-			for (let i = start; i < candidates.length; i++) {
-				const shape = candidates[i]
-				if (!this._isShapeDisjoint(shape, used)) continue
-				this._toggleShape(shape, used, true)
-				dfs(i + 1, count + 1)
-				this._toggleShape(shape, used, false)
-			}
-		}
-		dfs(0, 0)
-		return best
-	}
-
 	private _buildCellToShapes(candidates: number[][]): { [idx: number]: number[] } {
 		const cellToShapes: { [idx: number]: number[] } = {}
 		for (let i = 0; i < candidates.length; i++) {
@@ -552,40 +421,6 @@ class MapGroup extends eui.Component {
 			}
 		}
 		return cellToShapes
-	}
-
-	private _canExactCover(mapLen: number, activeCells: number[], candidates: number[][], cellToShapes: { [idx: number]: number[] }): boolean {
-		const used: boolean[] = []
-		for (let i = 0; i < mapLen; i++) used[i] = false
-		const dfs = (): boolean => {
-			let pick = -1
-			let pickOpts: number[] = null
-			for (let i = 0; i < activeCells.length; i++) {
-				const cell = activeCells[i]
-				if (used[cell]) continue
-				const options: number[] = []
-				const bucket = cellToShapes[cell] || []
-				for (let k = 0; k < bucket.length; k++) {
-					const si = bucket[k]
-					if (this._isShapeDisjoint(candidates[si], used)) options.push(si)
-				}
-				if (options.length == 0) return false
-				if (pick == -1 || options.length < pickOpts.length) {
-					pick = cell
-					pickOpts = options
-					if (options.length == 1) break
-				}
-			}
-			if (pick == -1) return true
-			for (let i = 0; i < pickOpts.length; i++) {
-				const shape = candidates[pickOpts[i]]
-				this._toggleShape(shape, used, true)
-				if (dfs()) return true
-				this._toggleShape(shape, used, false)
-			}
-			return false
-		}
-		return dfs()
 	}
 
 	/** 是否存在“恰好由 targetCount 个图形组成”的完整覆盖。 */
@@ -671,15 +506,6 @@ class MapGroup extends eui.Component {
 		lines.push("火柴数=" + active + (selected > 0 ? ("  选中=" + selected) : ""))
 		if (this.bReverse) {
 			lines.push("反转模式：当前状态" + (this.CheckReverseComplete() ? "已还原" : "未还原"))
-		} else if (this.isDualTarget()) {
-			const dr = this.GetDualTargetNum()
-			const s1 = this.getShapeName(r[2])
-			const s2 = this.getShapeName(r[4])
-			const t1 = r[3], t2 = r[5]
-			const p1 = dr ? dr[0] : false
-			const p2 = dr ? dr[1] : false
-			lines.push("双目标：" + s1 + ">=" + t1 + "  " + s2 + ">=" + t2)
-			lines.push("主识别=" + this.getShapeCount(r[2]) + "  次识别=" + this.getShapeCount(r[4]) + "  主目标=" + p1 + " 次目标=" + p2)
 		} else {
 			const s1 = this.getShapeName(r[2])
 			lines.push("目标=" + s1 + "  数量=" + r[3] + "  识别=" + ret[0] + "  有完整图形=" + ret[1])

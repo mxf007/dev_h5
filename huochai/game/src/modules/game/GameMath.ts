@@ -146,7 +146,7 @@ class GameMath extends mylib.UIBase {
 		var mapType = MyConst.MathMapData[this.curLv].mapType
 		const fit = mapType == 999 ? this.calcEquationMapFit() : this.calcMapFit()
 		if (mapType != 999) {
-			this._map = new MapGroup(this.curLv, mapType, false, false)
+			this._map = new MapGroup(this.curLv, mapType, false)
 			this._map.x = fit.x
 			this._map.y = fit.y
 			this._map.alpha = 0
@@ -451,7 +451,11 @@ class GameMath extends mylib.UIBase {
 					}
 				}
 		} else {
-			this.ShowTips("挑战失败！有尚未形成的图形。")
+			const mt = MyConst.MathMapData[this.curLv].mapType
+			const tip = mt == 999
+				? "挑战失败！等式未成立或无法识别数字。"
+				: "挑战失败！未达到图形关卡要求。"
+			this.ShowTips(tip)
 			mylib.GmGlobal.sound.playSoundEffect("sound/snd_07.mp3");
 		}
 	}

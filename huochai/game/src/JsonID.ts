@@ -10,6 +10,7 @@ const EvtType = {
 //	parame2		消耗数量
 //	parame3		taget 1 正方形 2 三角形
 //	parame4		target 数量
+// MapData / MapJiyiData（经典、记忆；每日挑战前两关亦从 MapData 抽关）：rule 固定 4 项，无双目标扩展。
 class MyConst {
 	public static MapData = [
 		{
@@ -1189,10 +1190,8 @@ class MyConst {
 			rst: [[1,1,1,1,1,0,0,1,1,0,0,1,0,0,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,0,0,1,0,0,1,1,0,0,1,1,1,1,1]]
 		}
 	]
-	//	parame1  	1 add 2 move  3 delete 4 chellenge	
-	//	parame2		消耗数量
-	//	parame3		taget 1 正方形 2 三角形
-	//	parame4		target 数量
+	// MathMapData（每日挑战第三关数字/等式，mapType=999）：rule 须 7 项 —
+	// [0] 玩法类型 [1] 步数 [2][3][4][5] 四格数字 [6] 运算符（MapEqualyGroup）。非形状双目标，不可截成 4 项。
 
 	public static MathMapData = [
 		{
