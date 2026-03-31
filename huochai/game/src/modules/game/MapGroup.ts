@@ -286,7 +286,7 @@ class MapGroup extends eui.Component {
 		return this.checkSingleStrictCover(shapeType, r[3])
 	}
 
-	/** 所有亮线恰好划分为 target 个互不重叠的合法图形，无散边 */
+	/** 每根亮线至少属于一支合法图形；共边处同一索引可被多支形状共用；恰好选 target 支（可含纯重叠补位），无散边 */
 	private checkSingleStrictCover(shapeType: number, target: number): boolean {
 		const ctx = this._buildCurrentCoverContext(shapeType)
 		if (!ctx) return target === 0
@@ -398,19 +398,6 @@ class MapGroup extends eui.Component {
 		return candidates
 	}
 
-	private _isShapeDisjoint(shape: number[], used: boolean[]): boolean {
-		for (let i = 0; i < shape.length; i++) {
-			if (used[shape[i]]) return false
-		}
-		return true
-	}
-
-	private _toggleShape(shape: number[], used: boolean[], value: boolean): void {
-		for (let i = 0; i < shape.length; i++) {
-			used[shape[i]] = value
-		}
-	}
-
 	private _buildCellToShapes(candidates: number[][]): { [idx: number]: number[] } {
 		const cellToShapes: { [idx: number]: number[] } = {}
 		for (let i = 0; i < candidates.length; i++) {
@@ -424,52 +411,82 @@ class MapGroup extends eui.Component {
 	}
 
 	/**
-	 * 是否存在“恰好由 targetCount 个图形组成”的完整覆盖。
-	 * 从 candidates 中选互不重叠的若干形状，使并集恰好覆盖所有 activeCells，且形状个数等于 targetCount。
+	 * 是否存在恰好 targetCount 支合法图形的选取方案。
+	 * 模板里相邻图形在「共边」火柴上会共用同一索引：允许不同候选形状同时包含该索引（不再要求集合两两不交）。
+	 * 约束：每根亮线至少被一支已选形状包含；每支候选形状在解中至多使用一次；形状总数恰为 targetCount。
 	 *
-	 * @param mapLen 地图格数，用于分配 used[]
-	 * @param activeCells 当前为“亮/占用”的格子索引
-	 * @param candidates 每个元素是一支形状占用的格子列表（已筛到仅落在当前地图上）
-	 * @param cellToShapes 格子 → 包含该格的形状在 candidates 中的下标（加速查找）
+	 * @param mapLen 地图格数
+	 * @param activeCells 当前为亮的火柴索引
+	 * @param candidates 每支形状占用的索引列表（已落在当前亮面上）
+	 * @param cellToShapes 索引 → 包含该索引的候选形状下标
 	 * @param targetCount 目标形状个数
 	 */
 	private _canExactCoverWithCount(mapLen: number, activeCells: number[], candidates: number[][], cellToShapes: { [idx: number]: number[] }, targetCount: number): boolean {
 		if (targetCount < 0) return false
-		// used[i]：格子 i 是否已被某支已选形状占用
-		const used: boolean[] = []
-		for (let i = 0; i < mapLen; i++) used[i] = false
+		const coverCount: number[] = []
+		for (let i = 0; i < mapLen; i++) coverCount[i] = 0
+		const picked: boolean[] = []
+		for (let i = 0; i < candidates.length; i++) picked[i] = false
+
+		const allActiveCovered = (): boolean => {
+			for (let i = 0; i < activeCells.length; i++) {
+				if (coverCount[activeCells[i]] === 0) return false
+			}
+			return true
+		}
+
+		const applyShape = (shape: number[], delta: number): void => {
+			for (let k = 0; k < shape.length; k++) coverCount[shape[k]] += delta
+		}
+
 		const dfs = (count: number): boolean => {
-			if (count > targetCount)
+			if (count > targetCount) return false
+
+			if (allActiveCovered()) {
+				if (count === targetCount) return true
+				if (count > targetCount) return false
+				// 已全部覆盖但形状数不足：再选仅重叠的候选（共边/完全叠在已覆盖区域上）
+				for (let si = 0; si < candidates.length; si++) {
+					if (picked[si]) continue
+					const shape = candidates[si]
+					picked[si] = true
+					applyShape(shape, 1)
+					if (dfs(count + 1)) return true
+					applyShape(shape, -1)
+					picked[si] = false
+				}
 				return false
-			// MRV：在未覆盖格中选「可选形状数最少」的一格分支，利于剪枝
+			}
+
+			// 仍有未覆盖的亮线：MRV 在未覆盖格上分支
 			let pick = -1
 			let pickOpts: number[] = null
 			for (let i = 0; i < activeCells.length; i++) {
 				const cell = activeCells[i]
-				if (used[cell]) continue
+				if (coverCount[cell] > 0) continue
 				const options: number[] = []
 				const bucket = cellToShapes[cell] || []
 				for (let k = 0; k < bucket.length; k++) {
 					const si = bucket[k]
-					if (this._isShapeDisjoint(candidates[si], used)) options.push(si)
+					if (!picked[si]) options.push(si)
 				}
-				if (options.length == 0)
-					return false // 该格无法被任何未冲突形状覆盖
-				if (pick == -1 || options.length < pickOpts.length) {
+				if (options.length === 0) return false
+				if (pick === -1 || options.length < pickOpts.length) {
 					pick = cell
 					pickOpts = options
-					if (options.length == 1) break // 已是最小分支（唯一选择）
+					if (options.length === 1) break
 				}
 			}
-			// 无未覆盖格：全部 active 已被覆盖，成功当且仅当用了恰好 targetCount 支形状
-			if (pick == -1)
-				return count == targetCount
+			if (pick === -1) return count === targetCount
+
 			for (let i = 0; i < pickOpts.length; i++) {
-				const shape = candidates[pickOpts[i]]
-				this._toggleShape(shape, used, true)
-				if (dfs(count + 1))
-					return true
-				this._toggleShape(shape, used, false)
+				const si = pickOpts[i]
+				const shape = candidates[si]
+				picked[si] = true
+				applyShape(shape, 1)
+				if (dfs(count + 1)) return true
+				applyShape(shape, -1)
+				picked[si] = false
 			}
 			return false
 		}
