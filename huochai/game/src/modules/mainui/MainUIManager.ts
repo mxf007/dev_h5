@@ -60,9 +60,6 @@ class MainUIManager {
 	private static readonly ENDLESS_HIGH_KEY = "huochaiEndlessHigh";
 	private static readonly ENDLESS_TIME_KEY = "huochaiEndlessTimeStats";
 	private static readonly MATH_TIME_KEY = "huochaiMathTimeStats";
-	private static readonly RULE_DEBUG_KEY = "huochaiRuleDebug";
-	private _ruleDebugLoaded: boolean = false;
-	private _ruleDebug: boolean = false;
 	/** 与主界面 Tab 顺序一致时默认落在首位「经典玩法」 */
 	public lastMainTab: string = "endless";
 	public getEndlessHighScore(): number {
@@ -232,30 +229,6 @@ class MainUIManager {
 		const lv = this.getReverseCurrentLevel()
 		lines.push("当前进度：" + lv + "/" + this.getReverseTotalLevels() + " " + this.getReverseDifficultyLabel(lv) + " " + this.getReverseDifficultyStars(lv))
 		return lines.join("\n")
-	}
-
-	private ensureRuleDebugLoaded(): void {
-		if (this._ruleDebugLoaded) return
-		const raw = egret.localStorage.getItem(MainUIManager.RULE_DEBUG_KEY)
-		this._ruleDebug = raw === "1"
-		this._ruleDebugLoaded = true
-	}
-
-	public isRuleDebugEnabled(): boolean {
-		this.ensureRuleDebugLoaded()
-		return this._ruleDebug
-	}
-
-	public setRuleDebugEnabled(v: boolean): void {
-		this.ensureRuleDebugLoaded()
-		this._ruleDebug = !!v
-		egret.localStorage.setItem(MainUIManager.RULE_DEBUG_KEY, this._ruleDebug ? "1" : "0")
-	}
-
-	public toggleRuleDebug(): boolean {
-		const next = !this.isRuleDebugEnabled()
-		this.setRuleDebugEnabled(next)
-		return next
 	}
 
 	// ===== 每日挑战 =====

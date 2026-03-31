@@ -22,4 +22,36 @@ namespace GameDesign {
 			destHeight: Math.round(SHARE_DEST_H * k)
 		};
 	}
+
+	/**
+	 * fixedWidth 下 stage.stageHeight 随设备变长；EUI 皮肤若写死 1280 高，底栏 bottom=0 只贴在皮肤底而非屏底。
+	 * 将全屏根组件宽高设为舞台逻辑尺寸，内部用 top/bottom 约束的底栏会贴真实屏底。
+	 */
+	export function syncRootUiToStage(root: eui.Component): void {
+		const st = egret.MainContext.instance.stage;
+		if (!st || !root) return;
+		const w = st.stageWidth > 0 ? st.stageWidth : CONTENT_WIDTH;
+		const h = st.stageHeight > 0 ? st.stageHeight : CONTENT_HEIGHT;
+		if (root.width !== w) root.width = w;
+		if (root.height !== h) root.height = h;
+	}
+
+	/**
+	 * 首次执行一次同步，并在舞台尺寸变化时重复；从舞台移除 root 时卸下监听。
+	 */
+	export function bindStageResizeFit(root: eui.Component, onResize?: () => void): void {
+		const st = egret.MainContext.instance.stage;
+		if (!st || !root) return;
+		const handler = () => {
+			syncRootUiToStage(root);
+			if (onResize) onResize();
+		};
+		handler();
+		st.addEventListener(egret.Event.RESIZE, handler, null);
+		const onRemoved = () => {
+			st.removeEventListener(egret.Event.RESIZE, handler, null);
+			root.removeEventListener(egret.Event.REMOVED_FROM_STAGE, onRemoved, root);
+		};
+		root.addEventListener(egret.Event.REMOVED_FROM_STAGE, onRemoved, root);
+	}
 }

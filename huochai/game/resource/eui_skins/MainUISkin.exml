@@ -37,14 +37,6 @@
 		</ns1:OneStateButton>
 	</e:Group>
 	<e:Image width="412" height="95" y="111.901" source="huochai_json.title" scaleX="0.7" scaleY="0.7" horizontalCenter="0"/>
-	<ns1:OneStateButton id="ruleDebugBtn" x="540" y="122" width="165" height="42" label="规则调试:关" visible="false">
-		<ns1:skinName>
-			<e:Skin states="up,down,disabled">
-				<e:Image width="100%" height="100%" source="btres_json.bg_orange" source.down="btres_json.bg_orange" source.disabled="btres_json.bg_orange"/>
-				<e:Label id="labelDisplay" horizontalCenter="0" verticalCenter="0" text="规则调试:关" textColor="0x2E2C2D" size="20" fontFamily="Microsoft YaHei" textAlign="center" verticalAlign="middle" bold="true"/>
-			</e:Skin>
-		</ns1:skinName>
-	</ns1:OneStateButton>
 	<e:Group id="modeBtns" x="15" y="205" width="690" height="100">
 		<e:Image width="690" height="52" x="0" y="-2" source="huochai_json.bg2" alpha="0.85" scale9Grid="12,12,76,76"/>
 		<e:Rect x="0" y="48" width="690" height="2" fillColor="0xA66C2C" alpha="0.55"/>

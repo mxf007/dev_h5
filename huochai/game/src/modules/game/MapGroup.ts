@@ -423,13 +423,25 @@ class MapGroup extends eui.Component {
 		return cellToShapes
 	}
 
-	/** 是否存在“恰好由 targetCount 个图形组成”的完整覆盖。 */
+	/**
+	 * 是否存在“恰好由 targetCount 个图形组成”的完整覆盖。
+	 * 从 candidates 中选互不重叠的若干形状，使并集恰好覆盖所有 activeCells，且形状个数等于 targetCount。
+	 *
+	 * @param mapLen 地图格数，用于分配 used[]
+	 * @param activeCells 当前为“亮/占用”的格子索引
+	 * @param candidates 每个元素是一支形状占用的格子列表（已筛到仅落在当前地图上）
+	 * @param cellToShapes 格子 → 包含该格的形状在 candidates 中的下标（加速查找）
+	 * @param targetCount 目标形状个数
+	 */
 	private _canExactCoverWithCount(mapLen: number, activeCells: number[], candidates: number[][], cellToShapes: { [idx: number]: number[] }, targetCount: number): boolean {
 		if (targetCount < 0) return false
+		// used[i]：格子 i 是否已被某支已选形状占用
 		const used: boolean[] = []
 		for (let i = 0; i < mapLen; i++) used[i] = false
 		const dfs = (count: number): boolean => {
-			if (count > targetCount) return false
+			if (count > targetCount)
+				return false
+			// MRV：在未覆盖格中选「可选形状数最少」的一格分支，利于剪枝
 			let pick = -1
 			let pickOpts: number[] = null
 			for (let i = 0; i < activeCells.length; i++) {
@@ -441,18 +453,22 @@ class MapGroup extends eui.Component {
 					const si = bucket[k]
 					if (this._isShapeDisjoint(candidates[si], used)) options.push(si)
 				}
-				if (options.length == 0) return false
+				if (options.length == 0)
+					return false // 该格无法被任何未冲突形状覆盖
 				if (pick == -1 || options.length < pickOpts.length) {
 					pick = cell
 					pickOpts = options
-					if (options.length == 1) break
+					if (options.length == 1) break // 已是最小分支（唯一选择）
 				}
 			}
-			if (pick == -1) return count == targetCount
+			// 无未覆盖格：全部 active 已被覆盖，成功当且仅当用了恰好 targetCount 支形状
+			if (pick == -1)
+				return count == targetCount
 			for (let i = 0; i < pickOpts.length; i++) {
 				const shape = candidates[pickOpts[i]]
 				this._toggleShape(shape, used, true)
-				if (dfs(count + 1)) return true
+				if (dfs(count + 1))
+					return true
 				this._toggleShape(shape, used, false)
 			}
 			return false
@@ -484,34 +500,6 @@ class MapGroup extends eui.Component {
 		if (!ctx) return [0, false]
 		const count = ctx.candidates.length
 		return [count, count > 0]
-	}
-
-	public GetRuleDebugText(): string {
-		const r = this._levelRow().rule
-		const modeName = this._interactionGameType == 1 ? "添加" : (this._interactionGameType == 2 ? "移动" : "删除")
-		const mapData: number[] = this.stepData.length > 0 ? this.stepData[this.stepData.length - 1] : []
-		let active = 0
-		let selected = 0
-		for (let i = 0; i < mapData.length; i++) {
-			if (mapData[i] == 1 || mapData[i] == 3) {
-				active++
-				if (mapData[i] == 3) selected++
-			}
-		}
-		const ret = this.GetTriangleNum()
-		const lines: string[] = []
-		const mapTag = MyConst.getMapTypeTag ? MyConst.getMapTypeTag(this.mapId) : "未知"
-		lines.push("[拼图规则层]")
-		lines.push("玩法=" + modeName + "  mapType=" + this.mapId + "(" + mapTag + ")  step=" + this.step + "/" + this.constStep + "  hist=" + this.stepData.length)
-		lines.push("火柴数=" + active + (selected > 0 ? ("  选中=" + selected) : ""))
-		if (this.bReverse) {
-			lines.push("反转模式：当前状态" + (this.CheckReverseComplete() ? "已还原" : "未还原"))
-		} else {
-			const s1 = this.getShapeName(r[2])
-			lines.push("目标=" + s1 + "  数量=" + r[3] + "  识别=" + ret[0] + "  有完整图形=" + ret[1])
-		}
-		lines.push("判定结果=" + this.CheckComplete())
-		return lines.join("\n")
 	}
 
 	public UpDateDisplaytagNum() {

@@ -9,7 +9,7 @@
             "sourceMaps": true,
             "preLaunchTask": "egret: run",
             "runtimeArgs": [
-                "--window-size=720,2280"
+                "--window-size=720,1334"
             ]
         },
         {

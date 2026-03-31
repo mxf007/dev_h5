@@ -322,57 +322,6 @@ class MapEqualyGroup extends eui.Component {
 		return false
 	}
 
-	private getOperatorText(): string {
-		if (this._operator == 1) return "+"
-		if (this._operator == 2) return "-"
-		if (this._operator == 3) return "*"
-		if (this._operator == 4) return "/"
-		return "?"
-	}
-
-	public GetRuleDebugText(): string {
-		if (this.stepData.length < 1) return "[等式规则层]\n状态为空"
-		const sz = this.stepData[this.stepData.length - 1]
-		const a = this.getNum(1, sz)
-		const b = this.getNum(2, sz)
-		const c = this.getNum(3, sz)
-		const d = this.getNum(4, sz)
-		const rightValid = c >= 0 && d >= 0
-		const right = rightValid ? (10 * c + d) : -1
-		const leftValid = a >= 0 && b >= 0
-		let leftExpr = ""
-		let leftOk = false
-		if (leftValid && rightValid) {
-			if (this._operator == 1) {
-				leftExpr = a + " + " + b
-				leftOk = (a + b == right)
-			} else if (this._operator == 2) {
-				leftExpr = a + " - " + b
-				leftOk = (a - b == right)
-			} else if (this._operator == 3) {
-				leftExpr = a + " * " + b
-				leftOk = (a * b == right)
-			} else if (this._operator == 4) {
-				leftExpr = a + " / " + b
-				leftOk = (b != 0 && a / b == right)
-			}
-		}
-
-		const lines: string[] = []
-		const modeName = this.gameType == 1 ? "添加" : (this.gameType == 2 ? "移动" : "删除")
-		lines.push("[等式规则层]")
-		const mapTag = MyConst.getMapTypeTag ? MyConst.getMapTypeTag(999) : "等式"
-		lines.push("玩法=" + modeName + "  mapType=999(" + mapTag + ")  运算=" + this.getOperatorText() + "  step=" + this.step + "/" + this.gameTagStep + "  hist=" + this.stepData.length)
-		lines.push("数字A=" + a + " B=" + b + " C=" + c + " D=" + d)
-		if (!leftValid || !rightValid) {
-			lines.push("等式：存在无法识别的数字")
-		} else {
-			lines.push("等式：" + leftExpr + " = " + right + "  => " + leftOk)
-		}
-		lines.push("判定结果=" + this.CheckComplete())
-		return lines.join("\n")
-	}
-
 	public RefreshMap(szMap: any) { // 刷新地图
 		var img_path_normal = RES.getRes(("huochai_json.game_map"))	// 默认
 		var img_path_match = RES.getRes(("huochai_json.ingame_matches"))			// 火柴背景

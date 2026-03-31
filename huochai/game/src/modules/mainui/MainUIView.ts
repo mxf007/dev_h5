@@ -68,7 +68,6 @@ class MainUIView extends mylib.UIBase {
 	private dailyTabLine: eui.Rect
 	private reverseBtn: OneStateButton
 	private modeTabLine: eui.Rect
-	private ruleDebugBtn: OneStateButton
 	private readonly _tabSelectedFilter: egret.GlowFilter = new egret.GlowFilter(0xFFF3A6, 0.9, 18, 18, 2, 1, false, false)
 
 	private _targetTotal: number = 0;
@@ -77,6 +76,7 @@ class MainUIView extends mylib.UIBase {
 	private _loadMoreThresholdPx: number = 600;
 	private _scrollSaveTimer: number = 0;
 	private _scoreRollProxy: { v: number } = { v: 0 }
+	private _stageFitBound: boolean = false
 	public constructor() {
 		super("MainUISkin");
 		this._data = {
@@ -223,7 +223,10 @@ class MainUIView extends mylib.UIBase {
 		this.resetLevelList(true);
 		this.other.visible = false
 		this.pintu.visible = false
-		this.syncRuleDebugBtn()
+		if (!this._stageFitBound) {
+			this._stageFitBound = true
+			GameDesign.bindStageResizeFit(this)
+		}
 	}
 
 	private getTotalLevelCount(): number {
@@ -338,7 +341,6 @@ class MainUIView extends mylib.UIBase {
 		this.timedBtn.addEventListener(egret.TouchEvent.TOUCH_END, this.onTimedChallenge, this);
 		this.endlessBtn.addEventListener(egret.TouchEvent.TOUCH_END, this.onEndlessChallenge, this);
 		if (this.reverseBtn) this.reverseBtn.addEventListener(egret.TouchEvent.TOUCH_END, this.onReverseChallenge, this);
-		if (this.ruleDebugBtn) this.ruleDebugBtn.addEventListener(egret.TouchEvent.TOUCH_END, this.onToggleRuleDebug, this);
 		this.signOK.addEventListener(egret.TouchEvent.TOUCH_TAP, this.onClickSignOk, this);
 		this.signClose.addEventListener(egret.TouchEvent.TOUCH_TAP, this.onClickSignClose, this);
 		// 钻石框点击事件
@@ -366,7 +368,6 @@ class MainUIView extends mylib.UIBase {
 		this.timedBtn.removeEventListener(egret.TouchEvent.TOUCH_END, this.onTimedChallenge, this);
 		this.endlessBtn.removeEventListener(egret.TouchEvent.TOUCH_END, this.onEndlessChallenge, this);
 		if (this.reverseBtn) this.reverseBtn.removeEventListener(egret.TouchEvent.TOUCH_END, this.onReverseChallenge, this);
-		if (this.ruleDebugBtn) this.ruleDebugBtn.removeEventListener(egret.TouchEvent.TOUCH_END, this.onToggleRuleDebug, this);
 		if (this._scrollSaveTimer) {
 			egret.clearTimeout(this._scrollSaveTimer);
 			this._scrollSaveTimer = 0;
@@ -594,7 +595,6 @@ class MainUIView extends mylib.UIBase {
 		const keepTab = mgr.lastMainTab
 		this.other.visible = false
 		this.pintu.visible = false
-		this.syncRuleDebugBtn()
 		this.syncModeToggleBtn()
 		const high = mgr.getEndlessHighScore();
 		if (this.endlessBtn) this.endlessBtn.label = this.getEndlessBtnText(high);
@@ -646,14 +646,6 @@ class MainUIView extends mylib.UIBase {
 
 	private jumpPage(view) {
 		this.showUIRight(view);
-	}
-
-	private syncRuleDebugBtn(): void {
-		if (!this.ruleDebugBtn) return
-		const on = MainUIManager.getInstance().isRuleDebugEnabled()
-		this.ruleDebugBtn.visible = on
-		;(this.ruleDebugBtn as eui.UIComponent).includeInLayout = on
-		this.ruleDebugBtn.label = on ? "规则调试:开" : "规则调试:关"
 	}
 
 	private syncModeToggleBtn(): void {
@@ -829,12 +821,6 @@ class MainUIView extends mylib.UIBase {
 		if (!this.reverseInfo) return
 		const mgr = MainUIManager.getInstance()
 		this.reverseInfo.text = mgr.getReverseInfoText()
-	}
-
-	private onToggleRuleDebug(): void {
-		const on = MainUIManager.getInstance().toggleRuleDebug()
-		this.syncRuleDebugBtn()
-		AlertBox.alert(on ? "规则调试已开启\n进入关卡可看到规则层判定信息" : "规则调试已关闭", null, null, "")
 	}
 
 	public loadData() {

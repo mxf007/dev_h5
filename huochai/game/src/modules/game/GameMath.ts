@@ -86,13 +86,11 @@ class GameMath extends mylib.UIBase {
 	private video_tips: eui.Label
 
 	private bRetry: boolean
-	private gp_rule_debug: eui.Group
-	private txt_rule_debug: eui.Label
-	private _ruleDebugToken: number = 0
 	private _levelStartAt: number = 0
 	private _winSoundPlayed: boolean = false
 	/** 皮肤子部件在构造函数返回后才绑定，首次 popallitem 须在 childrenCreated 之后执行 */
 	private _gameMathSkinPopDone: boolean = false
+	private _stageFitBound: boolean = false
 	private static readonly WIN_BGM_ID: string = "sound/snd_08.mp3"
 	private _scoreRollProxy: { v: number } = { v: 0 }
 	private _victoryFlyImages: eui.Image[] = []
@@ -179,7 +177,6 @@ class GameMath extends mylib.UIBase {
 				this.txt_condition1.text = "删除"
 			}
 			this.img_target_bg1.$setTexture(img_path_add)
-			this._startRuleDebugTicker()
 			return
 		}
 		var img_path_add = RES.getRes("huochai_json.ingame_ui_add")
@@ -230,7 +227,6 @@ class GameMath extends mylib.UIBase {
 
 		// 加载小星星动画
 		this.LoadStartBlinkAction()
-		this._startRuleDebugTicker()
 	}
 
 	protected childrenCreated() {
@@ -239,6 +235,21 @@ class GameMath extends mylib.UIBase {
 			this._gameMathSkinPopDone = true
 			this.popallitem()
 		}
+		if (!this._stageFitBound) {
+			this._stageFitBound = true
+			GameDesign.bindStageResizeFit(this, () => this._refitEmbeddedMap())
+		}
+	}
+
+	/** 旋转/改窗口后重算地图区域（与 popallitem 中 fit 逻辑一致） */
+	private _refitEmbeddedMap(): void {
+		if (!this._map || !this.gameGroup) return
+		if (this.curLv < 0 || !MyConst.MathMapData || this.curLv >= MyConst.MathMapData.length) return
+		const mapType = MyConst.MathMapData[this.curLv].mapType
+		const fit = mapType == 999 ? this.calcEquationMapFit() : this.calcMapFit()
+		this._map.x = fit.x
+		this._map.y = fit.y
+		this._map.scaleX = this._map.scaleY = fit.scale
 	}
 
 	public addEvts(): void {
@@ -298,7 +309,6 @@ class GameMath extends mylib.UIBase {
 		mylib.EvtBus.rmListener(EvtType.TouchStep, this.onSetpUpdate, this);
 		mylib.EvtBus.rmListener(EvtType.TouchCommplete, this.GameComplete, this);
 		mylib.EvtBus.rmListener(EvtType.TouchMoreStep, this.TouchMoreStep, this);
-		this._stopRuleDebugTicker();
 	}
 
 	public OnShowVideoOk(){
@@ -380,8 +390,6 @@ class GameMath extends mylib.UIBase {
 		if (this._map != null && MyConst.MathMapData[this.curLv].mapType != 999) { // 
 			this._map.UpDateDisplaytagNum()
 		}
-		this.refreshRuleDebugPanel()
-		
 		//mylib.GmGlobal.page.setPage({page:"help"}, this.jumpPage, this);
 	}
 
@@ -502,38 +510,6 @@ class GameMath extends mylib.UIBase {
 		return { scale, x, y }
 	}
 
-	private _startRuleDebugTicker(): void {
-		this._stopRuleDebugTicker()
-		this.refreshRuleDebugPanel()
-		if (!MainUIManager.getInstance().isRuleDebugEnabled()) return
-		this._ruleDebugToken = egret.setInterval(this.refreshRuleDebugPanel, this, 250)
-	}
-
-	private _stopRuleDebugTicker(): void {
-		if (this._ruleDebugToken) {
-			egret.clearInterval(this._ruleDebugToken)
-			this._ruleDebugToken = 0
-		}
-	}
-
-	private refreshRuleDebugPanel(): void {
-		if (!this.gp_rule_debug || !this.txt_rule_debug) return
-		const enabled = MainUIManager.getInstance().isRuleDebugEnabled()
-		this.gp_rule_debug.visible = enabled
-		if (!enabled) {
-			this.txt_rule_debug.text = ""
-			return
-		}
-		const lines: string[] = []
-		lines.push("数字关卡=" + (this.curLv + 1) + "  步数=" + this.step + "/" + this.constStep)
-		if (this._map && this._map.GetRuleDebugText) {
-			lines.push(this._map.GetRuleDebugText())
-		} else {
-			lines.push("地图未初始化")
-		}
-		this.txt_rule_debug.text = lines.join("\n")
-	}
-
 	private onClickRetry() { // 重试
 		this._stopWinBgm()
 		this.gp_tip.visible = false
@@ -591,7 +567,6 @@ class GameMath extends mylib.UIBase {
 			var img_path = RES.getRes(("huochai_json.ingame_bt_back1"))
 			this.btn_back_step.$setTexture(img_path)
 		}
-		this.refreshRuleDebugPanel()
 	}
 	private OnGameEnd(bGetAward: boolean, starsEarned: number, scoreBeforeWin: number) {
 		const flyN = starsEarned > 0 ? Math.min(starsEarned, 15) : 0
@@ -744,7 +719,6 @@ class GameMath extends mylib.UIBase {
 
 	public onClickGoHome() {
 		this._stopWinBgm()
-		this._stopRuleDebugTicker()
 		this._cleanupVictoryStarFly()
 		this._map.removeAllImgEvent()
 		this.gameGroup.removeChild(this._map)

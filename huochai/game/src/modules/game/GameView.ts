@@ -95,11 +95,8 @@ class GameView extends mylib.UIBase {
 
 	private bRetry: boolean
 	private txt_timer: eui.Label
-	private gp_rule_debug: eui.Group
-	private txt_rule_debug: eui.Label
 	private _timerToken: number = 0
 	private _timerStart: number = 0
-	private _ruleDebugToken: number = 0
 	private _levelStartAt: number = 0
 	private _winSoundPlayed: boolean = false
 	/** 记忆挑战：上一局通关是否推进了 guanqiaReverse（末关通关不推进，重试时不可再减进度） */
@@ -115,6 +112,7 @@ class GameView extends mylib.UIBase {
 	/** 胜利飞星 / 粒子：提前点「下一关」时 removeAllTweens 会取消回调，需主动从显示列表移除 */
 	private _victoryFlyImages: eui.Image[] = []
 	private _winParticleShapes: egret.Shape[] = []
+	private _stageFitBound: boolean = false
 	public constructor() {
 		super("GameUISkin");
 		this.curLv = MainUIManager.getInstance().selectId - 1
@@ -265,7 +263,6 @@ class GameView extends mylib.UIBase {
 				this.txt_condition1.text = "删除"
 			}
 			this.img_target_bg1.$setTexture(img_path_add)
-			this._startRuleDebugTicker()
 			return
 		}
 		var img_path_add = RES.getRes("huochai_json.ingame_ui_add")
@@ -352,11 +349,24 @@ class GameView extends mylib.UIBase {
 
 		// 加载小星星动画
 		this.LoadStartBlinkAction()
-		this._startRuleDebugTicker()
 	}
 
 	protected childrenCreated() {
 		super.childrenCreated();
+		if (!this._stageFitBound) {
+			this._stageFitBound = true
+			GameDesign.bindStageResizeFit(this, () => this._refitEmbeddedMap())
+		}
+	}
+
+	/** 旋转/改窗口后按新的 stage 高度重算地图缩放与位置（与 popallitem 中一致使用 calcMapFit） */
+	private _refitEmbeddedMap(): void {
+		if (!this._map || !this.gameGroup) return
+		if (!this._playLevelRow()) return
+		const fit = this.calcMapFit()
+		this._map.x = fit.x
+		this._map.y = fit.y
+		this._map.scaleX = this._map.scaleY = fit.scale
 	}
 
 	public addEvts(): void {
@@ -420,7 +430,6 @@ class GameView extends mylib.UIBase {
 		mylib.EvtBus.rmListener(EvtType.TouchStep, this.onSetpUpdate, this);
 		mylib.EvtBus.rmListener(EvtType.TouchCommplete, this.GameComplete, this);
 		mylib.EvtBus.rmListener(EvtType.TouchMoreStep, this.TouchMoreStep, this);
-		this._stopRuleDebugTicker();
 	}
 
 	public OnShowVideoOk(){
@@ -601,8 +610,6 @@ class GameView extends mylib.UIBase {
 		if (this._map != null && this._playLevelRow().mapType != 999) { // 
 			this._map.UpDateDisplaytagNum()
 		}
-		this.refreshRuleDebugPanel()
-		
 		//mylib.GmGlobal.page.setPage({page:"help"}, this.jumpPage, this);
 	}
 
@@ -657,7 +664,6 @@ class GameView extends mylib.UIBase {
 		mgr.reversePreviewAfterWin = true
 		this._stopWinBgm()
 		this._stopTimer()
-		this._stopRuleDebugTicker()
 		this._cleanupVictoryFx()
 		egret.Tween.removeAllTweens()
 		if (this._map) {
@@ -862,38 +868,6 @@ class GameView extends mylib.UIBase {
 		}
 	}
 
-	private _startRuleDebugTicker(): void {
-		this._stopRuleDebugTicker()
-		this.refreshRuleDebugPanel()
-		if (!MainUIManager.getInstance().isRuleDebugEnabled()) return
-		this._ruleDebugToken = egret.setInterval(this.refreshRuleDebugPanel, this, 250)
-	}
-
-	private _stopRuleDebugTicker(): void {
-		if (this._ruleDebugToken) {
-			egret.clearInterval(this._ruleDebugToken)
-			this._ruleDebugToken = 0
-		}
-	}
-
-	private refreshRuleDebugPanel(): void {
-		if (!this.gp_rule_debug || !this.txt_rule_debug) return
-		const enabled = MainUIManager.getInstance().isRuleDebugEnabled()
-		this.gp_rule_debug.visible = enabled
-		if (!enabled) {
-			this.txt_rule_debug.text = ""
-			return
-		}
-		const lines: string[] = []
-		lines.push("关卡=" + (this.curLv + 1) + "  步数=" + this.step + "/" + this.constStep)
-		if (this._map && this._map.GetRuleDebugText) {
-			lines.push(this._map.GetRuleDebugText())
-		} else {
-			lines.push("地图未初始化")
-		}
-		this.txt_rule_debug.text = lines.join("\n")
-	}
-
 	private onClickRetry() { // 重试
 		this._stopWinBgm()
 		this.gp_tip.visible = false
@@ -968,7 +942,6 @@ class GameView extends mylib.UIBase {
 			var img_path = RES.getRes(("huochai_json.ingame_bt_back1"))
 			this.btn_back_step.$setTexture(img_path)
 		}
-		this.refreshRuleDebugPanel()
 	}
 	private OnGameEnd(bGetAward: boolean, starsEarned: number, scoreBeforeWin: number) {
 		const mgrEnd = MainUIManager.getInstance()
@@ -1102,7 +1075,6 @@ class GameView extends mylib.UIBase {
 		this._reversePendingPreviewAfterGameEnd = false
 		this._stopWinBgm()
 		this._stopTimer();
-		this._stopRuleDebugTicker();
 		const mgr = MainUIManager.getInstance();
 		mgr.bTimedChallenge = false;
 		mgr.timedChallengeLevelId = 0;
