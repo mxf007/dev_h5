@@ -1,19 +1,24 @@
-
 @echo off
+setlocal EnableExtensions
+cd /d "%~dp0"
 
+call egret publish --target wxgame
+if errorlevel 1 goto :fail
 
+if not exist "..\game_wxgame\" mkdir "..\game_wxgame"
 
-egret publish --target wxgame && ^
-xcopy .\scripts\wxgame\game.js ..\game_wxgame\game.js /y && ^
-xcopy .\scripts\wxgame\game.json ..\game_wxgame\game.json /y
+xcopy /Y ".\scripts\wxgame\game.js" "..\game_wxgame\game.js"
+if errorlevel 1 goto :fail
 
-if %errorlevel% neq 0 (
-    echo 命令执行失败，错误代码: %errorlevel%
-    pause
-    exit /b %errorlevel%
-)
+xcopy /Y ".\scripts\wxgame\game.json" "..\game_wxgame\game.json"
+if errorlevel 1 goto :fail
 
 echo 发布完成
-
-echo 启动完成
 pause
+goto :eof
+
+:fail
+echo.
+echo 命令执行失败，错误代码: %errorlevel%
+pause
+exit /b %errorlevel%
