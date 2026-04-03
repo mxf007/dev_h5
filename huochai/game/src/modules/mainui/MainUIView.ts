@@ -76,7 +76,6 @@ class MainUIView extends mylib.UIBase {
 	private _loadMoreThresholdPx: number = 600;
 	private _scrollSaveTimer: number = 0;
 	private _scoreRollProxy: { v: number } = { v: 0 }
-	private _stageFitBound: boolean = false
 	public constructor() {
 		super("MainUISkin");
 		this._data = {
@@ -223,10 +222,6 @@ class MainUIView extends mylib.UIBase {
 		this.resetLevelList(true);
 		this.other.visible = false
 		this.pintu.visible = false
-		if (!this._stageFitBound) {
-			this._stageFitBound = true
-			GameDesign.bindStageResizeFit(this)
-		}
 	}
 
 	private getTotalLevelCount(): number {

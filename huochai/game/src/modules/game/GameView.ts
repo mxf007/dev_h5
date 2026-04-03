@@ -112,7 +112,6 @@ class GameView extends mylib.UIBase {
 	/** 胜利飞星 / 粒子：提前点「下一关」时 removeAllTweens 会取消回调，需主动从显示列表移除 */
 	private _victoryFlyImages: eui.Image[] = []
 	private _winParticleShapes: egret.Shape[] = []
-	private _stageFitBound: boolean = false
 	public constructor() {
 		super("GameUISkin");
 		this.curLv = MainUIManager.getInstance().selectId - 1
@@ -353,20 +352,6 @@ class GameView extends mylib.UIBase {
 
 	protected childrenCreated() {
 		super.childrenCreated();
-		if (!this._stageFitBound) {
-			this._stageFitBound = true
-			GameDesign.bindStageResizeFit(this, () => this._refitEmbeddedMap())
-		}
-	}
-
-	/** 旋转/改窗口后按新的 stage 高度重算地图缩放与位置（与 popallitem 中一致使用 calcMapFit） */
-	private _refitEmbeddedMap(): void {
-		if (!this._map || !this.gameGroup) return
-		if (!this._playLevelRow()) return
-		const fit = this.calcMapFit()
-		this._map.x = fit.x
-		this._map.y = fit.y
-		this._map.scaleX = this._map.scaleY = fit.scale
 	}
 
 	public addEvts(): void {

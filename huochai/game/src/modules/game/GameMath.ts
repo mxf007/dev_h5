@@ -90,7 +90,6 @@ class GameMath extends mylib.UIBase {
 	private _winSoundPlayed: boolean = false
 	/** 皮肤子部件在构造函数返回后才绑定，首次 popallitem 须在 childrenCreated 之后执行 */
 	private _gameMathSkinPopDone: boolean = false
-	private _stageFitBound: boolean = false
 	private static readonly WIN_BGM_ID: string = "sound/snd_08.mp3"
 	private _scoreRollProxy: { v: number } = { v: 0 }
 	private _victoryFlyImages: eui.Image[] = []
@@ -235,21 +234,6 @@ class GameMath extends mylib.UIBase {
 			this._gameMathSkinPopDone = true
 			this.popallitem()
 		}
-		if (!this._stageFitBound) {
-			this._stageFitBound = true
-			GameDesign.bindStageResizeFit(this, () => this._refitEmbeddedMap())
-		}
-	}
-
-	/** 旋转/改窗口后重算地图区域（与 popallitem 中 fit 逻辑一致） */
-	private _refitEmbeddedMap(): void {
-		if (!this._map || !this.gameGroup) return
-		if (this.curLv < 0 || !MyConst.MathMapData || this.curLv >= MyConst.MathMapData.length) return
-		const mapType = MyConst.MathMapData[this.curLv].mapType
-		const fit = mapType == 999 ? this.calcEquationMapFit() : this.calcMapFit()
-		this._map.x = fit.x
-		this._map.y = fit.y
-		this._map.scaleX = this._map.scaleY = fit.scale
 	}
 
 	public addEvts(): void {
