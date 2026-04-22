@@ -3,7 +3,23 @@ class Main extends mylib.IMain {
 		MainUIManager.getInstance().ListenServer();
 	}
 	public run(): void {
+		// 初始化微信云服务
+		if (typeof wx !== 'undefined') {
+			initWechatCloud();
+			WechatCloudService.getInstance().autoDownloadAndMerge().catch(err => {
+				console.error('自动下载云端数据失败:', err);
+			});
+		}
+		
 		MyConst.ensureDifficultyOrder();
+		// 六边形引猫进窝 Demo：地址栏加 #hexcat 进入（如 index.html#hexcat）
+		try {
+			const h = (typeof window !== "undefined" && window["location"] && window["location"]["hash"]) || ""
+			if (/hexcat/i.test(String(h))) {
+				new HexCatMatchView().showAt(mylib.GmGlobal.uiLayer)
+				return
+			}
+		} catch (e) { }
 		new MainUIView().showAt(mylib.GmGlobal.uiLayer);
 		// mylib.GmGlobal.sound.playBgm("MainLoop.ogg");
 	}

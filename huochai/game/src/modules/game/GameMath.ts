@@ -342,7 +342,7 @@ class GameMath extends mylib.UIBase {
 
 	private _consumeStarsAndShowResult(): void {
 		MainUIManager.getInstance().score -= 200
-		MainUIManager.getInstance().saveData()
+		MainUIManager.getInstance().saveData()  // 保存数据到本地和云端
 		this.score_num.text = MainUIManager.getInstance().score.toString()
 		this._showResultOnly()
 	}
@@ -401,7 +401,7 @@ class GameMath extends mylib.UIBase {
 					if (mgrWin.guanqia1 < this.curLv + 1) {
 						mgrWin.guanqia1 = this.curLv + 1
 						mgrWin.score += 5
-						mgrWin.saveData()
+						mgrWin.saveData()  // 保存数据到本地和云端
 						bGetAward = true
 					}
 

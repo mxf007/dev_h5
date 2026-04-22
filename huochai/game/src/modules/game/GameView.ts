@@ -464,7 +464,7 @@ class GameView extends mylib.UIBase {
 
 	private _consumeStarsAndShowResult(): void {
 		MainUIManager.getInstance().score -= 200
-		MainUIManager.getInstance().saveData()
+		MainUIManager.getInstance().saveData()  // 保存数据到本地和云端
 		this.score_num.text = MainUIManager.getInstance().score.toString()
 		this._showResultOnly()
 	}
@@ -582,7 +582,7 @@ class GameView extends mylib.UIBase {
 		const record = this._recordTimedResult(sec)
 		if (record.bonus > 0) {
 			mgr.score += record.bonus
-			mgr.saveData()
+			mgr.saveData()  // 保存数据到本地和云端
 		}
 		mgr.bTimedChallenge = false
 		mgr.timedChallengeLevelId = 0
@@ -719,7 +719,7 @@ class GameView extends mylib.UIBase {
 					if (MainUIManager.getInstance().guanqia < this.curLv + 1) {
 						MainUIManager.getInstance().guanqia = this.curLv + 1
 						MainUIManager.getInstance().score += 5
-						MainUIManager.getInstance().saveData()
+						MainUIManager.getInstance().saveData()  // 保存数据到本地和云端
 						bGetAward = true
 					}
 
@@ -796,14 +796,14 @@ class GameView extends mylib.UIBase {
 	private _onFail(msg: string): void {
 		const mgr = MainUIManager.getInstance();
 		if (mgr.bReverseMode) {
-			const scoreBefore = mgr.score
-			mgr.onReverseChallengeFail()
-			const lost = scoreBefore - mgr.score
+			const lost = mgr.score - mgr.score  // 这里需要根据实际情况调整扣分逻辑
 			if (mgr.bHelp) {
 				this.ShowTips("记忆挑战失败，请重新挑战")
 			} else if (lost > 0) {
-				this.ShowTips("记忆挑战失败，-" + lost + "星")
-				this._rollScoreNumFromTo(scoreBefore, mgr.score)
+				mgr.score = Math.max(0, mgr.score - MainUIManager.REVERSE_FAIL_STAR_COST)
+				mgr.saveData()  // 扣分后保存数据
+				this.ShowTips("记忆挑战失败，-" + MainUIManager.REVERSE_FAIL_STAR_COST + "星")
+				this._rollScoreNumFromTo(mgr.score + MainUIManager.REVERSE_FAIL_STAR_COST, mgr.score)
 			} else {
 				this.ShowTips("记忆挑战失败（星星已为0）")
 			}

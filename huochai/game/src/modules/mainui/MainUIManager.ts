@@ -238,8 +238,57 @@ class MainUIManager {
 	private _dailyTaskIndex: number = -1;
 	private _dailyReward: number = 100; // 完成3关奖励星星
 
+	// 在MainUIManager类的构造函数中添加云端服务初始化
 	public constructor() {
+        // 初始化微信云服务
+        if (typeof wx !== 'undefined') {
+            setTimeout(() => {
+                initWechatCloud();
+                WechatCloudService.getInstance().autoDownloadAndMerge().catch(err => {
+                    console.error('自动下载云端数据失败:', err);
+                });
+            }, 1000); // 延迟加载以确保微信环境完全初始化
+        }
+    }
+
+	// 添加获取最后保存时间的方法
+	public getLastSaveTime(): number {
+	    if (!this.lastSaveTimestamp) {
+	        this.lastSaveTimestamp = Date.now();
+	    }
+	    return this.lastSaveTimestamp;
 	}
+
+	// 修改saveData方法，记录保存时间戳
+	public saveData() {
+	    // 记录保存时间
+	    this.lastSaveTimestamp = Date.now();
+	    
+	var data = {
+		score: 0,
+		guanqia: 0,
+		selectId: 0,
+		scrollV: 0,
+		scrollVClassic: -1,
+		scrollVMath: -1,
+		guanqia1: 0,
+		guanqiaReverse: 0,
+	};
+	const inst = MainUIManager.getInstance();
+	data.score = inst.score;
+	data.guanqia = inst.guanqia;
+	data.selectId = inst.selectId;
+	data.scrollVClassic = inst.scrollVClassic;
+	data.scrollVMath = inst.scrollVMath;
+	// 旧字段：与经典列表一致，兼容只读 scrollV 的逻辑
+	data.scrollV = inst.scrollVClassic >= 0 ? inst.scrollVClassic : inst.scrollV;
+	data.guanqia1 = inst.guanqia1;
+	data.guanqiaReverse = inst.guanqiaReverse;
+	egret.localStorage.setItem("huochaiData", JSON.stringify(data));
+	}
+
+	// 添加字段存储最后保存时间戳
+	private lastSaveTimestamp: number = Date.now();
 
 	private getTodayStr(): string {
 		const d = new Date();
@@ -648,31 +697,6 @@ class MainUIManager {
 	private gameAuther = "";
 	public getGameAuther() {
 		return this.gameAuther;
-	}
-
-	public saveData()
-	{
-		var data ={
-			score: 0,
-			guanqia: 0,
-			selectId:0,
-			scrollV:0,
-			scrollVClassic: -1,
-			scrollVMath: -1,
-			guanqia1: 0,
-			guanqiaReverse: 0,
-		}
-		const inst = MainUIManager.getInstance()
-		data.score = inst.score
-		data.guanqia = inst.guanqia
-		data.selectId = inst.selectId
-		data.scrollVClassic = inst.scrollVClassic
-		data.scrollVMath = inst.scrollVMath
-		// 旧字段：与经典列表一致，兼容只读 scrollV 的逻辑
-		data.scrollV = inst.scrollVClassic >= 0 ? inst.scrollVClassic : inst.scrollV
-		data.guanqia1 = inst.guanqia1
-		data.guanqiaReverse = inst.guanqiaReverse
-		egret.localStorage.setItem("huochaiData", JSON.stringify(data));
 	}
 
 	private onUpdate(event:egret.Event): void {
