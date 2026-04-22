@@ -64,27 +64,33 @@ export class WechatCloudService {
      * 在「当前用户可读」的 game_data 列表里选一条最新存档的 _id（排除历史共享 doc player_data）
      */
     private async findPreferredSaveDocIdFromCloud(): Promise<string> {
-        const wxa = wx as any;
-        const db = wxa.cloud.database();
-        const res = await db.collection("game_data").limit(20).get();
-        const list = res && res.data;
-        if (!list || !list.length) {
+        try {
+            const wxa = wx as any;
+            const db = wxa.cloud.database();
+            const res = await db.collection("game_data").limit(20).get();
+            const list = res && res.data;
+            if (!list || !list.length) {
+                return "";
+            }
+            let best: any = null;
+            let bestT = -1;
+            for (let i = 0; i < list.length; i++) {
+                const d = list[i];
+                if (!d || d._id === WechatCloudService.LEGACY_DOC_ID) {
+                    continue;
+                }
+                const t = typeof d.updateTime === "number" ? d.updateTime : (typeof d.timestamp === "number" ? d.timestamp : 0);
+                if (t >= bestT) {
+                    bestT = t;
+                    best = d;
+                }
+            }
+            return best && best._id ? String(best._id) : "";
+        } catch (e) {
+            // 无 where、权限过严等会导致 list get 失败；不应阻断后续 player_data 只读回退
+            console.warn("列举云端存档失败（将尝试单条 doc 回退）:", e);
             return "";
         }
-        let best: any = null;
-        let bestT = -1;
-        for (let i = 0; i < list.length; i++) {
-            const d = list[i];
-            if (!d || d._id === WechatCloudService.LEGACY_DOC_ID) {
-                continue;
-            }
-            const t = typeof d.updateTime === "number" ? d.updateTime : (typeof d.timestamp === "number" ? d.timestamp : 0);
-            if (t >= bestT) {
-                bestT = t;
-                best = d;
-            }
-        }
-        return best && best._id ? String(best._id) : "";
     }
 
     /** 解析并缓存当前用户应使用的存档文档 _id（不含 legacy player_data） */
@@ -193,20 +199,28 @@ export class WechatCloudService {
                 stored = "";
             }
             if (stored) {
-                const r = await db.collection("game_data").doc(stored).get();
-                const gd = tryParse(r);
-                if (gd) {
-                    return gd;
+                try {
+                    const r = await db.collection("game_data").doc(stored).get();
+                    const gd = tryParse(r);
+                    if (gd) {
+                        return gd;
+                    }
+                } catch (e) {
+                    console.warn("按本地缓存 _id 拉取失败（可能已删档或权限变更）:", e);
                 }
             }
 
             const prefId = await this.findPreferredSaveDocIdFromCloud();
             if (prefId) {
-                this.setStoredSaveDocId(prefId);
-                const r2 = await db.collection("game_data").doc(prefId).get();
-                const gd2 = tryParse(r2);
-                if (gd2) {
-                    return gd2;
+                try {
+                    this.setStoredSaveDocId(prefId);
+                    const r2 = await db.collection("game_data").doc(prefId).get();
+                    const gd2 = tryParse(r2);
+                    if (gd2) {
+                        return gd2;
+                    }
+                } catch (e) {
+                    console.warn("按列举得到的 _id 拉取失败:", e);
                 }
             }
 
@@ -261,31 +275,37 @@ export class WechatCloudService {
      * 自动下载并合并游戏数据
      */
     public async autoDownloadAndMerge(): Promise<void> {
-        // 首先尝试从云端下载数据
         const remoteData = await this.downloadGameData();
-        
+        const mainUIManager = MainUIManager.getInstance();
+        const localRaw = egret.localStorage.getItem("huochaiData");
+        const hasPersistedLocal = !!(localRaw && localRaw !== "");
+        const localData = this.getLocalGameData();
+        const localTs = localData ? (localData.timestamp || 0) : 0;
+
         if (remoteData) {
-            // 如果云端有数据，则比较时间戳，保留最新的数据
-            const mainUIManager = MainUIManager.getInstance();
-            
-            // 如果云端数据比本地新，则合并到本地
-            if (remoteData.timestamp > (mainUIManager.getLastSaveTime?.() || 0)) {
-                // 更新本地数据为云端最新数据
+            // 勿用 getLastSaveTime() 与云端比：启动时 lastSaveTimestamp≈Date.now()，会导致云端永远「更旧」、重装后永远合并不了
+            if (!hasPersistedLocal) {
+                mainUIManager.score = remoteData.score;
+                mainUIManager.guanqia = remoteData.guanqia;
+                mainUIManager.guanqia1 = remoteData.guanqia1;
+                mainUIManager.guanqiaReverse = remoteData.guanqiaReverse;
+                mainUIManager.selectId = remoteData.selectId;
+                mainUIManager.saveData();
+                console.log("云端数据已恢复到本地（无本地持久化存档）");
+            } else if (remoteData.timestamp > localTs) {
                 mainUIManager.score = Math.max(mainUIManager.score, remoteData.score);
                 mainUIManager.guanqia = Math.max(mainUIManager.guanqia, remoteData.guanqia);
                 mainUIManager.guanqia1 = Math.max(mainUIManager.guanqia1, remoteData.guanqia1);
                 mainUIManager.guanqiaReverse = Math.max(mainUIManager.guanqiaReverse, remoteData.guanqiaReverse);
                 mainUIManager.selectId = remoteData.selectId;
-                
-                // 保存合并后的数据到本地
                 mainUIManager.saveData();
-                
-                console.log('云端数据已合并到本地');
+                console.log("云端数据已合并到本地");
             }
-        } else {
-            // 云端没有数据，将本地数据上传到云端作为初始数据
-            console.log('云端无数据，将本地数据上传至云端');
+        } else if (hasPersistedLocal) {
+            console.log("云端无数据，将本地数据上传至云端");
             await this.autoUpload();
+        } else {
+            console.log("云端无数据且无本地持久化存档，跳过上传（避免用默认进度覆盖云端）");
         }
     }
     
@@ -318,9 +338,13 @@ export class WechatCloudService {
                     console.log('已从云端更新数据');
                 }
             } else {
-                // 云端无数据，上传本地数据
-                console.log('云端无数据，上传本地数据');
-                await this.autoUpload();
+                const raw = egret.localStorage.getItem("huochaiData");
+                if (raw && raw !== "") {
+                    console.log("云端无数据，上传本地数据");
+                    await this.autoUpload();
+                } else {
+                    console.log("云端无数据且无本地持久化存档，跳过上传");
+                }
             }
         } catch (error) {
             console.error('云端数据同步失败，使用本地数据:', error);
