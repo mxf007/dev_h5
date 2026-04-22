@@ -3,12 +3,10 @@ class Main extends mylib.IMain {
 		MainUIManager.getInstance().ListenServer();
 	}
 	public run(): void {
-		// 初始化微信云服务
-		if (typeof wx !== 'undefined') {
-			initWechatCloud();
-			WechatCloudService.getInstance().autoDownloadAndMerge().catch(err => {
-				console.error('自动下载云端数据失败:', err);
-			});
+		if (typeof wx !== "undefined") {
+			try {
+				require("./CloudBootstrap").initCloudOnGameStart();
+			} catch (e) { }
 		}
 		
 		MyConst.ensureDifficultyOrder();
@@ -25,32 +23,41 @@ class Main extends mylib.IMain {
 	}
 
 	public getJumpView(data: any, curinfo: any) {
-		if (data.page == "" || data.page == undefined || data.page == null)// || data.page == curinfo.page)
-		{
+		// 类型检查：确保 data 存在且 page 属性有效
+		if (!data || data.page === "" || data.page === undefined || data.page === null) {
 			return null;
 		}
-		if (data.page == "help") {
-			var lv = data.level
-			if (data.type == 0) {
-				if (lv > 0) {
-					var mapType = MyConst.MapData[parseInt(lv) + 1].mapType
-					MainUIManager.getInstance().selectId = parseInt(lv) + 1
-					MainUIManager.getInstance().bHelp = true
-					return (new GameView());
-
+		
+		if (data.page === "help") {
+			const lv = data.level;
+			// 确保 lv 是有效数字或可转换为数字的字符串
+			if (lv !== undefined && lv !== null && lv !== "") {
+				const levelNum = parseInt(String(lv), 10);
+				
+				if (data.type === 0) {
+					if (levelNum > 0) {
+						// 增加边界检查，防止数组越界
+						if (MyConst.MapData && MyConst.MapData[levelNum + 1]) {
+							// var mapType = MyConst.MapData[levelNum + 1].mapType; // 如果 mapType 未使用可注释或删除
+						}
+						MainUIManager.getInstance().selectId = levelNum + 1;
+						MainUIManager.getInstance().bHelp = true;
+						return new GameView();
+					}
+					return new GameView();
+				} else if (data.type === 1) {
+					if (levelNum > 0) {
+						// 增加边界检查
+						if (MyConst.MathMapData && MyConst.MathMapData[levelNum + 1]) {
+							// var mapType = MyConst.MathMapData[levelNum + 1].mapType;
+						}
+						MainUIManager.getInstance().selectId = levelNum + 1;
+						MainUIManager.getInstance().bHelp = true;
+						return new GameMath(levelNum); // 传递数字类型
+					}
+					return new GameMath(levelNum);
 				}
-				return (new GameView());
-			} else if (data.type == 1) {
-				if (lv > 0) {
-					var mapType = MyConst.MathMapData[parseInt(lv) + 1].mapType
-					MainUIManager.getInstance().selectId = parseInt(lv) + 1
-					MainUIManager.getInstance().bHelp = true
-					return (new GameMath(lv));
-
-				}
-				return (new GameMath(lv));
 			}
-
 		}
 		return null;
 	}
@@ -69,7 +76,7 @@ class Com {
      * 滚动对象
      * @param object 提示内容
      */
-	public static MoveObject(parent, obj, waittime = 200, movetime = 0, toattr = {}, onEnd: Function = null, thisObj: any = null, ...args: any[]): void {
+	public static MoveObject(parent: any, obj: any, waittime = 200, movetime = 0, toattr: any = {}, onEnd: Function = null, thisObj: any = null, ...args: any[]): void {
 		if (!parent || !obj) {
 			console.warn('Parent or object is null/undefined');
 			return;
@@ -77,13 +84,18 @@ class Com {
 		
 		// 确保对象已经被正确初始化
 		try {
-			parent.addChild(obj);
+			if (parent instanceof egret.DisplayObjectContainer) {
+				parent.addChild(obj);
+			} else {
+				console.error('Parent is not a DisplayObjectContainer');
+				return;
+			}
 		} catch (e) {
 			console.error('Failed to add child to parent:', e);
 			return;
 		}
 		
-		var tw = egret.Tween.get(obj);
+		const tw = egret.Tween.get(obj);
 		if (waittime > 0) {
 			tw.wait(waittime);
 		}
@@ -118,13 +130,13 @@ class Com {
      * 滚动文字
      * @param text 提示内容
      */
-	public static MoveText(parent, text: string, fromx, fromy, waittime = 200, movetime = 0, tox = 0, toy = 0, onEnd: Function = null, thisObj: any = null, ...args: any[]): void {
+	public static MoveText(parent: any, text: string, fromx: number, fromy: number, waittime = 200, movetime = 0, tox: number = 0, toy: number = 0, onEnd: Function = null, thisObj: any = null, ...args: any[]): void {
 		if (!parent) {
 			console.warn('Parent is null/undefined for MoveText');
 			return;
 		}
 		
-		var lable = new eui.Label(text);
+		const lable = new eui.Label(text);
 		lable.touchEnabled = false;
 		lable.x = fromx;
 		lable.y = fromy;
@@ -135,8 +147,11 @@ class Com {
 		
 		// 在微信小游戏中，异步获取宽高后再设置锚点
 		egret.callLater(() => {
-			lable.anchorOffsetX = lable.width / 2;
-			lable.anchorOffsetY = lable.height / 2;
+			// 检查对象是否还在显示列表中，避免访问已销毁的对象
+			if (lable && lable.parent) {
+				lable.anchorOffsetX = lable.width / 2;
+				lable.anchorOffsetY = lable.height / 2;
+			}
 		}, this);
 		
 		Com.MoveObject(parent, lable, waittime, movetime, { x: tox, y: toy, alpha: 0 }, onEnd, thisObj, args);
@@ -146,13 +161,13 @@ class Com {
      * 滚动文字
      * @param text 提示内容
      */
-	public static MoveTextRect(parent, text: string, fromx, fromy, waittime = 200, movetime = 0, tox = 0, toy = 0, onEnd: Function = null, thisObj: any = null, ...args: any[]): void {
+	public static MoveTextRect(parent: any, text: string, fromx: number, fromy: number, waittime = 200, movetime = 0, tox: number = 0, toy: number = 0, onEnd: Function = null, thisObj: any = null, ...args: any[]): void {
 		if (!parent) {
 			console.warn('Parent is null/undefined for MoveTextRect');
 			return;
 		}
 		
-		var lable = new eui.Label(text);
+		const lable = new eui.Label(text);
 		lable.touchEnabled = false;
 		lable.x = fromx;
 		lable.y = fromy;
@@ -163,20 +178,23 @@ class Com {
 		
 		// 在微信小游戏中，异步获取宽高后再设置锚点
 		egret.callLater(() => {
-			lable.anchorOffsetX = lable.width / 2;
-			lable.anchorOffsetY = lable.height / 2;
-			
-			// 创建矩形背景
-			var rect = new eui.Rect(lable.width + 40, lable.height + 20, 0x000000);
-			rect.touchEnabled = false;
-			rect.alpha = 0.6;
-			rect.x = fromx - 20;
-			rect.y = fromy - 10;
-			rect.anchorOffsetX = rect.width / 2;
-			rect.anchorOffsetY = rect.height / 2;
-			
-			Com.MoveObject(parent, rect, waittime, movetime, { x: tox, y: toy, alpha: 0 });
-			Com.MoveObject(parent, lable, waittime, movetime, { x: tox, y: toy, alpha: 0 }, onEnd, thisObj, args);
+			// 检查对象是否还在显示列表中，避免访问已销毁的对象
+			if (lable && lable.parent) {
+				lable.anchorOffsetX = lable.width / 2;
+				lable.anchorOffsetY = lable.height / 2;
+				
+				// 创建矩形背景
+				const rect = new eui.Rect(lable.width + 40, lable.height + 20, 0x000000);
+				rect.touchEnabled = false;
+				rect.alpha = 0.6;
+				rect.x = fromx - 20;
+				rect.y = fromy - 10;
+				rect.anchorOffsetX = rect.width / 2;
+				rect.anchorOffsetY = rect.height / 2;
+				
+				Com.MoveObject(parent, rect, waittime, movetime, { x: tox, y: toy, alpha: 0 });
+				Com.MoveObject(parent, lable, waittime, movetime, { x: tox, y: toy, alpha: 0 }, onEnd, thisObj, args);
+			}
 		}, this);
 	}
 }

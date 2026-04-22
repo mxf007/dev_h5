@@ -10,12 +10,10 @@
 
 ### 2.1 修改环境 ID
 
-在 [src/services/WechatCloudService.ts](file:///g:/dev_h5/huochai/game/src/services/WechatCloudService.ts) 文件中，将 `your-cloud-env` 替换为你的云开发环境 ID：
+在 [src/CloudConfig.ts](file:///g:/dev_h5/huochai/game/src/CloudConfig.ts) 文件中，将 `你的云开发环境ID` 替换为你的云开发环境 ID：
 
 ```typescript
-wx.cloud.init({
-    env: '你的云开发环境ID'  // 替换为你的实际环境ID
-});
+public static CLOUDBASE_ENV: string = '你的云开发环境ID';  // 例如: 'prod-xxxxx'
 ```
 
 ### 2.2 创建云开发目录结构
@@ -34,11 +32,29 @@ wx.cloud.init({
 2. 上传代码时，确保包含云开发相关文件
 3. 在小程序管理后台提交审核时，注意勾选云开发相关权限
 
-## 5. 测试
+## 5. 老数据兼容机制
+
+系统具有完善的老数据兼容机制：
+
+- **首次访问云端**：如果云端没有数据，系统会将本地存储的游戏进度上传到云端
+- **云端数据较新**：如果云端数据的时间戳比本地新，系统会将云端数据合并到本地
+- **本地数据较高**：如果本地某些数值（如积分、关卡进度）比云端高，系统会保留较高的数值，防止进度丢失
+- **无缝切换**：无论用户何时开始使用云存储，都能保证数据不丢失
+
+## 6. 重要配置说明
+
+**务必在发布前完成以下配置**：
+
+1. 在 [CloudConfig.ts](file:///g:/dev_h5/huochai/game/src/CloudConfig.ts) 中替换为真实的环境ID
+2. 确保在云开发控制台创建了 `game_data` 数据库集合
+3. 设置正确的数据库访问权限
+
+## 7. 测试
 
 1. 在微信开发者工具中测试云开发功能
 2. 确保数据能够正常上传和下载
 3. 检查错误处理是否正常
+4. 验证老数据兼容机制是否正常工作
 
 ## 注意事项
 

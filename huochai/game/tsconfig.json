@@ -11,5 +11,8 @@
   "include": [
     "src",
     "libs"
+  ],
+  "files": [
+    "src/platform.d.ts"
   ]
 }

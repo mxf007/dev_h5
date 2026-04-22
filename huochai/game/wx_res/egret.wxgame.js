@@ -1005,7 +1005,9 @@ r.prototype = e.prototype, t.prototype = new r();
             };
             HTML5StageText.prototype.$addToStage = function () {
             };
+            // 延迟 showKeyboard、并先 off 再 on，减轻 insertTextView:fail parent not found（父原生节点未就绪或重复监听竞态）
             HTML5StageText.prototype.$show = function () {
+                var self = this;
                 var info = {
                     defaultValue: this.$textfield.text,
                     maxLength: 9999,
@@ -1019,11 +1021,22 @@ r.prototype = e.prototype, t.prototype = new r();
                 if (this.$textfield.maxChars) {
                     info.maxLength = this.$textfield.maxChars;
                 }
-                wx.showKeyboard(info);
-                wx.onKeyboardConfirm(this.onKeyboardComplete);
-                wx.onKeyboardComplete(this.onKeyboardComplete);
-                wx.onKeyboardInput(this.onKeyboardInput);
-                this.dispatchEvent(new egret.Event("focus"));
+                try {
+                    wx.offKeyboardComplete(this.onKeyboardComplete);
+                    wx.offKeyboardConfirm(this.onKeyboardComplete);
+                    wx.offKeyboardInput(this.onKeyboardInput);
+                } catch (e) { }
+                setTimeout(function () {
+                    try {
+                        wx.showKeyboard(info);
+                    } catch (e) {
+                        console.log(e);
+                    }
+                    wx.onKeyboardConfirm(self.onKeyboardComplete);
+                    wx.onKeyboardComplete(self.onKeyboardComplete);
+                    wx.onKeyboardInput(self.onKeyboardInput);
+                    self.dispatchEvent(new egret.Event("focus"));
+                }, 0);
             };
             HTML5StageText.prototype.onKeyboardInput = function (data) {
                 this.textValue = data.value;
@@ -1034,10 +1047,14 @@ r.prototype = e.prototype, t.prototype = new r();
                 this.$hide();
             };
             HTML5StageText.prototype.$hide = function () {
-                wx.offKeyboardComplete();
-                wx.offKeyboardConfirm();
-                wx.offKeyboardInput();
-                wx.hideKeyboard({});
+                try {
+                    wx.offKeyboardComplete(this.onKeyboardComplete);
+                    wx.offKeyboardConfirm(this.onKeyboardComplete);
+                    wx.offKeyboardInput(this.onKeyboardInput);
+                } catch (e) { }
+                try {
+                    wx.hideKeyboard({});
+                } catch (e) { }
                 this.dispatchEvent(new egret.Event("blur"));
             };
             HTML5StageText.prototype.$getText = function () {

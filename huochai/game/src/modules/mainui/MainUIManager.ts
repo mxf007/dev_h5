@@ -1,6 +1,3 @@
-declare function pfCommand(cmd: string, data: any, cb: Function, thisObj: any);
-
-
 class MainUIManager {
 	private static _instance: MainUIManager;
 	public static getInstance(): MainUIManager {
@@ -102,7 +99,8 @@ class MainUIManager {
 	}
 
 	public getEndlessDisplayLevel(): number {
-		const max = Math.max(1, (MyConst && MyConst.MapData) ? MyConst.MapData.length : 1);
+		const mapData = (typeof MyConst !== 'undefined' && MyConst.MapData) ? MyConst.MapData : null;
+		const max = Math.max(1, mapData ? mapData.length : 1);
 		const next = this.getEndlessHighScore() + 1;
 		return Math.max(1, Math.min(next, max));
 	}
@@ -238,19 +236,6 @@ class MainUIManager {
 	private _dailyTaskIndex: number = -1;
 	private _dailyReward: number = 100; // 完成3关奖励星星
 
-	// 在MainUIManager类的构造函数中添加云端服务初始化
-	public constructor() {
-        // 初始化微信云服务
-        if (typeof wx !== 'undefined') {
-            setTimeout(() => {
-                initWechatCloud();
-                WechatCloudService.getInstance().autoDownloadAndMerge().catch(err => {
-                    console.error('自动下载云端数据失败:', err);
-                });
-            }, 1000); // 延迟加载以确保微信环境完全初始化
-        }
-    }
-
 	// 添加获取最后保存时间的方法
 	public getLastSaveTime(): number {
 	    if (!this.lastSaveTimestamp) {
@@ -284,7 +269,14 @@ class MainUIManager {
 	data.scrollV = inst.scrollVClassic >= 0 ? inst.scrollVClassic : inst.scrollV;
 	data.guanqia1 = inst.guanqia1;
 	data.guanqiaReverse = inst.guanqiaReverse;
+	// 添加时间戳，便于云端数据比较
+	(data as any).timestamp = this.lastSaveTimestamp;
 	egret.localStorage.setItem("huochaiData", JSON.stringify(data));
+		try {
+			if (typeof wx !== "undefined" && wx.cloud) {
+				require("../../CloudBootstrap").afterLocalSaveUploadCloud();
+			}
+		} catch (e) { }
 	}
 
 	// 添加字段存储最后保存时间戳
@@ -316,9 +308,12 @@ class MainUIManager {
 
 	private createDailyTasks(): any {
 		// 策略：经典两关按 guanqia 分段在关卡号区间内随机；候选池按整张 MapData 该区间建（可未解锁），最后才用已解锁池兜底
-		const mapLen = MyConst.MapData ? MyConst.MapData.length : 1;
+		const mapData = (typeof MyConst !== 'undefined' && MyConst.MapData) ? MyConst.MapData : null;
+		const mathMapData = (typeof MyConst !== 'undefined' && MyConst.MathMapData) ? MyConst.MathMapData : null;
+		
+		const mapLen = mapData ? mapData.length : 1;
 		const maxClassic = Math.max(1, Math.min(this.guanqia || 1, mapLen));
-		const maxMath = Math.max(1, Math.min(this.guanqia1 || 1, (MyConst.MathMapData ? MyConst.MathMapData.length : 1)));
+		const maxMath = Math.max(1, Math.min(this.guanqia1 || 1, (mathMapData ? mathMapData.length : 1)));
 
 		const gq = Math.max(1, this.guanqia | 0);
 		let bandMin: number;
@@ -348,12 +343,12 @@ class MainUIManager {
 		/** 在关卡号闭区间 [lvFrom, lvTo] 内扫 MapData（不限解锁），1/2/3 类玩法池 */
 		const fillClassicPoolLevelRange = (lvFrom: number, lvTo: number, minRuleCost: number): { [k: number]: number[] } => {
 			const p: { [k: number]: number[] } = { 1: [], 2: [], 3: [] };
-			if (!MyConst.MapData || mapLen <= 0) return p;
+			if (!mapData || mapLen <= 0) return p;
 			const lo = Math.max(1, lvFrom);
 			const hi = Math.min(mapLen, lvTo);
 			if (lo > hi) return p;
 			for (let i = lo - 1; i <= hi - 1; i++) {
-				const m = MyConst.MapData[i];
+				const m = mapData[i];
 				if (m.mapType == 999) continue;
 				const gt = m.rule && m.rule[0] ? m.rule[0] : 1;
 				const cost = m.rule && m.rule[1] != null ? m.rule[1] : 0;
@@ -451,7 +446,7 @@ class MainUIManager {
 		if (classic.length < 2) classic.push(classic[0]);
 
 		// 数字玩法：从 10 关以上已解锁范围随机 1 个，如果不足 10 关则从已解锁范围随机
-		const mathTotalLv = MyConst.MathMapData ? MyConst.MathMapData.length : 1;
+		const mathTotalLv = mathMapData ? mathMapData.length : 1;
 		const mathPool = maxMath > 10 ? Array.from({length: maxMath - 10}, (_, i) => i + 11) : Array.from({length: maxMath}, (_, i) => i + 1);
 		let mathLv: number;
 		if (mathPool.length > 0) {
@@ -721,10 +716,11 @@ class MainUIManager {
 
 	/** MapData 中 mapType!=999 的下标（0-based），与主界面列表项 data.actualMapIndex 一致 */
 	public static getClassicLevelMapIndices(): number[] {
-		if (!MyConst.MapData) return [];
+		const mapData = (typeof MyConst !== 'undefined' && MyConst.MapData) ? MyConst.MapData : null;
+		if (!mapData) return [];
 		const arr: number[] = [];
-		for (let i = 0; i < MyConst.MapData.length; i++) {
-			if (MyConst.MapData[i].mapType != 999) arr.push(i);
+		for (let i = 0; i < mapData.length; i++) {
+			if (mapData[i].mapType != 999) arr.push(i);
 		}
 		return arr;
 	}
@@ -767,11 +763,16 @@ class MainUIManager {
 		dailyData.tasks.forEach((task: any, index: number) => {
 			const taskType = task.mode === 1 ? "数字玩法" : "拼图玩法";
 			const level = task.level;
-			const mapData = task.mode === 1 ? MyConst.MathMapData[level - 1] : MyConst.MapData[level - 1];
+			const mathMapData = (typeof MyConst !== 'undefined' && MyConst.MathMapData) ? MyConst.MathMapData : null;
+			const classicMapData = (typeof MyConst !== 'undefined' && MyConst.MapData) ? MyConst.MapData : null;
+			
+			const mapData = task.mode === 1 
+				? (mathMapData && level >= 1 && level <= mathMapData.length ? mathMapData[level - 1] : null)
+				: (classicMapData && level >= 1 && level <= classicMapData.length ? classicMapData[level - 1] : null);
 			
 			console.log(`\n任务${index + 1}:`);
 			console.log(`  类型：${taskType}`);
-		 console.log(`  关卡：${level}`);
+			console.log(`  关卡：${level}`);
 			if (mapData) {
 				console.log(`  地图类型：${mapData.mapType}`);
 				if (mapData.rule) {
